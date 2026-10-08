@@ -58,6 +58,7 @@
      ===================================================================== */
   async function hook() {
     const st = $('#story'), bg = $('#storyBg'), cast = $('#cast'), sfx = $('#storyFx');
+    SD.music('calm'); SD.ambience('harbour');                 // sunrise at the harbour: calm theme, waves and gulls
     st.classList.remove('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([st, bg, cast, sfx], { clearProps: 'all' });
     let skipping = false;
     $('#skipStory').onclick = e => { e.stopPropagation(); skipping = true; SD.skip(); };
@@ -70,7 +71,7 @@
       const d = document.createElement('div'); d.className = 'actor'; d.dataset.edit = name; Object.assign(d.style, css);
       const im = new Image(); im.src = 'assets/img/' + src;
       if (flip) { const f = document.createElement('div'); f.className = 'flip'; f.appendChild(im); d.appendChild(f); } else d.appendChild(im);
-      cast.appendChild(d); return { el: d, im, face: SD.face(im, src.replace('.webp', '')) };   // talking face sprite (lip-synced in core.js)
+      cast.appendChild(d); return { el: d, im };
     };
     // the sonar-room doors: latch, hiss, then both halves slide apart (timing + ease from door_opening.svg: 0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1))
     async function doors() {
@@ -99,8 +100,7 @@
     // two characters walk in through the doorway: small and far at the centre → their places, with a step bounce
     async function walkIn(list) {
       list.forEach(([a, dx, dl]) => {
-        gsap.from(a.el, { x: dx, y: -170, scale: .42, opacity: 0, duration: 1.15, delay: dl, ease: 'power2.out' });
-        gsap.fromTo(a.im, { y: 0 }, { y: -16, duration: .19, yoyo: true, repeat: 5, delay: dl, ease: 'sine.inOut' });
+        gsap.from(a.el, { x: dx, y: -170, scale: .42, opacity: 0, duration: 1.15, delay: dl, ease: 'power2.out' });   // a smooth glide in, no bounce
       });
       for (let i = 0; i < 6; i++) gsap.delayedCall(i * .19, SFX.foot);
       await wait(.7);                                   // the first line starts while they are still walking in
@@ -112,17 +112,19 @@
     let actors = [], frames = null;
     async function line(L, b, a, extra) {
       chk();
-      actors.forEach(x => { x.el.classList.toggle('dim', x !== a); gsap.to(x.el, { scale: x === a ? 1.03 : 1, duration: .3 }); });
+      actors.forEach(x => x.el.classList.toggle('dim', x !== a));   // the listener dims; nobody moves
       const origin = b.classList.contains('tr') ? '85% 110%' : b.classList.contains('lft') ? '-5% 50%' : b.classList.contains('rgt') ? '105% 50%' : '15% 110%';
       gsap.fromTo(b, { scale: .5, opacity: 0, transformOrigin: origin }, { scale: 1, opacity: 1, duration: .4, ease: 'back.out(2.2)' });
       const tn = gsap.fromTo('#tapNext', { opacity: 0 }, { opacity: .85, duration: .4, delay: 1.6 });
       if (extra) extra();
-      await say(L, { bubble: b, face: a.face });
+      await say(L, { bubble: b });
       tn.kill(); gsap.set('#tapNext', { opacity: 0 });
       await gsap.to(b, { opacity: 0, scale: .9, duration: .2 });
     }
 
+    const SCENE = Q.get('at') === 'hook' ? +(Q.get('scene') || 1) : 1;   // QA: start at scene 2 (control room) or 3 (dive)
     try {
+      if (SCENE < 2) {
       /* ---- Scene 1 · the harbour at sunrise ---- */
       bg.style.backgroundImage = 'url(assets/img/harbour.webp)';
       gsap.fromTo(bg, { scale: 1.16, x: 70 }, { scale: 1.04, x: 0, duration: 14, ease: 'none' });
@@ -132,21 +134,22 @@
       actors = [meera, riya];
       gsap.from(meera.el, { x: -600, duration: 1, ease: 'power3.out', delay: .2 });
       gsap.from(riya.el, { x: 620, duration: .9, ease: 'power3.out', delay: .6 });
-      gsap.fromTo(riya.el, { y: 0 }, { y: -40, duration: .18, yoyo: true, repeat: 3, delay: 1.1, ease: 'power1.out' });
       await wait(1.1); chk();
       const bR = bubble('riya', 'tr', { left: '780px', top: '220px' }, 'harbour-riya-bubble');
       const bM = bubble('meera', 'tl', { left: '470px', top: '150px' }, 'harbour-meera-bubble');
       await line(S.h1, bR, riya);
       const alarm = document.createElement('div'); alarm.className = 'alarmglow'; sfx.appendChild(alarm);
       await line(S.h2, bM, meera, () => {
-        gsap.delayedCall(.8, () => { SFX.alarm(); SFX.ping(); gsap.to(alarm, { opacity: 1, duration: .35, yoyo: true, repeat: 5 }); gsap.fromTo(riya.el, { y: 0 }, { y: -50, duration: .16, yoyo: true, repeat: 1 }); });
+        gsap.delayedCall(.8, () => { SFX.alarm(); SFX.ping(); gsap.to(alarm, { opacity: 1, duration: .35, yoyo: true, repeat: 5 }); });
       });
       chk();
+      }
 
+      if (SCENE < 3) {
       /* ---- Scene 2 · the sonar-room doors open, Meera and Riya walk in ---- */
       SFX.swoosh();
       await gsap.to([bg, cast, sfx], { opacity: 0, duration: .4, ease: 'power2.in' });
-      gsap.killTweensOf(bg); cast.innerHTML = sfx.innerHTML = '';
+      gsap.killTweensOf(bg); cast.innerHTML = sfx.innerHTML = ''; SD.ambience(null);   // indoors: no sea
       bg.style.backgroundImage = 'url(assets/img/sonar_room.webp)';
       gsap.set([bg, cast, sfx], { x: 0, opacity: 1 });
       await doors(); chk();
@@ -155,11 +158,11 @@
       radar.innerHTML = '<div class="sweep2"></div>';
       gsap.to(radar.firstChild, { rotation: 360, duration: 2.6, repeat: -1, ease: 'none' });
       const blip = (x, y) => { const b = document.createElement('div'); b.className = 'blip'; Object.assign(b.style, { left: x + 'px', top: y + 'px' }); radar.appendChild(b); gsap.fromTo(b, { scale: 0 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); SFX.blip(); return b; };
-      const m2 = actor('meera_talk_1.webp', { left: '0px', height: '600px', bottom: '-10px' }, 'sonar-meera');
+      const m2 = actor('meera_right_big.webp', { left: '20px', height: '980px', bottom: '-380px' }, 'sonar-meera');   // full body (no waist-up cutout)
       const r2 = actor('riya_idle.webp', { left: '1190px', height: '820px', bottom: '-330px' }, 'sonar-riya', true);
       actors = [m2, r2];
       await walkIn([[m2, 640, 0], [r2, -480, .12]]); chk();
-      const bM2 = bubble('meera', 'lft', { left: '500px', top: '700px' }, 'sonar-meera-bubble');
+      const bM2 = bubble('meera', 'lft', { left: '600px', top: '700px' }, 'sonar-meera-bubble');
       const bR2 = bubble('riya', 'rgt', { right: '790px', top: '650px' }, 'sonar-riya-bubble');
       const blips = [];
       await line(S.h3, bM2, m2, () => { [[560, 120], [690, 300], [480, 250]].forEach(([x, y], i) => gsap.delayedCall(.4 + i * .5, () => blips.push(blip(x, y)))); });
@@ -178,9 +181,9 @@
         const spots = [-3, -1, 2];
         blips.forEach((b, i) => { gsap.killTweensOf(b); if (i < spots.length) gsap.to(b, { left: 150 + 300 + spots[i] * 90, top: 330, x: 0, duration: .6, delay: 1.2 + i * .2, ease: 'back.out(1.6)' }); else gsap.to(b, { opacity: 0, duration: .4, delay: 1 }); });
       });
-      r2.im.src = 'assets/img/riya_cheer.webp'; r2.face = SD.face(r2.im, 'riya_cheer'); r2.el.style.height = '760px'; r2.el.style.bottom = '-200px';
-      gsap.fromTo(r2.el, { y: 0 }, { y: -60, duration: .25, yoyo: true, repeat: 1, ease: 'power2.out' });
+      r2.im.src = 'assets/img/riya_cheer.webp'; r2.el.style.height = '760px'; r2.el.style.bottom = '-200px';
       await line(S.h8, bR2, r2);
+      }
     } catch (e) { if (e !== SKIP) throw e; }
 
     /* ---- Dive · through the porthole into the sea ---- */
@@ -188,7 +191,7 @@
     gsap.set('#tapNext', { opacity: 0 });
     const dr = $('#doors'); if (dr) { gsap.killTweensOf(dr.querySelectorAll('*')); dr.remove(); }
     if (bg.style.backgroundImage.indexOf('sonar_room') < 0) { bg.style.backgroundImage = 'url(assets/img/sonar_room.webp)'; cast.innerHTML = sfx.innerHTML = ''; gsap.set([bg, cast, sfx], { x: 0, opacity: 1, scale: 1 }); }
-    SFX.swoosh();
+    SFX.swoosh(); SFX.splash(); SD.music('play'); SD.ambience('waves');    // into the sea: the mission theme takes over
     for (let i = 0; i < 4; i++) { const r = document.createElement('div'); r.className = 'diveRing'; Object.assign(r.style, { left: '1710px', top: '380px', width: '200px', height: '200px', marginLeft: '-100px', marginTop: '-100px' }); sfx.appendChild(r); gsap.fromTo(r, { scale: .3, opacity: 1 }, { scale: 6, opacity: 0, duration: 1.2, delay: i * .15 }); }
     gsap.to(cast, { opacity: 0, duration: .4 });
     await gsap.to([bg, cast], { scale: 4.2, transformOrigin: '1710px 380px', duration: 1.3, ease: 'power3.in' });
@@ -346,14 +349,12 @@
   }
 
   /* ---------- Final mixed mission ---------- */
-  async function finalMission() {
+  async function finalMission(start = 0) {
     LV = 'fin'; await W.banner('FINAL MISSION', 'Protect the Route', 'Compare · Order · Combine', 2.4);
-    W.pips(3, 0); SD.where = { at: 'final', round: 1 };
-    await orderRound(D.FIN_ORD);
-    W.pips(3, 1); await W.sail(); SD.where = { at: 'final', round: 2 };
-    await W.spawn(D.FIN_CMP.subs);
-    await mission(D.FIN_CMP.m);
-    await W.clearSubs(); W.stripOff(); W.pips(3, 2); await W.sail(); SD.where = { at: 'final', round: 3 };
+    W.pips(3, start);
+    if (start < 1) { SD.where = { at: 'final', round: 1 }; await orderRound(D.FIN_ORD); W.pips(3, 1); await W.sail(); }
+    if (start < 2) { SD.where = { at: 'final', round: 2 }; await W.spawn(D.FIN_CMP.subs); await mission(D.FIN_CMP.m); await W.clearSubs(); W.stripOff(); W.pips(3, 2); await W.sail(); }
+    SD.where = { at: 'final', round: 3 };
     await signalRound(D.FIN_SIG, 5);
     W.pips(3, 3);
     await say(S.finEnd, { pose: 'cheer' });
@@ -384,12 +385,13 @@
     for (let i = order.indexOf(at); i < order.length; i++) {
       const k = order[i], st = k === at ? r : 0;
       SD.where = { at: k, round: st + 1 };
+      if (k !== 'hook' && k === at) { SD.music('play'); SD.ambience('waves'); }
       if (k === 'hook') await hook();
       if (k === 'teach') await teach();
       if (k === 'l1') { if (k === at && at !== 'teach') await W.scaleIntro(); await level1(st); }
       if (k === 'l2') { if (k === at) await W.scaleIntro(); await level2(st); }
       if (k === 'l3') { if (k === at) await W.scaleIntro(); await level3(st); }
-      if (k === 'final') { if (k === at) await W.scaleIntro(); await finalMission(); location.search = ''; }
+      if (k === 'final') { if (k === at) await W.scaleIntro(); await finalMission(st); location.search = Q.get('qa') === '1' ? '?qa=1' : ''; }
     }
   }
   $('#btnSpeak').onclick = () => { const l = SD.lastLine; if (l) say(l.x, l.o.bubble ? {} : l.o); };
@@ -398,13 +400,14 @@
     window.SD_RUN = run();
   };
   // title screen breathes
-  gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.1, immediateRender: false });   // breathes once it has popped in
   const logo = $('#title .logo');
   logo.innerHTML = [...logo.textContent].map(c => c === ' ' ? '<span>&nbsp;</span>' : `<span>${c}</span>`).join('');
   gsap.from('#title .logo span', { y: -160, opacity: 0, rotation: () => (Math.random() - .5) * 40, duration: .9, stagger: .05, ease: 'back.out(1.8)' });
   gsap.to('#title .logo span', { y: -10, duration: .7, ease: 'sine.inOut', stagger: { each: .08, repeat: -1, yoyo: true }, delay: 1.4 });
   gsap.fromTo('#title .art', { scale: 1.1 }, { scale: 1, duration: 2.6, ease: 'power2.out' });   // a slow push-in on the cover
   gsap.to('#title .art', { scale: 1.025, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.6 });
-  gsap.from('#start', { y: 80, opacity: 0, duration: .8, delay: 1.1, ease: 'back.out(2)' });
+  gsap.from('#start', { scale: 0, rotation: -120, opacity: 0, duration: .9, delay: 1.1, ease: 'back.out(2.2)' });
+  $('#start').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#start').onclick(); } };
   if (Q.get('autostart') === '1') $('#start').onclick();
 })();

@@ -42,17 +42,17 @@
   const readTime = t => Math.max(1.6, t.split(/\s+/).length * 0.36);
   const MUTE = Q.get('mute') === '1';
 
-  /* ================= sound: Web-Audio synth (no files needed) ================= */
-  let AC = null, master = null, sfxBus = null, musicBus = null;
+  /* ================= sound: recorded music + ambience + effects (assets/sfx), synthesized UI sounds ================= */
+  let AC = null, master = null, sfxBus = null, musicBus = null, ambBus = null;
   function audioOn() {
     if (AC) return;
     try {
       AC = new (window.AudioContext || window.webkitAudioContext)();
       master = AC.createGain(); master.gain.value = MUTE ? 0 : .8; master.connect(AC.destination);
       sfxBus = AC.createGain(); sfxBus.gain.value = .75; sfxBus.connect(master);
-      musicBus = AC.createGain(); musicBus.gain.value = .0001; musicBus.connect(master);
-      musicBus.gain.linearRampToValueAtTime(.55, AC.currentTime + 3);
-      ambience(); music();
+      musicBus = AC.createGain(); musicBus.gain.value = .55; musicBus.connect(master);
+      ambBus = AC.createGain(); ambBus.gain.value = .55; ambBus.connect(master);
+      bed('music', want.music, 1.2); bed('amb', want.amb, 1.2);   // already loaded while the cover was showing
     } catch (e) { AC = null; }
   }
   function env(g, t, a, d, peak) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); }
@@ -66,53 +66,67 @@
     const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = b; f.type = 'lowpass'; f.frequency.value = lp;
     env(g, t, .02, dur, peak); s.connect(f); if (hp) { const h = AC.createBiquadFilter(); h.type = 'highpass'; h.frequency.value = hp; f.connect(h); h.connect(g); } else f.connect(g); g.connect(sfxBus); s.start(t);
   }
-  function ambience() {   // soft underwater rumble + slow "breathing" filter
-    const n = AC.sampleRate * 4, b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0); let last = 0;
-    for (let i = 0; i < n; i++) { last = (last + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3; }
-    const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = b; s.loop = true; f.type = 'lowpass'; f.frequency.value = 380; g.gain.value = .2;
-    const lfo = AC.createOscillator(), lg = AC.createGain(); lfo.frequency.value = .08; lg.gain.value = 140; lfo.connect(lg); lg.connect(f.frequency); lfo.start();
-    s.connect(f); f.connect(g); g.connect(musicBus); s.start();
+  /* Recorded sound: assets/sfx/*.ogg (CC0 effects + music made for the game, see assets/sfx/CREDITS.md).
+     Over http(s) the files become Web Audio buffers (they overlap, duck under the voice and pause with the AudioContext);
+     from file://, where fetch is blocked, each plays through one reused <audio> element. */
+  const ONE = { sonar: .5, explosion: .85, splash: .55, torpedo: .75, door_open: .95, door_slide: .85, bubbles: .5, rush: .7 };
+  const BED = { music_calm: 'music', music_play: 'music', harbour: 'amb', waves: 'amb' };
+  const viaWA = /^https?:$/.test(location.protocol), BUF = {}, EL = {}, beds = {};
+  let want = { music: null, amb: null }, ducked = false;
+  function loadSounds() {   // runs at boot: an offline context decodes without needing the player's first tap
+    const DEC = viaWA && window.OfflineAudioContext ? new OfflineAudioContext(2, 1, 48000) : null;
+    for (const n of Object.keys(ONE).concat(Object.keys(BED))) {
+      const url = 'assets/sfx/' + n + '.ogg';
+      if (DEC) fetch(url).then(r => r.arrayBuffer()).then(b => DEC.decodeAudioData(b)).then(buf => { BUF[n] = buf; if (want[BED[n]] === n) bed(BED[n], n, 2); }).catch(() => {});
+      else { const el = new Audio(); el.preload = 'auto'; el.src = url; el.loop = !!BED[n]; EL[n] = el; }
+    }
   }
-  /* music bed: a tanpura drone (Pa · Sa · Sa · low Sa, in D) under a slow underwater pad — gives the game an Indian heartbeat */
-  function pluck(freq, t, peak) {
-    const o = AC.createOscillator(), o2 = AC.createOscillator(), f = AC.createBiquadFilter(), bp = AC.createBiquadFilter(), g = AC.createGain(), g2 = AC.createGain();
-    o.type = 'sawtooth'; o.frequency.value = freq; o2.type = 'sawtooth'; o2.frequency.value = freq * 1.003;
-    f.type = 'lowpass'; f.frequency.setValueAtTime(2600, t); f.frequency.exponentialRampToValueAtTime(500, t + 3.5);
-    bp.type = 'bandpass'; bp.frequency.setValueAtTime(freq * 6, t); bp.frequency.linearRampToValueAtTime(freq * 9, t + 2.5); bp.Q.value = 6;   // the buzzy "jivari" shimmer
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + 4.6);
-    g2.gain.setValueAtTime(0, t); g2.gain.linearRampToValueAtTime(peak * .5, t + .8); g2.gain.exponentialRampToValueAtTime(.0001, t + 4.2);
-    o.connect(f); o2.connect(f); f.connect(g); g.connect(musicBus); o.connect(bp); bp.connect(g2); g2.connect(musicBus);
-    o.start(t); o2.start(t); o.stop(t + 4.8); o2.stop(t + 4.8);
+  const fadeEl = (el, to, dur, after) => { gsap.killTweensOf(el); gsap.to(el, { volume: to, duration: dur, ease: 'none', onComplete: after }); };
+  // a looping bed: kind 'music' or 'amb' crossfades to track n (null = silence)
+  function bed(kind, n, fade = 1.5) {
+    want[kind] = n; if (!AC || MUTE) return;
+    const cur = beds[kind];
+    if (cur && cur.n === n) return;
+    if (cur) { beds[kind] = null; if (cur.src) { const g = cur.g.gain, t = AC.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + fade); cur.src.stop(t + fade + .05); } else fadeEl(cur.el, 0, fade, () => cur.el.pause()); }
+    if (!n) return;
+    if (BUF[n] || (viaWA && window.OfflineAudioContext)) {
+      if (!BUF[n]) return;   // starts when decoded (loadSounds)
+      const src = AC.createBufferSource(), g = AC.createGain(), t = AC.currentTime; src.buffer = BUF[n]; src.loop = true;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + fade); src.connect(g); g.connect(kind === 'music' ? musicBus : ambBus); src.start(t);
+      beds[kind] = { n, src, g };
+    } else {
+      const el = EL[n]; if (!el) return; el.volume = 0; el.currentTime = 0; el.play().catch(() => {});
+      beds[kind] = { n, el }; fadeEl(el, elVol(kind), fade);
+    }
   }
-  function padChord(freqs, t, dur) {
-    freqs.forEach((fq, i) => {
-      const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain();
-      o.type = i % 2 ? 'triangle' : 'sine'; o.frequency.value = fq; o.detune.value = (i - 1) * 6;
-      f.type = 'lowpass'; f.frequency.value = 900;
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.022, t + dur * .4); g.gain.linearRampToValueAtTime(0, t + dur);
-      o.connect(f); f.connect(g); g.connect(musicBus); o.start(t); o.stop(t + dur + .1);
-    });
+  const elVol = kind => (kind === 'music' ? (ducked ? .18 : .55) : (ducked ? .4 : .55)) * .8;
+  // a one-shot; false when the file isn't there, so the caller can fall back to the synth
+  function sample(n, vol = 1, rate = 1) {
+    if (!AC || MUTE) return true;
+    if (!EL[n]) { const b = BUF[n]; if (!b) return false; const s = AC.createBufferSource(), g = AC.createGain(); s.buffer = b; s.playbackRate.value = rate; g.gain.value = ONE[n] * vol; s.connect(g); g.connect(sfxBus); s.start(); return true; }
+    const el = EL[n]; if (!el || el.error) return false;
+    el.volume = Math.min(1, ONE[n] * vol * .75); el.playbackRate = rate; el.currentTime = 0; el.play().catch(() => {}); return true;
   }
-  function music() {
-    const SA = 146.83, PA = 110, LSA = 73.42, CYC = 4.8;
-    const PADS = [[293.66, 349.23, 440], [261.63, 329.63, 392], [233.08, 293.66, 349.23], [261.63, 329.63, 440]];   // Dm · C · Bb · C(add A)
-    let next = AC.currentTime + .3, bar = 0;
-    setInterval(() => {
-      if (!AC || SD.paused) return;
-      while (next < AC.currentTime + 1.5) {
-        pluck(PA, next, .035); pluck(SA, next + 1.2, .03); pluck(SA, next + 2.4, .03); pluck(LSA, next + 3.6, .045);
-        if (bar % 2 === 0) padChord(PADS[(bar / 2) % PADS.length], next, CYC * 2);
-        next += CYC; bar++;
-      }
-    }, 400);
+  function holdMedia(on) { for (const el of Object.values(EL)) { if (on && !el.paused) { el._held = true; el.pause(); } else if (!on && el._held) { el._held = false; el.play().catch(() => {}); } } }
+  // the music (and a little of the ambience) dips under every spoken line
+  function duck(on) {
+    ducked = on; if (!AC) return;
+    const t = AC.currentTime, ramp = (g, v) => { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(v, t + (on ? .25 : 1.2)); };
+    ramp(musicBus, on ? .18 : .55); ramp(ambBus, on ? .4 : .55);
+    for (const k of ['music', 'amb']) { const c = beds[k]; if (c && c.el) fadeEl(c.el, elVol(k), on ? .25 : 1.2); }
   }
-  function duck(on) { if (!AC) return; const t = AC.currentTime; musicBus.gain.cancelScheduledValues(t); musicBus.gain.setValueAtTime(musicBus.gain.value, t); musicBus.gain.linearRampToValueAtTime(on ? .18 : .55, t + (on ? .25 : 1.2)); }
+  if (!MUTE) loadSounds();
+  let lastSonar = 0;
 
   const SFX = {
-    ping() { tone('sine', 1250, 900, 1.1, .16); tone('sine', 1250, 900, .9, .05, .35); },
+    ping() {   // a real sonar ping; a burst of pings (submarines rising one by one) turns into soft bubbles after the first
+      const now = performance.now(); if (now - lastSonar < 700) { sample('bubbles', .7, .9 + Math.random() * .25) || tone('sine', 1250, 900, .6, .08); return; }
+      lastSonar = now; sample('sonar') || (tone('sine', 1250, 900, 1.1, .16), tone('sine', 1250, 900, .9, .05, .35));
+    },
     lock() { tone('square', 880, 1320, .09, .07); tone('square', 1320, 1760, .09, .06, .1); },
-    launch() { noise(.55, .28, 900, 0, 120); tone('sawtooth', 220, 90, .5, .06); },
-    boom() { tone('sine', 120, 40, .7, .5); noise(.9, .38, 600); for (let i = 0; i < 6; i++) tone('sine', 500 + Math.random() * 700, 1400, .08, .05, .15 + i * .07); },
+    launch() { noise(.18, .2, 700, 0, 120); sample('torpedo') || (noise(.55, .28, 900, 0, 120), tone('sawtooth', 220, 90, .5, .06)); },
+    boom() { tone('sine', 110, 38, .6, .32); sample('explosion') || (noise(.9, .38, 600), tone('sine', 120, 40, .7, .5)); for (let i = 0; i < 5; i++) tone('sine', 500 + Math.random() * 700, 1400, .08, .04, .25 + i * .08); },
+    sink() { sample('bubbles', .9, .8); },
     right() { tone('triangle', 784, 0, .18, .22); tone('triangle', 1175, 0, .32, .22, .14); },
     wrong() { tone('square', 180, 140, .28, .1); tone('square', 150, 120, .28, .09, .14); },
     shield() { tone('sine', 600, 1400, .25, .12); noise(.2, .1, 3000); },
@@ -127,9 +141,9 @@
     // sonar-room doors: unlock beeps → latch → air hiss → heavy slide (rumble + servo whine) → stop
     doorBeep() { tone('sine', 1320, 0, .09, .12); tone('sine', 1760, 0, .12, .1, .13); },
     clunk() { tone('sine', 120, 36, .34, .5); noise(.16, .32, 650); tone('square', 74, 52, .07, .05); },
-    hiss(dur = .8) { noise(dur, .2, 9000, 0, 2200); noise(dur * .6, .08, 3200, .05, 900); },
+    hiss(dur = .8) { sample('door_open') || (noise(dur, .2, 9000, 0, 2200), noise(dur * .6, .08, 3200, .05, 900)); },
     doorSlide(dur = 1.8) {
-      if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain();
+      if (!AC) return; sample('door_slide'); const t = AC.currentTime, o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain();
       o.type = 'sawtooth'; o.frequency.setValueAtTime(46, t); o.frequency.linearRampToValueAtTime(68, t + dur * .55); o.frequency.linearRampToValueAtTime(50, t + dur);
       f.type = 'lowpass'; f.frequency.value = 300;
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.1, t + .3); g.gain.setValueAtTime(.1, t + dur - .35); g.gain.linearRampToValueAtTime(0, t + dur);
@@ -137,7 +151,8 @@
       noise(dur, .16, 240); tone('triangle', 230, 320, dur * .8, .025);
     },
     foot() { noise(.07, .1, 900, 0, 160); },
-    splash() { noise(1, .2, 1500, 0, 280); noise(.5, .08, 6000, .1, 2500); },
+    splash() { sample('splash') || (noise(1, .2, 1500, 0, 280), noise(.5, .08, 6000, .1, 2500)); },
+    sail() { sample('rush') || noise(1.2, .18, 700, 0, 200); gsap.delayedCall(.15, () => sample('splash', .6)); },
     // reward: bright arpeggio + shimmer (bigger when right first time) · ding when the star lands in its pip
     reward(big) { [784, 988, 1175, 1568].forEach((f, i) => { tone('sine', f, 0, .55, big ? .15 : .1, i * .07); tone('triangle', f * 2, 0, .3, .03, i * .07); }); noise(.6, .05, 14000, .18, 6000); },
     ding() { tone('sine', 1976, 0, .7, .13); tone('sine', 2637, 0, .5, .05, .02); },
@@ -176,7 +191,7 @@
   }
   // editor pause: hold the current line (recorded or browser voice) and carry on from the same word on resume
   function holdVoice(on) {
-    held = on; const syn = 'speechSynthesis' in window ? speechSynthesis : null;
+    held = on; holdMedia(on); const syn = 'speechSynthesis' in window ? speechSynthesis : null;
     if (on) {
       if (curAudio && !curAudio.paused) { curAudio._held = true; curAudio.pause(); }
       if (syn && syn.speaking) syn.pause();
@@ -215,55 +230,9 @@
   const offImg = $('#offImg');
   function pose(p) {
     const f = POSE[p] || POSE.idle; if (offImg.src.endsWith(f + '.webp')) return;
-    offImg.src = 'assets/img/' + f + '.webp';
-    gsap.fromTo('#officer', { scaleY: .94, scaleX: 1.04 }, { scaleY: 1, scaleX: 1, duration: .35, ease: 'back.out(3)' });
+    offImg.src = 'assets/img/' + f + '.webp';   // still images: the pose just changes, no squash
   }
-  /* ================= talking faces =================
-     Each talking sprite has a face sprite sheet (assets/img/talk_*.webp, made from the sprite itself with Nano Banana Pro):
-     6 frames M closed · E "eh" · A "ah" · O "oo" · I "ee" · B blink, laid over the face of the body sprite.
-     While a recorded line plays, the mouth follows VO_MOUTH (its loudness, 12 values a second, from tools/make_voices.py);
-     otherwise a 3.6 s talking loop plays. Every face blinks now and then while its mouth is closed. */
-  const FACES = {
-    meera_right_big: { sheet: 'talk_meera_full', box: [125, 22, 300, 300], size: [700, 1101] },
-    meera_talk_1:    { sheet: 'talk_meera_half', box: [100, 40, 280, 280], size: [383, 503] },
-    riya_idle:       { sheet: 'talk_riya',       box: [110, 60, 260, 260], size: [389, 856] },
-    riya_cheer:      { sheet: 'talk_riya_cheer', box: [130, 55, 260, 260], size: [439, 841] },
-  };
-  Object.values(FACES).forEach(f => { const i = new Image(); i.src = `assets/img/${f.sheet}.webp`; });
-  const FR = { M: 0, E: 1, A: 2, O: 3, I: 4, B: 5 }, LOOP = 'EAIEMOAIEMMEIAOEMMMEAIEOAEMMIEAOEMMM';   // 36 steps × 0.1 s
-  const MOUTH = window.VO_MOUTH || {}, live = new Set();
-  let talker = null;
-  const show = (el, k) => { if (el._k !== k) { el._k = k; el.style.backgroundPosition = k * 20 + '% 0'; } };
-  // put (or switch) the face layer on a sprite <img>; its parent must wrap the image exactly (position: relative/absolute)
-  function face(img, name) {
-    const f = FACES[name]; let el = img._face;
-    if (!f) { if (el) el.style.display = 'none'; return null; }
-    if (!el) { el = img._face = document.createElement('i'); el.className = 'face'; img.after(el); }
-    const [x, y, w, h] = f.box, [W, H] = f.size;
-    Object.assign(el.style, { display: '', left: x / W * 100 + '%', top: y / H * 100 + '%', width: w / W * 100 + '%', height: h / H * 100 + '%', backgroundImage: `url(assets/img/${f.sheet}.webp)` });
-    el._name = name; el._k = -1; show(el, 0); el._blink = performance.now() + 1200 + Math.random() * 2500; live.add(el);
-    return el;
-  }
-  (function faces(now) {
-    requestAnimationFrame(faces);
-    if (window.SD && SD.paused) return;
-    for (const el of live) {
-      if (!el.isConnected) { live.delete(el); continue; }
-      let st = 'M';
-      if (talker && talker.el === el) {
-        const env = MOUTH[talker.id];
-        if (env && voice._id === talker.id && !voice.paused) {   // lip-sync to where the voice actually is
-          const k = Math.floor((voice.currentTime + .04) * 12), lv = env[k] || '0';
-          st = lv === '0' ? 'M' : lv === '3' ? 'A' : lv === '2' ? (k % 4 < 2 ? 'I' : 'E') : (k % 3 ? 'E' : 'O');
-        } else if (!env || voice._id !== talker.id) st = LOOP[Math.floor((now - talker.t0) / 100) % LOOP.length];
-      }
-      if (st === 'M') { if (now > el._blink + 140) el._blink = now + 2200 + Math.random() * 2800; else if (now >= el._blink) st = 'B'; }
-      show(el, FR[st]);
-    }
-  })(0);
-  function talking(el, id, on) { if (on) talker = el ? { el, id, t0: performance.now() } : null; else if (talker && talker.el === el) talker = null; }
-
-  // comms portrait next to the caption: Meera waist-up / Riya, each with a talking face
+  // comms portrait next to the caption: still images (Meera waist-up / Riya)
   const pImg = $('#pImg'), pSpr = $('#pSpr'), pName = $('#pName'), comms = $('#comms');
   ['assets/img/riya_idle.webp', 'assets/img/riya_cheer.webp'].forEach(s => { const i = new Image(); i.src = s; });
   let curWho = null;
@@ -272,12 +241,10 @@
     pName.textContent = SCRIPT.WHO[who].name;
     const name = who === 'riya' ? (mood === 'cheer' ? 'riya_cheer' : 'riya_idle') : 'meera_talk_1';
     if (!pImg.src.endsWith(name + '.webp')) pImg.src = `assets/img/${name}.webp`;
-    if (!pImg._face || pImg._face._name !== name) face(pImg, name);
     pSpr.className = who + (mood === 'cheer' ? ' cheer' : '');
-    if (curWho !== who) gsap.fromTo('#portrait', { scale: .7, rotation: -8 }, { scale: 1, rotation: 0, duration: .4, ease: 'back.out(2.4)' });
     curWho = who;
   }
-  face(pImg, 'meera_talk_1');
+  const talking = () => {};   // characters are still images for now (talking sprite sheets come later)
 
   /* ================= caption / speech bubble + say ================= */
   let lastLine = null, sayN = 0;
@@ -296,8 +263,7 @@
       gsap.killTweensOf('#comms'); gsap.to('#comms', { opacity: 1, duration: .25 });
       gsap.fromTo(box, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: .3 });
     }
-    const fc = o.bubble ? o.face : pImg._face;          // whose face talks: the story actor, or the comms portrait
-    talking(fc, id, true); duck(true);
+    duck(true);
     const t0 = performance.now();
     const skipP = new Promise(r => { skipFn = r; });
     const spokeP = playVO(id).then(ok => ok || speak(text, who));
@@ -307,7 +273,6 @@
       if (spent < min) await Promise.race([wait(min - spent), skipP]);
     } else hush();
     skipFn = null;
-    talking(fc, id, false);
     if (my !== sayN) return;
     duck(false);
     if (!o.keep && !o.bubble) captionOff(.25);
@@ -316,7 +281,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, portrait, face, get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, portrait, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

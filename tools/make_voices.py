@@ -491,8 +491,6 @@ def main():
         failed += [l['id'] for l in make if l['id'] not in made and l['id'] not in failed]
 
     have = write_manifest(lines)
-    if made:
-        write_mouth(lines)
     print('\nDone: %d made \u00b7 %d skipped \u00b7 %d failed \u00b7 %d of %d lines recorded.' % (len(made), len(skip), len(failed), len(have), len(lines)))
     if failed:
         print('Failed: ' + ', '.join(failed) + '\nRun again to retry them (finished lines are skipped).')

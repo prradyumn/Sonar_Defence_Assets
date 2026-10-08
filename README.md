@@ -31,6 +31,16 @@ python3 tools/make_voices.py       # makes every line that has no wav yet
 - Rate limits are retried automatically; if the daily quota runs out, just run it again later — finished lines are skipped.
 - Without recorded files the game falls back to the browser's voice (en-IN when the computer has one), then to reading time.
 
+## QA jumper (for testers)
+Add `?qa=1` to the URL (e.g. `https://<your-vercel-link>/?qa=1`). A small **QA ▾** panel (top-left) jumps straight into any part and starts playing:
+story (Harbour · Control room · Dive), Teaching, every round of Level 1–3 and the Final mission. While playing: **Skip line**, **Answer ✓** (taps the right submarine / pair), **Restart part**; choose 1×/2×/3× speed and sound for the next jump. Players never see it. (URL equivalents: `?at=hook&scene=2`, `?at=l3&round=4`, `?at=final&round=3`.)
+
+## Sound
+Recorded music + ambience + effects live in `assets/sfx/` (all `.ogg`): two loops composed for the game with Google Lyria (calm for the story, playful for the missions, crossfading at the dive), harbour gulls + waves, sea waves, and CC0 Freesound effects (sonar, torpedo, underwater explosion, splash, water rush, sci-fi door, bubbles) — see `assets/sfx/CREDITS.md`. Taps, chimes and the reward arpeggio are synthesized. Music dips under every voice line. Over http(s) everything plays through Web Audio; from `file://` through `<audio>` elements.
+
+## Characters
+Still `.webp` images for now (no bounce or wobble); talking sprite sheets will replace them later. `tools/make_voices.py --mouth` can write per-line mouth-openness data (`assets/vo/vo_mouth.js`) for lip-syncing those sheets.
+
 ## Pause + layout editor ("Figma inside the game")
 Players never see it. Open `index.html?edit=1`, or press **E** in the game.
 
@@ -57,6 +67,7 @@ open http://localhost:8000/?edit=1
 - `js/script.js` EVERY spoken line ({id, who, text}) + level data. The game and `tools/make_voices.py` both read it — edit lines here (and re-record: `--only <id> --force`).
 - `js/core.js` stage fit, sound (Web-Audio sfx + tanpura/underwater music bed, ducked under voice), voice playback (recorded VO → browser voice), comms portrait + captions, Meera's poses on the ship
 - `js/world.js` parallax sea (sky, far reef, fish schools, manta, rays, caustics, marine snow, kelp sway, bubbles, waves), ship + launcher, navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/torpedo/blast (flash, shockwave, debris), hints, hand demos, badges, L3 signals + defence marker
+- `js/qa.js` the QA jumper (`?qa=1`)
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
 - `js/levels.js` flow + pedagogy: hook scenes, teaching, tutorial, 3-strike (Oops + direction arrow → Hint + rule card → Nudge + hand), idle help (6 s visual → 12 s spoken → 22 s reminder), stars
 - `tools/make_voices.py` makes the voice files

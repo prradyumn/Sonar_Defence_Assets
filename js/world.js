@@ -96,8 +96,6 @@
   // ship & officer ride the swell
   gsap.to('#ship', { y: 4, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.set('#offImg,#pSpr', { xPercent: -50 });
-  // Meera shifts her weight now and then, so she never looks pasted on
-  (function idleSway() { gsap.to('#officer', { rotation: (Math.random() - .5) * 3, duration: 1.6 + Math.random(), ease: 'sine.inOut', transformOrigin: '50% 100%', onComplete: idleSway }); })();
   gsap.to('#ship', { rotation: .7, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut', transformOrigin: '50% 75%' });
   // bubbles drifting past (rise + go backwards = we are moving forward)
   const bub = $('#bubbles');
@@ -111,7 +109,7 @@
   for (let i = 0; i < 14; i++) setTimeout(() => spawnBubble(false), i * 60);
 
   W.sail = async (dur = 1.6) => {     // short "full speed ahead" burst between missions
-    SFX.swoosh(); SFX.splash();
+    SFX.sail();
     gsap.to(W, { mult: 9, duration: .5, ease: 'power2.in' });
     gsap.to('#ship', { x: 30, duration: .6, ease: 'power2.out' });
     for (let i = 0; i < 10; i++) setTimeout(() => spawnBubble(true), i * 70);
@@ -341,7 +339,7 @@
     for (let f = 0; f < 4; f++) gsap.delayedCall(f * .12, () => { b.style.backgroundPosition = `${-f * 340}px 0`; });
     gsap.fromTo(b, { scale: .6 }, { scale: 1.25, duration: .5, ease: 'power2.out' }); gsap.to(b, { opacity: 0, duration: .4, delay: .45, onComplete: () => b.remove() });
     await wait(.12);
-    s.im.src = 'assets/img/sub_hit.webp'; gsap.killTweensOf(s.bob);
+    s.im.src = 'assets/img/sub_hit.webp'; gsap.killTweensOf(s.bob); gsap.delayedCall(.35, SFX.sink);
     gsap.to(s.d, { y: 220, rotation: 18, opacity: 0, duration: 1.4, ease: 'power1.in' });
     gsap.to(s.line, { opacity: 0, duration: .5 });
     await wait(.5);
