@@ -8,10 +8,13 @@ Flow: Hook (Commander Meera & Cadet Riya: harbour → the sonar-room doors slide
 index.html          the game
 css/                game.css (layout, stage px) · editor.css (layout editor only)
 js/                 script.js (every spoken line) · core · world · levels · editor · layout.js · gsap.min.js
-assets/img/         all art, .webp      assets/vo/   all voice lines, .ogg + vo_manifest.js      assets/fonts/
+assets/img/         all art, .webp (cover.webp = the title screen)      assets/vo/   all voice lines, .ogg + vo_manifest.js      assets/fonts/
 tools/              make_voices.py (records the voices) · dev_server.py (lets the editor save)
 ```
 The original art pack (PNG sources, concepts, briefs) is not needed by the game; it was moved out to `~/Downloads/Sonar_Defence_Archive_2026-10-09/` and is also in this repo's git history.
+
+## Deploy (Vercel)
+It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
 
 ## Voices (Indian English, Gemini TTS)
 Every spoken line lives in `js/script.js`. `tools/make_voices.py` records them (Python 3 standard library + `node` to read the script):

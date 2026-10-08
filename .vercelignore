@@ -1,0 +1,5 @@
+# only the game itself is deployed (index.html, css/, js/, assets/)
+tools/
+.vscode/
+README.md
+VSCODE_PROMPT.md

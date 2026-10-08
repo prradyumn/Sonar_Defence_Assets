@@ -134,7 +134,15 @@ img{-webkit-user-drag:none;user-select:none}
 
 /* overlays */
 .overlay{position:absolute;inset:0;pointer-events:auto}
-#title{background:url(../assets/img/title_bg.webp) center/cover}
+/* cover: the title lives in the art (assets/img/cover.webp); sonar pings pulse out of its glow */
+#title{background:#0b3d66;overflow:hidden}
+#title .art{position:absolute;inset:0;background:url(../assets/img/cover.webp) center/cover no-repeat;transform-origin:50% 32%}
+#title .pings{position:absolute;left:970px;top:322px;pointer-events:none}
+#title .pings i{position:absolute;left:-260px;top:-260px;width:520px;height:520px;border-radius:50%;border:4px solid rgba(150,245,255,.75);box-shadow:0 0 34px rgba(80,220,255,.55),inset 0 0 24px rgba(80,220,255,.35);mix-blend-mode:screen;opacity:0;animation:titlePing 3.6s ease-out infinite}
+#title .pings i:nth-child(2){animation-delay:1.2s}#title .pings i:nth-child(3){animation-delay:2.4s}
+@keyframes titlePing{0%{transform:scale(.45);opacity:0}12%{opacity:.55}100%{transform:scale(1.9);opacity:0}}
+#title .logo,#title .sub2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}   /* read by screen readers; the art shows the title */
+#start{top:906px}
 #title .logo{position:absolute;left:960px;top:250px;transform:translateX(-50%);font:800 132px/1 Baloo;color:#fff;letter-spacing:2px;
   text-shadow:0 6px 0 #0a3c6e,0 10px 26px rgba(0,30,70,.6),0 0 40px rgba(90,220,255,.6);white-space:nowrap}
 #title .sub2{position:absolute;left:960px;top:400px;transform:translateX(-50%);font:600 40px/1 Baloo;color:#eaffff;text-shadow:0 3px 10px rgba(0,30,60,.8);white-space:nowrap}

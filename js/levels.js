@@ -404,7 +404,8 @@
   logo.innerHTML = [...logo.textContent].map(c => c === ' ' ? '<span>&nbsp;</span>' : `<span>${c}</span>`).join('');
   gsap.from('#title .logo span', { y: -160, opacity: 0, rotation: () => (Math.random() - .5) * 40, duration: .9, stagger: .05, ease: 'back.out(1.8)' });
   gsap.to('#title .logo span', { y: -10, duration: .7, ease: 'sine.inOut', stagger: { each: .08, repeat: -1, yoyo: true }, delay: 1.4 });
-  gsap.from('#title .sub2', { y: 30, opacity: 0, duration: .7, delay: .9, ease: 'power2.out' });
+  gsap.fromTo('#title .art', { scale: 1.1 }, { scale: 1, duration: 2.6, ease: 'power2.out' });   // a slow push-in on the cover
+  gsap.to('#title .art', { scale: 1.025, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.6 });
   gsap.from('#start', { y: 80, opacity: 0, duration: .8, delay: 1.1, ease: 'back.out(2)' });
   if (Q.get('autostart') === '1') $('#start').onclick();
 })();
