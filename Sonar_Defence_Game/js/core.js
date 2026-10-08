@@ -5,8 +5,37 @@
   const SPEED = parseFloat(Q.get('speed') || '1');
   if (SPEED !== 1) gsap.globalTimeline.timeScale(SPEED);
   const stage = $('#stage');
-  function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = `translate(${(innerWidth - 1920 * s) / 2}px,${(innerHeight - 1080 * s) / 2}px) scale(${s})`; }
+  const inset = { l: 0, t: 0, r: 0, b: 0 };   // room kept free around the stage (the layout editor's panels)
+  function fit() {
+    const w = innerWidth - inset.l - inset.r, h = innerHeight - inset.t - inset.b, s = Math.min(w / 1920, h / 1080);
+    stage.style.transform = `translate(${inset.l + (w - 1920 * s) / 2}px,${inset.t + (h - 1080 * s) / 2}px) scale(${s})`;
+  }
   addEventListener('resize', fit); fit();
+
+  /* ================= layout overrides: js/layout.js (window.LAYOUT, written by the editor) → one <style> ================= */
+  const PX = { left: 1, top: 1, width: 1, height: 1, minHeight: 1, maxWidth: 1, marginLeft: 1, fontSize: 1 };
+  const kebab = k => k.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
+  function layoutCSS(ov) {
+    return Object.keys(ov || {}).map(sel => {
+      const p = ov[sel], d = [];
+      for (const k in p) {
+        const v = p[k]; if (typeof v !== 'number' || !isFinite(v)) continue;
+        if (PX[k]) d.push(`${kebab(k)}:${v}px!important`);
+        else if (k === 'zIndex') d.push(`z-index:${v}!important`);
+        else if (k === 'rotate') d.push(`rotate:${v}deg`);              // not !important: GSAP folds rotate/scale into its own transform
+        else if (k === 'scale' || k === 'opacity') d.push(`${k}:${v}`);   // opacity stays animatable by the game
+      }
+      if (p.left != null) d.push('right:auto!important');
+      if (p.top != null) d.push('bottom:auto!important');
+      return d.length ? `${sel}{${d.join(';')}}` : '';
+    }).filter(Boolean).join('\n');
+  }
+  function applyLayout(ov) {
+    let st = document.getElementById('layoutOverrides');
+    if (!st) { st = document.createElement('style'); st.id = 'layoutOverrides'; document.head.appendChild(st); }
+    st.textContent = layoutCSS(ov);
+  }
+  applyLayout(window.LAYOUT && LAYOUT.overrides);
 
   const wait = s => new Promise(r => gsap.delayedCall(s, r));
   const fmt = v => v > 0 ? '+' + v : v < 0 ? '−' + Math.abs(v) : '0';   // true minus sign
@@ -69,7 +98,7 @@
     const PADS = [[293.66, 349.23, 440], [261.63, 329.63, 392], [233.08, 293.66, 349.23], [261.63, 329.63, 440]];   // Dm · C · Bb · C(add A)
     let next = AC.currentTime + .3, bar = 0;
     setInterval(() => {
-      if (!AC) return;
+      if (!AC || SD.paused) return;
       while (next < AC.currentTime + 1.5) {
         pluck(PA, next, .035); pluck(SA, next + 1.2, .03); pluck(SA, next + 2.4, .03); pluck(LSA, next + 3.6, .045);
         if (bar % 2 === 0) padChord(PADS[(bar / 2) % PADS.length], next, CYC * 2);
@@ -95,19 +124,67 @@
     blip() { tone('sine', 1500, 1500, .12, .08); },
     tap() { tone('sine', 520, 780, .07, .12); },
     bubble() { tone('sine', 300 + Math.random() * 300, 900 + Math.random() * 500, .12, .05); },
+    // sonar-room doors: unlock beeps → latch → air hiss → heavy slide (rumble + servo whine) → stop
+    doorBeep() { tone('sine', 1320, 0, .09, .12); tone('sine', 1760, 0, .12, .1, .13); },
+    clunk() { tone('sine', 120, 36, .34, .5); noise(.16, .32, 650); tone('square', 74, 52, .07, .05); },
+    hiss(dur = .8) { noise(dur, .2, 9000, 0, 2200); noise(dur * .6, .08, 3200, .05, 900); },
+    doorSlide(dur = 1.8) {
+      if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(46, t); o.frequency.linearRampToValueAtTime(68, t + dur * .55); o.frequency.linearRampToValueAtTime(50, t + dur);
+      f.type = 'lowpass'; f.frequency.value = 300;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.1, t + .3); g.gain.setValueAtTime(.1, t + dur - .35); g.gain.linearRampToValueAtTime(0, t + dur);
+      o.connect(f); f.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + dur + .05);
+      noise(dur, .16, 240); tone('triangle', 230, 320, dur * .8, .025);
+    },
+    foot() { noise(.07, .1, 900, 0, 160); },
+    splash() { noise(1, .2, 1500, 0, 280); noise(.5, .08, 6000, .1, 2500); },
+    // reward: bright arpeggio + shimmer (bigger when right first time) · ding when the star lands in its pip
+    reward(big) { [784, 988, 1175, 1568].forEach((f, i) => { tone('sine', f, 0, .55, big ? .15 : .1, i * .07); tone('triangle', f * 2, 0, .3, .03, i * .07); }); noise(.6, .05, 14000, .18, 6000); },
+    ding() { tone('sine', 1976, 0, .7, .13); tone('sine', 2637, 0, .5, .05, .02); },
+    sparkle() { for (let i = 0; i < 4; i++) tone('sine', 1800 + Math.random() * 1400, 0, .12, .04, i * .05); },
   };
 
   /* ================= voice: recorded VO (assets/vo/<id>.wav) → browser voice → reading time ================= */
   const VO_OK = id => !MUTE && Array.isArray(window.VO_HAVE) && window.VO_HAVE.includes(id);
-  let curAudio = null, skipFn = null;
-  function playVO(id) {
+  let curAudio = null, skipFn = null, held = false;
+  const onResume = [];   // voice that was due to start while the editor had the game paused
+  const VO_EXT = ['ogg', 'wav'];   // recorded lines are Ogg Opus; a .wav still works
+  /* ONE audio element plays every line. A new element per line piles up media players until Chrome starts
+     suspending them, and lines then stall for seconds mid-word. A token per line ignores the last line's events. */
+  const voice = new Audio(); voice.preload = 'auto';
+  let vTok = 0, endPrev = null;
+  function playVO(id, ext = 0) {
     return new Promise(res => {
-      if (!VO_OK(id)) return res(false);
-      const a = new Audio('assets/vo/' + id + '.wav'); curAudio = a; a.playbackRate = Math.min(SPEED, 2);
-      let done = false; const fin = ok => { if (!done) { done = true; if (curAudio === a) curAudio = null; res(ok); } };
-      a.onended = () => fin(true); a.onerror = () => fin(false); a.onpause = () => fin(true);
-      a.play().catch(() => fin(false));
+      if (!VO_OK(id) || ext >= VO_EXT.length) return res(false);
+      if (endPrev) endPrev();                          // a new line ends the one before it
+      const my = ++vTok, a = voice;
+      let done = false;
+      const off = () => { for (const k in on) a.removeEventListener(k, on[k]); if (endPrev === stop) endPrev = null; };
+      const fin = ok => { if (done) return; done = true; off(); if (vTok === my && curAudio === a) curAudio = null; res(ok); };
+      const stop = () => fin(true);
+      const on = {
+        ended: () => fin(true),
+        pause: () => { if (!a._held && vTok === my) fin(true); },
+        error: () => { if (done || vTok !== my) return; done = true; off(); playVO(id, ext + 1).then(res); },   // .ogg missing → .wav
+      };
+      for (const k in on) a.addEventListener(k, on[k]);
+      endPrev = stop; a._held = false;
+      a.src = 'assets/vo/' + id + '.' + VO_EXT[ext]; a.playbackRate = Math.min(SPEED, 2); curAudio = a;
+      const go = () => { if (vTok === my) a.play().catch(e => { if (vTok === my && (!e || (e.name !== 'NotSupportedError' && e.name !== 'AbortError'))) fin(false); }); };
+      held ? onResume.push(go) : go();
     });
+  }
+  // editor pause: hold the current line (recorded or browser voice) and carry on from the same word on resume
+  function holdVoice(on) {
+    held = on; const syn = 'speechSynthesis' in window ? speechSynthesis : null;
+    if (on) {
+      if (curAudio && !curAudio.paused) { curAudio._held = true; curAudio.pause(); }
+      if (syn && syn.speaking) syn.pause();
+    } else {
+      if (curAudio && curAudio._held) { curAudio._held = false; curAudio.play().catch(() => {}); }
+      if (syn) syn.resume();
+      onResume.splice(0).forEach(f => f());
+    }
   }
   let voices = { meera: null, riya: null };
   function pickVoice() {
@@ -125,7 +202,9 @@
       speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(clean); u.voice = v; u.lang = v.lang;
       u.rate = who === 'riya' ? 1.04 : .95; u.pitch = who === 'riya' ? 1.45 : 1.05;
       let done = false; const fin = () => { if (!done) { done = true; res(true); } };
-      u.onend = fin; u.onerror = fin; speechSynthesis.speak(u); setTimeout(fin, (readTime(text) * 2.2 + 2) * 1000);
+      u.onend = fin; u.onerror = fin;
+      const go = () => speechSynthesis.speak(u); held ? onResume.push(go) : go();
+      gsap.delayedCall((readTime(text) * 2.2 + 2) * gsap.globalTimeline.timeScale(), fin);   // safety net, freezes with a pause
     });
   }
   function hush() { if (curAudio) { curAudio.pause(); curAudio = null; } if ('speechSynthesis' in window) speechSynthesis.cancel(); }
@@ -133,7 +212,7 @@
   /* ================= characters ================= */
   // Commander Meera on the ship deck (full-body poses)
   const POSE = { idle: 'off_idle', right: 'off_right', left: 'off_left', thumb: 'off_thumb', cheer: 'off_cheer', think: 'off_think', bino: 'off_bino' };
-  const offImg = $('#offImg'); let talkTw = null;
+  const offImg = $('#offImg');
   function pose(p) {
     const f = POSE[p] || POSE.idle; if (offImg.src.endsWith(f + '.webp')) return;
     offImg.src = 'assets/img/' + f + '.webp';
@@ -153,12 +232,10 @@
     if (curWho !== who) gsap.fromTo('#portrait', { scale: .7, rotation: -8 }, { scale: 1, rotation: 0, duration: .4, ease: 'back.out(2.4)' });
     curWho = who;
   }
-  function talking(who, on) {
-    if (talkTw) { talkTw.kill(); talkTw = null; gsap.to('#offImg,#pImg', { y: 0, rotation: 0, duration: .15 }); }
+  function talking(who, on) {   // no bounce while speaking: only Meera's portrait cycles its talking frames (real sprites come later)
     clearInterval(frameTimer); frameTimer = null;
     if (!on) return;
-    talkTw = gsap.to(who === 'meera' ? '#offImg,#pImg' : '#pImg', { y: -4, rotation: 1.2, duration: .2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-    if (who === 'meera') { let k = 0; frameTimer = setInterval(() => { k = (k + 1 + Math.floor(Math.random() * 2)) % TALK.length; pImg.src = TALK[k]; }, 520 / SPEED); }
+    if (who === 'meera') { let k = 0; frameTimer = setInterval(() => { if (SD.paused) return; k = (k + 1 + Math.floor(Math.random() * 2)) % TALK.length; pImg.src = TALK[k]; }, 520 / SPEED); }
   }
 
   /* ================= caption / speech bubble + say ================= */
@@ -196,5 +273,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, portrait, get lastLine() { return lastLine; } };
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, portrait, get lastLine() { return lastLine; },
+    // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
+    paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

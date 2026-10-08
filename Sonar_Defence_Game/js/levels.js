@@ -8,6 +8,12 @@
   let LV = 'l1';
   const mark = ok => (SCORE[LV] = SCORE[LV] || []).push(ok);
   const rnd = a => a[Math.floor(Math.random() * a.length)];
+  const bezier = (x1, y1, x2, y2) => t => {          // CSS cubic-bezier as a GSAP ease (Newton on x, then y)
+    let u = t;
+    for (let i = 0; i < 8; i++) { const x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u - t, dx = 3 * (1 - u) * (1 - u) * x1 + 6 * (1 - u) * u * (x2 - x1) + 3 * u * u * (1 - x2); if (Math.abs(x) < 1e-6 || !dx) break; u = Math.min(1, Math.max(0, u - x / dx)); }
+    return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+  };
+  const DOOR_EASE = bezier(.45, 0, .2, 1);
 
   /* ---------- one "fire at the right submarine" tap, with the 3-strike rule ---------- */
   // m: { target, lines: { oopsL, hintL, nudgeL, idleL } }
@@ -30,8 +36,8 @@
       const red = await W.lock(s, 'red'); await W.wrong(s); red.remove();
       W.clearHints();
       if (wrong === 1) { W.hintArrow(s.v, dir); await say(m.lines.oopsL, { pose: 'think' }); }
-      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true); await say(m.lines.hintL, { pose: dir > 0 ? 'right' : 'left' }); }
-      else { const t = W.subAt(m.target); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true); await say(m.lines.nudgeL, { pose: dir > 0 ? 'right' : 'left' }); }
+      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true, 'compare'); await say(m.lines.hintL, { pose: dir > 0 ? 'right' : 'left' }); }
+      else { const t = W.subAt(m.target); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true, 'compare'); await say(m.lines.nudgeL, { pose: dir > 0 ? 'right' : 'left' }); }
     }
   }
   async function mission(m, o = {}) {
@@ -39,7 +45,9 @@
     if (o.intro !== false) await say(m.sayL, { pose: 'bino' });
     const first = await strike(m);
     mark(first); SD.pose('thumb');
-    if (first || Math.random() < .5) await say(rnd(S.hits), { mood: 'cheer' });
+    const cheer = first || Math.random() < .5 ? rnd(S.hits) : null;
+    W.reward({ big: first, word: cheer && cheer.text, pip: W.pipDone });
+    if (cheer) await say(cheer, { mood: 'cheer' });
     if (m.show) W.strip(m.show, { big: true });
     await say(m.okL, { pose: 'thumb' });
     return first;
@@ -57,12 +65,48 @@
     const SKIP = {};
     const chk = () => { if (skipping) throw SKIP; };
 
-    const actor = (src, css) => {
-      const d = document.createElement('div'); d.className = 'actor'; Object.assign(d.style, css);
-      const im = new Image(); im.src = 'assets/img/' + src; d.appendChild(im); cast.appendChild(d); return { el: d, im };
+    // data-edit gives each story element a stable name, so the layout editor can move it (js/layout.js)
+    const actor = (src, css, name, flip) => {   // flip: mirror the art so the two characters face each other
+      const d = document.createElement('div'); d.className = 'actor'; d.dataset.edit = name; Object.assign(d.style, css);
+      const im = new Image(); im.src = 'assets/img/' + src;
+      if (flip) { const f = document.createElement('div'); f.className = 'flip'; f.appendChild(im); d.appendChild(f); } else d.appendChild(im);
+      cast.appendChild(d); return { el: d, im };
     };
-    const bubble = (who, cls, css) => {
-      const b = document.createElement('div'); b.className = `bubble ${who} ${cls}`; Object.assign(b.style, css);
+    // the sonar-room doors: latch, hiss, then both halves slide apart (timing + ease from door_opening.svg: 0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1))
+    async function doors() {
+      const d = document.createElement('div'); d.id = 'doors';
+      d.innerHTML = '<div class="spill"></div><div class="door l"><img src="assets/img/door_left.webp" alt=""><i class="lamp"></i></div><div class="door r"><img src="assets/img/door_right.webp" alt=""><i class="lamp"></i></div><div class="seam"></div>';
+      sfx.appendChild(d);
+      const L = d.querySelector('.door.l'), R = d.querySelector('.door.r'), lamps = d.querySelectorAll('.lamp'), seam = d.querySelector('.seam'), spill = d.querySelector('.spill');
+      gsap.fromTo(d, { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'power2.out' });
+      await wait(.4); chk();
+      for (let i = 0; i < 2; i++) { SFX.doorBeep(); gsap.fromTo(lamps, { opacity: .15 }, { opacity: 1, duration: .08, yoyo: true, repeat: 1 }); await wait(.22); }
+      chk(); SFX.clunk(); gsap.to(lamps, { opacity: .85, duration: .2 });
+      gsap.fromTo([L, R], { x: 0 }, { x: i => i ? 7 : -7, duration: .07, yoyo: true, repeat: 1, ease: 'power1.out' });   // the latch kicks
+      SFX.hiss(); gsap.fromTo(seam, { opacity: 0 }, { opacity: 1, duration: .25 });
+      for (let i = 0; i < 7; i++) {   // air escaping at the seam
+        const p = document.createElement('div'); p.className = 'steam'; Object.assign(p.style, { left: '960px', top: (240 + i * 110) + 'px' }); d.appendChild(p);
+        gsap.fromTo(p, { scale: .2, opacity: .9, x: 0 }, { scale: 1.6 + Math.random(), opacity: 0, x: (i % 2 ? 1 : -1) * (40 + Math.random() * 60), y: -30 - Math.random() * 40, duration: 1.1, ease: 'power2.out', onComplete: () => p.remove() });
+      }
+      await wait(.35); chk();
+      SFX.doorSlide(1.8);
+      gsap.to(L, { x: -960, duration: 1.8, ease: DOOR_EASE }); gsap.to(R, { x: 960, duration: 1.8, ease: DOOR_EASE });
+      gsap.fromTo(spill, { opacity: 1, scaleX: .05 }, { opacity: 0, scaleX: 1.6, duration: 1.8, ease: DOOR_EASE });
+      gsap.to(seam, { opacity: 0, duration: .3 });
+      gsap.fromTo(bg, { scale: 1.12 }, { scale: 1.03, duration: 2.1, ease: 'power2.out' });
+      await wait(1.5); gsap.delayedCall(.25, () => { SFX.clunk(); d.remove(); });   // characters start in as the doors finish
+    }
+    // two characters walk in through the doorway: small and far at the centre → their places, with a step bounce
+    async function walkIn(list) {
+      list.forEach(([a, dx, dl]) => {
+        gsap.from(a.el, { x: dx, y: -170, scale: .42, opacity: 0, duration: 1.15, delay: dl, ease: 'power2.out' });
+        gsap.fromTo(a.im, { y: 0 }, { y: -16, duration: .19, yoyo: true, repeat: 5, delay: dl, ease: 'sine.inOut' });
+      });
+      for (let i = 0; i < 6; i++) gsap.delayedCall(i * .19, SFX.foot);
+      await wait(.7);                                   // the first line starts while they are still walking in
+    }
+    const bubble = (who, cls, css, name) => {
+      const b = document.createElement('div'); b.className = `bubble ${who} ${cls}`; b.dataset.edit = name; Object.assign(b.style, css);
       b.innerHTML = `<span class="nm">${SCRIPT.WHO[who].name}</span><span class="txt"></span>`; cast.appendChild(b); return b;
     };
     let actors = [], frames = null;
@@ -71,12 +115,11 @@
       actors.forEach(x => { x.el.classList.toggle('dim', x !== a); gsap.to(x.el, { scale: x === a ? 1.03 : 1, duration: .3 }); });
       const origin = b.classList.contains('tr') ? '85% 110%' : b.classList.contains('lft') ? '-5% 50%' : b.classList.contains('rgt') ? '105% 50%' : '15% 110%';
       gsap.fromTo(b, { scale: .5, opacity: 0, transformOrigin: origin }, { scale: 1, opacity: 1, duration: .4, ease: 'back.out(2.2)' });
-      const bob = gsap.to(a.im, { y: -6, duration: .22, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-      let ft = null; if (a.talk) { let k = 0; ft = setInterval(() => { k = (k + 1) % 6; a.im.src = `assets/img/meera_talk_${k + 1}.webp`; }, 560 / SD.SPEED); }
+      let ft = null; if (a.talk) { let k = 0; ft = setInterval(() => { if (SD.paused) return; k = (k + 1) % 6; a.im.src = `assets/img/meera_talk_${k + 1}.webp`; }, 560 / SD.SPEED); }
       const tn = gsap.fromTo('#tapNext', { opacity: 0 }, { opacity: .85, duration: .4, delay: 1.6 });
       if (extra) extra();
       await say(L, { bubble: b });
-      bob.kill(); gsap.to(a.im, { y: 0, duration: .15 }); clearInterval(ft); tn.kill(); gsap.set('#tapNext', { opacity: 0 });
+      clearInterval(ft); tn.kill(); gsap.set('#tapNext', { opacity: 0 });
       await gsap.to(b, { opacity: 0, scale: .9, duration: .2 });
     }
 
@@ -85,15 +128,15 @@
       bg.style.backgroundImage = 'url(assets/img/harbour.webp)';
       gsap.fromTo(bg, { scale: 1.16, x: 70 }, { scale: 1.04, x: 0, duration: 14, ease: 'none' });
       gsap.fromTo(st, { opacity: 0 }, { opacity: 1, duration: .6 });
-      const meera = actor('meera_right_big.webp', { left: '40px', height: '820px', bottom: '-70px' });
-      const riya = actor('riya_idle.webp', { left: '1390px', height: '640px', bottom: '-20px' });
+      const meera = actor('meera_right_big.webp', { left: '40px', height: '820px', bottom: '-70px' }, 'harbour-meera');
+      const riya = actor('riya_idle.webp', { left: '1390px', height: '640px', bottom: '-20px' }, 'harbour-riya', true);
       actors = [meera, riya];
       gsap.from(meera.el, { x: -600, duration: 1, ease: 'power3.out', delay: .2 });
       gsap.from(riya.el, { x: 620, duration: .9, ease: 'power3.out', delay: .6 });
-      gsap.fromTo(riya.el, { y: 0 }, { y: -40, duration: .18, yoyo: true, repeat: 3, delay: 1.3, ease: 'power1.out' });
-      await wait(1.6); chk();
-      const bR = bubble('riya', 'tr', { left: '780px', top: '220px' });
-      const bM = bubble('meera', 'tl', { left: '470px', top: '150px' });
+      gsap.fromTo(riya.el, { y: 0 }, { y: -40, duration: .18, yoyo: true, repeat: 3, delay: 1.1, ease: 'power1.out' });
+      await wait(1.1); chk();
+      const bR = bubble('riya', 'tr', { left: '780px', top: '220px' }, 'harbour-riya-bubble');
+      const bM = bubble('meera', 'tl', { left: '470px', top: '150px' }, 'harbour-meera-bubble');
       await line(S.h1, bR, riya);
       const alarm = document.createElement('div'); alarm.className = 'alarmglow'; sfx.appendChild(alarm);
       await line(S.h2, bM, meera, () => {
@@ -101,26 +144,24 @@
       });
       chk();
 
-      /* ---- Scene 2 · the sonar room ---- */
+      /* ---- Scene 2 · the sonar-room doors open, Meera and Riya walk in ---- */
       SFX.swoosh();
-      await gsap.to([bg, cast, sfx], { x: -300, opacity: 0, duration: .35, ease: 'power2.in' });
-      cast.innerHTML = sfx.innerHTML = '';
+      await gsap.to([bg, cast, sfx], { opacity: 0, duration: .4, ease: 'power2.in' });
+      gsap.killTweensOf(bg); cast.innerHTML = sfx.innerHTML = '';
       bg.style.backgroundImage = 'url(assets/img/sonar_room.webp)';
-      gsap.set([cast, sfx], { x: 0, opacity: 1 });
-      gsap.fromTo(bg, { x: 300, opacity: 0, scale: 1.1 }, { x: 0, opacity: 1, duration: .45, ease: 'power2.out' });
-      gsap.to(bg, { scale: 1, duration: 16, ease: 'none', delay: .45 });
+      gsap.set([bg, cast, sfx], { x: 0, opacity: 1 });
+      await doors(); chk();
+      gsap.to(bg, { scale: 1, duration: 14, ease: 'none' });
       const radar = document.createElement('div'); radar.className = 'radar'; sfx.appendChild(radar);
       radar.innerHTML = '<div class="sweep2"></div>';
       gsap.to(radar.firstChild, { rotation: 360, duration: 2.6, repeat: -1, ease: 'none' });
       const blip = (x, y) => { const b = document.createElement('div'); b.className = 'blip'; Object.assign(b.style, { left: x + 'px', top: y + 'px' }); radar.appendChild(b); gsap.fromTo(b, { scale: 0 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); SFX.blip(); return b; };
-      const m2 = actor('meera_talk_1.webp', { left: '0px', height: '600px', bottom: '-10px' }); m2.talk = true;
-      const r2 = actor('riya_idle.webp', { left: '1190px', height: '820px', bottom: '-330px' });
+      const m2 = actor('meera_talk_1.webp', { left: '0px', height: '600px', bottom: '-10px' }, 'sonar-meera'); m2.talk = true;
+      const r2 = actor('riya_idle.webp', { left: '1190px', height: '820px', bottom: '-330px' }, 'sonar-riya', true);
       actors = [m2, r2];
-      gsap.from(m2.el, { y: 300, duration: .6, ease: 'back.out(1.4)', delay: .2 });
-      gsap.from(r2.el, { y: 360, duration: .6, ease: 'back.out(1.4)', delay: .35 });
-      await wait(.8); chk();
-      const bM2 = bubble('meera', 'lft', { left: '500px', top: '700px' });
-      const bR2 = bubble('riya', 'rgt', { right: '790px', top: '650px' });
+      await walkIn([[m2, 640, 0], [r2, -480, .12]]); chk();
+      const bM2 = bubble('meera', 'lft', { left: '500px', top: '700px' }, 'sonar-meera-bubble');
+      const bR2 = bubble('riya', 'rgt', { right: '790px', top: '650px' }, 'sonar-riya-bubble');
       const blips = [];
       await line(S.h3, bM2, m2, () => { [[560, 120], [690, 300], [480, 250]].forEach(([x, y], i) => gsap.delayedCall(.4 + i * .5, () => blips.push(blip(x, y)))); });
       await line(S.h4, bR2, r2, () => { [[770, 150], [620, 390], [720, 220], [520, 360]].forEach(([x, y], i) => gsap.delayedCall(.2 + i * .3, () => blips.push(blip(x, y)))); });
@@ -146,6 +187,7 @@
     /* ---- Dive · through the porthole into the sea ---- */
     SD.hush(); st.onpointerdown = null;
     gsap.set('#tapNext', { opacity: 0 });
+    const dr = $('#doors'); if (dr) { gsap.killTweensOf(dr.querySelectorAll('*')); dr.remove(); }
     if (bg.style.backgroundImage.indexOf('sonar_room') < 0) { bg.style.backgroundImage = 'url(assets/img/sonar_room.webp)'; cast.innerHTML = sfx.innerHTML = ''; gsap.set([bg, cast, sfx], { x: 0, opacity: 1, scale: 1 }); }
     SFX.swoosh();
     for (let i = 0; i < 4; i++) { const r = document.createElement('div'); r.className = 'diveRing'; Object.assign(r.style, { left: '1710px', top: '380px', width: '200px', height: '200px', marginLeft: '-100px', marginTop: '-100px' }); sfx.appendChild(r); gsap.fromTo(r, { scale: .3, opacity: 1 }, { scale: 6, opacity: 0, duration: 1.2, delay: i * .15 }); }
@@ -162,12 +204,10 @@
     const intro = W.scaleIntro(); await say(S.g1, { mood: 'cheer' }); await intro; W.zeroGlow();
     W.strip('Navigation scale · <b>0</b> is the centre');
     await say(S.t1, { pose: 'idle' });
-    let off = await W.scan(8, 'Greater ▶');
-    await say(S.t2, { pose: 'right' });
-    off();
-    off = await W.scan(-8, '◀ Smaller');
-    await say(S.t3, { pose: 'left' });
-    off();
+    let scan = W.scan(8, 'Greater ▶'), line = say(S.t2, { pose: 'right' });   // she narrates while the light sweeps
+    let off = await scan; await line; off();
+    scan = W.scan(-8, '◀ Smaller'); line = say(S.t3, { pose: 'left' });
+    off = await scan; await line; off();
     await W.spawn([-3, 2]);
     W.glow(W.subAt(2), true); W.strip('<b>+2</b> is farther to the right', {});
     await say(S.t4, { pose: 'right' });
@@ -176,7 +216,7 @@
     await W.spawn([-2, -6]);
     W.glow(W.subAt(-6), true, 'rgba(255,150,90,.6)'); W.strip('<b>−6</b> is farther to the left');
     await say(S.t5, { pose: 'left' });
-    W.strip('−6 < −2', { big: true }); W.rule(true);
+    W.strip('−6 < −2', { big: true }); W.rule(true, 'compare');
     await say(S.t6, { pose: 'thumb' });
     await say(S.t7, { mood: 'cheer' });
     await W.clearSubs(); W.rule(false); W.stripOff();
@@ -202,6 +242,7 @@
     const total = 5; let done = [0, 1, 4][start];
     W.pips(total, done);
     for (let r = start; r < D.L1.length; r++) {
+      SD.where = { at: 'l1', round: r + 1 };
       const R = D.L1[r]; await W.spawn(R.subs);
       for (let i = 0; i < R.m.length; i++) {
         const m = R.m[i];
@@ -229,11 +270,12 @@
       const m = { target: next, lines: { oopsL: ORD.oops(R.dir), hintL: ORD.hint(R.dir), nudgeL: ORD.nudge(next), idleL: ORD.idle(R.dir) } };
       if (i === 1) W.sweepArrow(R.dir);
       const first = await strike(m); allFirst = allFirst && first;
-      W.badge(next, i + 1); SFX.right(); await wait(.3);
+      W.badge(next, i + 1); SFX.right(); W.sparkle(W.lastHit.x, W.lastHit.y); await wait(.3);
     }
     W.clearHints(); mark(allFirst);
     W.strip(R.chain, { big: true }); SD.pose('thumb');
-    await say(rnd(S.hits), { mood: 'cheer' });
+    const cheer = rnd(S.hits); W.reward({ big: allFirst, word: cheer.text, pip: W.pipDone });
+    await say(cheer, { mood: 'cheer' });
     await say(R.okL, { pose: 'thumb' });
     await wait(.6); W.clearBadges(); await W.clearSubs(); W.stripOff();
   }
@@ -241,7 +283,7 @@
     LV = 'l2'; await W.banner('LEVEL 2', 'Order the Submarines', 'The launcher fires in a sweep');
     W.pips(D.L2.length, start);
     if (start === 0) await say(S.l2intro, { pose: 'bino' });
-    for (let r = start; r < D.L2.length; r++) { await orderRound(D.L2[r]); W.pips(D.L2.length, r + 1); if (r < D.L2.length - 1) await W.sail(); }
+    for (let r = start; r < D.L2.length; r++) { SD.where = { at: 'l2', round: r + 1 }; await orderRound(D.L2[r]); W.pips(D.L2.length, r + 1); if (r < D.L2.length - 1) await W.sail(); }
     await complete('l2', 'Level 2 cleared!', 'You ordered the submarines.', 'Left → Right: smallest to greatest');
   }
 
@@ -255,14 +297,14 @@
     if (!same) {
       await say(L.intro, { pose: 'idle' });
       W.strip('Tap a pair to cancel it: one ▶ with one ◀');
-      let demo = null;
-      if (idx === 0) {                                     // first time: show where to tap
-        demo = (async () => { await wait(.1); const b = (W._pairBoxes || [])[0]; if (!b) return; const r = b.getBoundingClientRect(), st = $('#stage').getBoundingClientRect(), k = st.width / 1920;
-          const x = (r.left - st.left + r.width / 2) / k, y = (r.top - st.top + r.height / 2) / k;
-          say(S.pairDemo, { pose: 'right' }); await W.handTo(x, y + 20, .9); await W.handTap(x, y);
-          gsap.to('#hand', { y: 18, duration: .45, yoyo: true, repeat: -1, ease: 'sine.inOut' }); })();
-      }
-      await W.pairUp(() => W.hand(null), () => { W.hintPairs(); say(S.pairIdle, { pose: 'think' }); });
+      const showPair = async () => {                       // the hand glides to an open pair and taps it
+        const c = W.pairCentre(); if (!c) return;
+        say(S.pairDemo, { pose: 'right' }); await W.handTo(c.x, c.y + 20, .9); await W.handTap(c.x, c.y);
+        gsap.to('#hand', { y: 18, duration: .45, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      };
+      if (idx === 0) gsap.delayedCall(.1, showPair);       // first time: show where to tap
+      // idle help while pairing: 6 s the pair boxes glow · 12 s spoken hint · 22 s the hand shows a pair
+      await W.pairUp(() => W.hand(null), { idle: () => say(S.pairIdle, { pose: 'think' }), idle2: showPair });
       W.hand(null);
       await say(L.after, { pose: res > 0 ? 'right' : res < 0 ? 'left' : 'thumb' });
     } else {
@@ -285,11 +327,13 @@
       wrong++; const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); W.clearHints();
       const dir = Math.sign(res - s.v);
       if (wrong === 1) { W.hintArrow(s.v, dir); await say(L.oops, { pose: 'think' }); }
-      else if (wrong === 2) { W.hintArrow(s.v, dir); await say(L.hint, { pose: dir > 0 ? 'right' : 'left' }); }
-      else { const t = W.subAt(res); W.dimOthers(t, true); W.hand(t); W.glow(t, true); await say(L.nudge, { pose: dir > 0 ? 'right' : 'left' }); }
+      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true, same ? 'same' : 'pairs'); await say(L.hint, { pose: dir > 0 ? 'right' : 'left' }); }
+      else { const t = W.subAt(res); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true, same ? 'same' : 'pairs'); await say(L.nudge, { pose: dir > 0 ? 'right' : 'left' }); }
     }
-    mark(wrong === 0);
-    if (wrong === 0) await say(rnd(S.hits), { mood: 'cheer' });
+    W.rule(false); mark(wrong === 0);
+    const cheer = wrong === 0 ? rnd(S.hits) : null;
+    W.reward({ big: wrong === 0, word: cheer && cheer.text, pip: W.pipDone });
+    if (cheer) await say(cheer, { mood: 'cheer' });
     W.strip(eq(R.a, R.b) + ' = ' + f(res), { big: true });
     await say(L.ok, { pose: 'thumb' });
     W.clearSignals(); W.markerOff(); await W.clearSubs(); W.stripOff();
@@ -298,19 +342,19 @@
     LV = 'l3'; await W.banner('LEVEL 3', 'Additive Integer Defence', 'Signals move the defence marker');
     W.pips(D.L3.length, start);
     if (start === 0) await say(S.l3intro, { pose: 'idle' });
-    for (let r = start; r < D.L3.length; r++) { await signalRound(D.L3[r], r); W.pips(D.L3.length, r + 1); if (r < D.L3.length - 1) await W.sail(); }
+    for (let r = start; r < D.L3.length; r++) { SD.where = { at: 'l3', round: r + 1 }; await signalRound(D.L3[r], r); W.pips(D.L3.length, r + 1); if (r < D.L3.length - 1) await W.sail(); }
     await complete('l3', 'Level 3 cleared!', 'You combined positive and negative moves.', 'Opposites cancel: +4 and −4 make 0');
   }
 
   /* ---------- Final mixed mission ---------- */
   async function finalMission() {
     LV = 'fin'; await W.banner('FINAL MISSION', 'Protect the Route', 'Compare · Order · Combine', 2.4);
-    W.pips(3, 0);
+    W.pips(3, 0); SD.where = { at: 'final', round: 1 };
     await orderRound(D.FIN_ORD);
-    W.pips(3, 1); await W.sail();
+    W.pips(3, 1); await W.sail(); SD.where = { at: 'final', round: 2 };
     await W.spawn(D.FIN_CMP.subs);
     await mission(D.FIN_CMP.m);
-    await W.clearSubs(); W.stripOff(); W.pips(3, 2); await W.sail();
+    await W.clearSubs(); W.stripOff(); W.pips(3, 2); await W.sail(); SD.where = { at: 'final', round: 3 };
     await signalRound(D.FIN_SIG, 5);
     W.pips(3, 3);
     await say(S.finEnd, { pose: 'cheer' });
@@ -340,6 +384,7 @@
     const order = ['hook', 'teach', 'l1', 'l2', 'l3', 'final'];
     for (let i = order.indexOf(at); i < order.length; i++) {
       const k = order[i], st = k === at ? r : 0;
+      SD.where = { at: k, round: st + 1 };
       if (k === 'hook') await hook();
       if (k === 'teach') await teach();
       if (k === 'l1') { if (k === at && at !== 'teach') await W.scaleIntro(); await level1(st); }
@@ -355,6 +400,11 @@
   };
   // title screen breathes
   gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  gsap.from('#title .logo', { y: -40, opacity: 0, duration: .9, ease: 'back.out(1.6)' });
+  const logo = $('#title .logo');
+  logo.innerHTML = [...logo.textContent].map(c => c === ' ' ? '<span>&nbsp;</span>' : `<span>${c}</span>`).join('');
+  gsap.from('#title .logo span', { y: -160, opacity: 0, rotation: () => (Math.random() - .5) * 40, duration: .9, stagger: .05, ease: 'back.out(1.8)' });
+  gsap.to('#title .logo span', { y: -10, duration: .7, ease: 'sine.inOut', stagger: { each: .08, repeat: -1, yoyo: true }, delay: 1.4 });
+  gsap.from('#title .sub2', { y: 30, opacity: 0, duration: .7, delay: .9, ease: 'power2.out' });
+  gsap.from('#start', { y: 80, opacity: 0, duration: .8, delay: 1.1, ease: 'back.out(2)' });
   if (Q.get('autostart') === '1') $('#start').onclick();
 })();

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Sonar Defence</title>
 <link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/editor.css">
 </head>
 <body>
 <div id="stage">
@@ -33,11 +34,13 @@
   <div id="fx"></div>
 
   <div id="ship">
-    <div id="wake"></div>
+    <!-- wake: foam trailing the stern + propeller bubbles (behind the hull); waterline foam + bow wave (in front) — drawn in world.js -->
+    <svg id="wakeFx" viewBox="-440 96 1160 150" aria-hidden="true"></svg>
     <img class="hull" src="assets/img/ship.webp" alt="">
     <!-- Commander Meera stands on the fore-deck, behind the bulwark and rail, and rocks with the ship -->
     <div id="officer"><img id="offImg" src="assets/img/off_idle.webp" alt=""></div>
     <img class="hull front" src="assets/img/ship.webp" alt="">
+    <svg id="hullFoam" viewBox="-440 96 1160 150" aria-hidden="true"></svg>
     <svg id="deckRail" viewBox="0 0 120 40" aria-hidden="true">
       <g stroke="#1b3558" stroke-linecap="round">
         <path d="M4 8 H116" stroke-width="4"/><path d="M4 22 H116" stroke-width="3"/>
@@ -72,6 +75,7 @@
     <div id="hand"></div>
     <div class="ibtn" id="btnSpeak" title="Hear it again"></div>
   </div>
+  <div id="fxTop"></div>
 
   <!-- OVERLAYS -->
   <div class="overlay hidden" id="story"><div class="bg" id="storyBg"></div><div id="storyFx"></div><div id="cast"></div><div id="skipStory">Skip story ▸▸</div><div id="tapNext">tap to continue ▸</div></div>
@@ -81,9 +85,11 @@
 </div>
 <script src="js/gsap.min.js"></script>
 <script src="js/script.js"></script>
+<script src="js/layout.js"></script>
 <script src="assets/vo/vo_manifest.js"></script>
 <script src="js/core.js"></script>
 <script src="js/world.js"></script>
 <script src="js/levels.js"></script>
+<script src="js/editor.js"></script>
 </body>
 </html>
