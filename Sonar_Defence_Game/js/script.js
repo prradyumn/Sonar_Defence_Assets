@@ -1,4 +1,4 @@
-/* script: every spoken line in the game (one source for the game AND tools/voice_studio.html).
+/* script: every spoken line in the game (one source for the game AND tools/make_voices.py).
    Each line = { id, who, text }. Voice files live at assets/vo/<id>.wav.
    who: 'meera' (Commander Meera) | 'riya' (Cadet Riya). */
 (function () {
@@ -119,7 +119,7 @@
   }
   L3.forEach((R3, r) => regSignal('l3_r' + (r + 1), R3, r === 0)); regSignal('fin_r3', FIN_SIG, false);
 
-  /* how a line should be READ aloud (signs → words) — used by the browser voice and the Voice Studio */
+  /* how a line should be READ aloud (signs → words) — used by the browser voice and tools/make_voices.py */
   function spoken(t) {
     return t.replace(/\((.[^)]*)\)\s*\+\s*\((.[^)]*)\)/g, '$1 plus $2')
       .replace(/−\s?(\d)/g, 'minus $1').replace(/\+(\d)/g, 'plus $1')
