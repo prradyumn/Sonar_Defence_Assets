@@ -1,8 +1,17 @@
 # Sonar Defence — integers on the navigation scale (Grade 6)
 
-Open `index.html` in Chrome (double-click works; a local server is fine too).
+Open `index.html` in Chrome: double-click it, or press **Go Live** in VS Code (Live Server serves this folder, so the game opens straight away).
 
-Flow: Hook (Commander Meera & Cadet Riya: harbour → sonar room → dive through the porthole) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
+Flow: Hook (Commander Meera & Cadet Riya: harbour → the sonar-room doors slide open → sonar room → dive through the porthole) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
+
+```
+index.html          the game
+css/                game.css (layout, stage px) · editor.css (layout editor only)
+js/                 script.js (every spoken line) · core · world · levels · editor · layout.js · gsap.min.js
+assets/img/         all art, .webp      assets/vo/   all voice lines, .ogg + vo_manifest.js      assets/fonts/
+tools/              make_voices.py (records the voices) · dev_server.py (lets the editor save)
+```
+The original art pack (PNG sources, concepts, briefs) is not needed by the game; it was moved out to `~/Downloads/Sonar_Defence_Archive_2026-10-09/` and is also in this repo's git history.
 
 ## Voices (Indian English, Gemini TTS)
 Every spoken line lives in `js/script.js`. `tools/make_voices.py` records them (Python 3 standard library + `node` to read the script):
@@ -48,10 +57,11 @@ open http://localhost:8000/?edit=1
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
 - `js/levels.js` flow + pedagogy: hook scenes, teaching, tutorial, 3-strike (Oops + direction arrow → Hint + rule card → Nudge + hand), idle help (6 s visual → 12 s spoken → 22 s reminder), stars
 - `tools/make_voices.py` makes the voice files
-- `assets/img` web versions of the art pack
+- `assets/img` web versions of the art pack (all `.webp`; the sonar-room doors are `door_left/right.webp`)
 
 ## Placeholders still in code (replace when the art arrives)
 - launcher turret → inline SVG in index.html (`#turret`)
+- talking animation → Meera's portrait cycles `meera_talk_1..6`; characters don't bounce while speaking (real talking sprites to come)
 - rule card → CSS (`#rule`)
 - left signal → `sig.webp` mirrored + recoloured in CSS (`.sig.neg`)
 - fish & manta → inline SVG in `world.js`
