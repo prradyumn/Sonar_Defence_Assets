@@ -70,7 +70,7 @@
       const d = document.createElement('div'); d.className = 'actor'; d.dataset.edit = name; Object.assign(d.style, css);
       const im = new Image(); im.src = 'assets/img/' + src;
       if (flip) { const f = document.createElement('div'); f.className = 'flip'; f.appendChild(im); d.appendChild(f); } else d.appendChild(im);
-      cast.appendChild(d); return { el: d, im };
+      cast.appendChild(d); return { el: d, im, face: SD.face(im, src.replace('.webp', '')) };   // talking face sprite (lip-synced in core.js)
     };
     // the sonar-room doors: latch, hiss, then both halves slide apart (timing + ease from door_opening.svg: 0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1))
     async function doors() {
@@ -115,11 +115,10 @@
       actors.forEach(x => { x.el.classList.toggle('dim', x !== a); gsap.to(x.el, { scale: x === a ? 1.03 : 1, duration: .3 }); });
       const origin = b.classList.contains('tr') ? '85% 110%' : b.classList.contains('lft') ? '-5% 50%' : b.classList.contains('rgt') ? '105% 50%' : '15% 110%';
       gsap.fromTo(b, { scale: .5, opacity: 0, transformOrigin: origin }, { scale: 1, opacity: 1, duration: .4, ease: 'back.out(2.2)' });
-      let ft = null; if (a.talk) { let k = 0; ft = setInterval(() => { if (SD.paused) return; k = (k + 1) % 6; a.im.src = `assets/img/meera_talk_${k + 1}.webp`; }, 560 / SD.SPEED); }
       const tn = gsap.fromTo('#tapNext', { opacity: 0 }, { opacity: .85, duration: .4, delay: 1.6 });
       if (extra) extra();
-      await say(L, { bubble: b });
-      clearInterval(ft); tn.kill(); gsap.set('#tapNext', { opacity: 0 });
+      await say(L, { bubble: b, face: a.face });
+      tn.kill(); gsap.set('#tapNext', { opacity: 0 });
       await gsap.to(b, { opacity: 0, scale: .9, duration: .2 });
     }
 
@@ -156,7 +155,7 @@
       radar.innerHTML = '<div class="sweep2"></div>';
       gsap.to(radar.firstChild, { rotation: 360, duration: 2.6, repeat: -1, ease: 'none' });
       const blip = (x, y) => { const b = document.createElement('div'); b.className = 'blip'; Object.assign(b.style, { left: x + 'px', top: y + 'px' }); radar.appendChild(b); gsap.fromTo(b, { scale: 0 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); SFX.blip(); return b; };
-      const m2 = actor('meera_talk_1.webp', { left: '0px', height: '600px', bottom: '-10px' }, 'sonar-meera'); m2.talk = true;
+      const m2 = actor('meera_talk_1.webp', { left: '0px', height: '600px', bottom: '-10px' }, 'sonar-meera');
       const r2 = actor('riya_idle.webp', { left: '1190px', height: '820px', bottom: '-330px' }, 'sonar-riya', true);
       actors = [m2, r2];
       await walkIn([[m2, 640, 0], [r2, -480, .12]]); chk();
@@ -179,7 +178,7 @@
         const spots = [-3, -1, 2];
         blips.forEach((b, i) => { gsap.killTweensOf(b); if (i < spots.length) gsap.to(b, { left: 150 + 300 + spots[i] * 90, top: 330, x: 0, duration: .6, delay: 1.2 + i * .2, ease: 'back.out(1.6)' }); else gsap.to(b, { opacity: 0, duration: .4, delay: 1 }); });
       });
-      r2.im.src = 'assets/img/riya_cheer.webp'; r2.el.style.height = '760px'; r2.el.style.bottom = '-200px';
+      r2.im.src = 'assets/img/riya_cheer.webp'; r2.face = SD.face(r2.im, 'riya_cheer'); r2.el.style.height = '760px'; r2.el.style.bottom = '-200px';
       gsap.fromTo(r2.el, { y: 0 }, { y: -60, duration: .25, yoyo: true, repeat: 1, ease: 'power2.out' });
       await line(S.h8, bR2, r2);
     } catch (e) { if (e !== SKIP) throw e; }

@@ -95,7 +95,7 @@
   setTimeout(manta, 4000);
   // ship & officer ride the swell
   gsap.to('#ship', { y: 4, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  gsap.set('#offImg,#pImg', { xPercent: -50 });
+  gsap.set('#offImg,#pSpr', { xPercent: -50 });
   // Meera shifts her weight now and then, so she never looks pasted on
   (function idleSway() { gsap.to('#officer', { rotation: (Math.random() - .5) * 3, duration: 1.6 + Math.random(), ease: 'sine.inOut', transformOrigin: '50% 100%', onComplete: idleSway }); })();
   gsap.to('#ship', { rotation: .7, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut', transformOrigin: '50% 75%' });

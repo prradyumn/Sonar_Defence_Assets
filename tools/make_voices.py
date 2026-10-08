@@ -339,6 +339,36 @@ def save_take(lid, pcm, rate, fmt):
     return base + '.wav'
 
 
+MOUTH = os.path.join(VO_DIR, 'vo_mouth.js')
+
+
+def write_mouth(lines):
+    """assets/vo/vo_mouth.js: how open the mouth is 12 times a second (0 closed … 3 wide), from each line's loudness.
+    The game uses it to lip-sync the talking face sprites."""
+    if not FFMPEG:
+        return 0
+    env = {}
+    for l in lines:
+        p = vo_file(l['id'])
+        if not p:
+            continue
+        pcm = subprocess.run([FFMPEG, '-v', 'error', '-i', p, '-f', 's16le', '-ac', '1', '-ar', '12000', '-'], capture_output=True, check=True).stdout
+        s = array.array('h')
+        s.frombytes(pcm[:len(pcm) - len(pcm) % 2])
+        if sys.byteorder == 'big':
+            s.byteswap()
+        rms = [math.sqrt(sum(x * x for x in s[i:i + 1000]) / max(1, len(s[i:i + 1000]))) for i in range(0, len(s), 1000)]
+        ref = sorted(rms)[int(len(rms) * .9)] or 1.0
+        voiced = sorted(r for r in rms if r >= .12 * ref) or [ref]            # silence → closed; voiced → the line's own thirds
+        q1, q2 = voiced[len(voiced) // 3], voiced[2 * len(voiced) // 3]
+        env[l['id']] = ''.join('0' if r < .12 * ref else '1' if r < q1 else '2' if r < q2 else '3' for r in rms)
+    tmp = MOUTH + '.part'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        f.write('/* mouth openness per line, 12 values a second (0 closed … 3 wide); written by tools/make_voices.py */\nwindow.VO_MOUTH = ' + json.dumps(env, separators=(',', ':')) + ';\n')
+    os.replace(tmp, MOUTH)
+    return len(env)
+
+
 def vo_file(lid):
     for ext in ('.ogg', '.wav'):
         if os.path.exists(os.path.join(VO_DIR, lid + ext)):
@@ -371,6 +401,7 @@ def main():
     ap.add_argument('--gap', type=float, default=0.5, help='seconds to wait between requests [0.5]')
     ap.add_argument('--verify', action='store_true', help='transcribe every new take and re-take it (up to 3x) if the words differ')
     ap.add_argument('--check', action='store_true', help='only transcribe the recorded wavs and list lines whose words differ')
+    ap.add_argument('--mouth', action='store_true', help='only rebuild assets/vo/vo_mouth.js (lip-sync data) from the recorded lines')
     ap.add_argument('--dry-run', action='store_true', help='list what would be made and show one prompt; no API calls')
     args = ap.parse_args()
 
@@ -395,6 +426,10 @@ def main():
         print('\n%d to make, %d already recorded.' % (len(make), len(skip)))
         if make:
             print('\nPrompt for %s:\n%s' % (make[0]['id'], build_prompt(make[0])))
+        return
+
+    if args.mouth:
+        print('vo_mouth.js: %d lines' % write_mouth(lines))
         return
 
     key = os.environ.get('GEMINI_API_KEY', '').strip()
@@ -456,6 +491,8 @@ def main():
         failed += [l['id'] for l in make if l['id'] not in made and l['id'] not in failed]
 
     have = write_manifest(lines)
+    if made:
+        write_mouth(lines)
     print('\nDone: %d made \u00b7 %d skipped \u00b7 %d failed \u00b7 %d of %d lines recorded.' % (len(made), len(skip), len(failed), len(have), len(lines)))
     if failed:
         print('Failed: ' + ', '.join(failed) + '\nRun again to retry them (finished lines are skipped).')

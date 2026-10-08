@@ -169,7 +169,7 @@
       };
       for (const k in on) a.addEventListener(k, on[k]);
       endPrev = stop; a._held = false;
-      a.src = 'assets/vo/' + id + '.' + VO_EXT[ext]; a.playbackRate = Math.min(SPEED, 2); curAudio = a;
+      a.src = 'assets/vo/' + id + '.' + VO_EXT[ext]; a._id = id; a.playbackRate = Math.min(SPEED, 2); curAudio = a;
       const go = () => { if (vTok === my) a.play().catch(e => { if (vTok === my && (!e || (e.name !== 'NotSupportedError' && e.name !== 'AbortError'))) fin(false); }); };
       held ? onResume.push(go) : go();
     });
@@ -218,25 +218,66 @@
     offImg.src = 'assets/img/' + f + '.webp';
     gsap.fromTo('#officer', { scaleY: .94, scaleX: 1.04 }, { scaleY: 1, scaleX: 1, duration: .35, ease: 'back.out(3)' });
   }
-  // comms portrait next to the caption (waist-up talking frames)
-  const pImg = $('#pImg'), pName = $('#pName'), comms = $('#comms');
-  const TALK = [1, 2, 3, 4, 5, 6].map(i => `assets/img/meera_talk_${i}.webp`);
-  TALK.concat(['assets/img/riya_idle.webp', 'assets/img/riya_cheer.webp']).forEach(s => { const i = new Image(); i.src = s; });
-  let frameTimer = null, curWho = null;
+  /* ================= talking faces =================
+     Each talking sprite has a face sprite sheet (assets/img/talk_*.webp, made from the sprite itself with Nano Banana Pro):
+     6 frames M closed · E "eh" · A "ah" · O "oo" · I "ee" · B blink, laid over the face of the body sprite.
+     While a recorded line plays, the mouth follows VO_MOUTH (its loudness, 12 values a second, from tools/make_voices.py);
+     otherwise a 3.6 s talking loop plays. Every face blinks now and then while its mouth is closed. */
+  const FACES = {
+    meera_right_big: { sheet: 'talk_meera_full', box: [125, 22, 300, 300], size: [700, 1101] },
+    meera_talk_1:    { sheet: 'talk_meera_half', box: [100, 40, 280, 280], size: [383, 503] },
+    riya_idle:       { sheet: 'talk_riya',       box: [110, 60, 260, 260], size: [389, 856] },
+    riya_cheer:      { sheet: 'talk_riya_cheer', box: [130, 55, 260, 260], size: [439, 841] },
+  };
+  Object.values(FACES).forEach(f => { const i = new Image(); i.src = `assets/img/${f.sheet}.webp`; });
+  const FR = { M: 0, E: 1, A: 2, O: 3, I: 4, B: 5 }, LOOP = 'EAIEMOAIEMMEIAOEMMMEAIEOAEMMIEAOEMMM';   // 36 steps × 0.1 s
+  const MOUTH = window.VO_MOUTH || {}, live = new Set();
+  let talker = null;
+  const show = (el, k) => { if (el._k !== k) { el._k = k; el.style.backgroundPosition = k * 20 + '% 0'; } };
+  // put (or switch) the face layer on a sprite <img>; its parent must wrap the image exactly (position: relative/absolute)
+  function face(img, name) {
+    const f = FACES[name]; let el = img._face;
+    if (!f) { if (el) el.style.display = 'none'; return null; }
+    if (!el) { el = img._face = document.createElement('i'); el.className = 'face'; img.after(el); }
+    const [x, y, w, h] = f.box, [W, H] = f.size;
+    Object.assign(el.style, { display: '', left: x / W * 100 + '%', top: y / H * 100 + '%', width: w / W * 100 + '%', height: h / H * 100 + '%', backgroundImage: `url(assets/img/${f.sheet}.webp)` });
+    el._name = name; el._k = -1; show(el, 0); el._blink = performance.now() + 1200 + Math.random() * 2500; live.add(el);
+    return el;
+  }
+  (function faces(now) {
+    requestAnimationFrame(faces);
+    if (window.SD && SD.paused) return;
+    for (const el of live) {
+      if (!el.isConnected) { live.delete(el); continue; }
+      let st = 'M';
+      if (talker && talker.el === el) {
+        const env = MOUTH[talker.id];
+        if (env && voice._id === talker.id && !voice.paused) {   // lip-sync to where the voice actually is
+          const k = Math.floor((voice.currentTime + .04) * 12), lv = env[k] || '0';
+          st = lv === '0' ? 'M' : lv === '3' ? 'A' : lv === '2' ? (k % 4 < 2 ? 'I' : 'E') : (k % 3 ? 'E' : 'O');
+        } else if (!env || voice._id !== talker.id) st = LOOP[Math.floor((now - talker.t0) / 100) % LOOP.length];
+      }
+      if (st === 'M') { if (now > el._blink + 140) el._blink = now + 2200 + Math.random() * 2800; else if (now >= el._blink) st = 'B'; }
+      show(el, FR[st]);
+    }
+  })(0);
+  function talking(el, id, on) { if (on) talker = el ? { el, id, t0: performance.now() } : null; else if (talker && talker.el === el) talker = null; }
+
+  // comms portrait next to the caption: Meera waist-up / Riya, each with a talking face
+  const pImg = $('#pImg'), pSpr = $('#pSpr'), pName = $('#pName'), comms = $('#comms');
+  ['assets/img/riya_idle.webp', 'assets/img/riya_cheer.webp'].forEach(s => { const i = new Image(); i.src = s; });
+  let curWho = null;
   function portrait(who, mood) {
     comms.classList.toggle('riya', who === 'riya');
     pName.textContent = SCRIPT.WHO[who].name;
-    if (who === 'riya') pImg.src = `assets/img/${mood === 'cheer' ? 'riya_cheer' : 'riya_idle'}.webp`;
-    else pImg.src = TALK[0];
-    pImg.className = who + (mood === 'cheer' ? ' cheer' : '');
+    const name = who === 'riya' ? (mood === 'cheer' ? 'riya_cheer' : 'riya_idle') : 'meera_talk_1';
+    if (!pImg.src.endsWith(name + '.webp')) pImg.src = `assets/img/${name}.webp`;
+    if (!pImg._face || pImg._face._name !== name) face(pImg, name);
+    pSpr.className = who + (mood === 'cheer' ? ' cheer' : '');
     if (curWho !== who) gsap.fromTo('#portrait', { scale: .7, rotation: -8 }, { scale: 1, rotation: 0, duration: .4, ease: 'back.out(2.4)' });
     curWho = who;
   }
-  function talking(who, on) {   // no bounce while speaking: only Meera's portrait cycles its talking frames (real sprites come later)
-    clearInterval(frameTimer); frameTimer = null;
-    if (!on) return;
-    if (who === 'meera') { let k = 0; frameTimer = setInterval(() => { if (SD.paused) return; k = (k + 1 + Math.floor(Math.random() * 2)) % TALK.length; pImg.src = TALK[k]; }, 520 / SPEED); }
-  }
+  face(pImg, 'meera_talk_1');
 
   /* ================= caption / speech bubble + say ================= */
   let lastLine = null, sayN = 0;
@@ -255,7 +296,8 @@
       gsap.killTweensOf('#comms'); gsap.to('#comms', { opacity: 1, duration: .25 });
       gsap.fromTo(box, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: .3 });
     }
-    talking(who, true); duck(true);
+    const fc = o.bubble ? o.face : pImg._face;          // whose face talks: the story actor, or the comms portrait
+    talking(fc, id, true); duck(true);
     const t0 = performance.now();
     const skipP = new Promise(r => { skipFn = r; });
     const spokeP = playVO(id).then(ok => ok || speak(text, who));
@@ -265,15 +307,16 @@
       if (spent < min) await Promise.race([wait(min - spent), skipP]);
     } else hush();
     skipFn = null;
+    talking(fc, id, false);
     if (my !== sayN) return;
-    talking(who, false); duck(false);
+    duck(false);
     if (!o.keep && !o.bubble) captionOff(.25);
     await wait(.3);
   }
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, portrait, get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, portrait, face, get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

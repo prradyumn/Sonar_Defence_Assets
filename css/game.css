@@ -116,9 +116,12 @@ img{-webkit-user-drag:none;user-select:none}
 #comms{position:absolute;left:34px;top:862px;width:1560px;height:190px;opacity:0}
 #portrait{position:absolute;left:0;top:0;width:186px;height:186px;border-radius:50%;overflow:hidden;z-index:2;
   background:radial-gradient(circle at 50% 35%,#3fa6e6,#0d3b6c 70%);border:6px solid #5fe6ff;box-shadow:0 0 0 4px #062244,0 0 26px rgba(80,220,255,.6)}
-#portrait img{position:absolute;left:50%;top:8px;height:340px}
-#portrait img.riya{height:640px;top:4px}
-#portrait img.riya.cheer{height:560px;top:-34px}
+#pSpr{position:absolute;left:50%;top:8px;height:340px}
+#pSpr img{display:block;height:100%}
+#pSpr.riya{height:640px;top:4px}
+#pSpr.riya.cheer{height:560px;top:-34px}
+/* talking face layer (js/core.js face()): one frame of a 6-frame face sheet laid over the sprite's own face */
+.face{position:absolute;display:block;background:0 0/600% 100% no-repeat;pointer-events:none}
 #comms.riya #portrait{border-color:#ffc04d;box-shadow:0 0 0 4px #4a2600,0 0 26px rgba(255,190,70,.6);background:radial-gradient(circle at 50% 35%,#ffcf7a,#b8571a 75%)}
 #pName{position:absolute;left:170px;top:14px;z-index:3;padding:6px 20px 4px 26px;border-radius:0 14px 14px 0;background:#5fe6ff;color:#06264a;font:800 26px/1 Baloo}
 #comms.riya #pName{background:#ffc04d;color:#4a2600}
@@ -218,7 +221,7 @@ img{-webkit-user-drag:none;user-select:none}
 #storyFx,#cast{position:absolute;inset:0;pointer-events:none}
 .actor{position:absolute;bottom:0;transform-origin:50% 100%;filter:drop-shadow(0 14px 18px rgba(0,20,50,.35))}
 .actor img{display:block;height:100%}
-.actor.dim img{filter:brightness(.82) saturate(.9)}
+.actor.dim img,.actor.dim .face{filter:brightness(.82) saturate(.9)}
 .bubble{position:absolute;max-width:640px;padding:26px 34px 24px;border-radius:34px;background:#fff;color:#0d2c4f;font:600 38px/1.25 Baloo,sans-serif;
   box-shadow:0 10px 0 rgba(0,30,70,.18),0 18px 40px rgba(0,20,50,.35);border:5px solid #0d3a66;opacity:0}
 .bubble .nm{position:absolute;left:24px;top:-24px;padding:6px 18px 4px;border-radius:14px;font:800 26px/1 Baloo;background:#5fe6ff;color:#06264a;border:3px solid #0d3a66}
@@ -256,7 +259,7 @@ img{-webkit-user-drag:none;user-select:none}
 #doors .seam{position:absolute;left:957px;top:0;width:6px;height:1080px;background:linear-gradient(rgba(170,252,255,0),rgba(210,253,255,.95) 50%,rgba(170,252,255,0));filter:blur(2px);opacity:0}
 #doors .spill{position:absolute;left:0;top:0;width:1920px;height:1080px;background:radial-gradient(ellipse 22% 70% at 50% 50%,rgba(190,250,255,.75),rgba(120,220,255,.25) 45%,rgba(0,0,0,0) 75%);mix-blend-mode:screen;opacity:0}
 .steam{position:absolute;width:160px;height:160px;margin:-80px 0 0 -80px;border-radius:50%;background:radial-gradient(circle,rgba(235,250,255,.75),rgba(235,250,255,0) 68%);filter:blur(3px)}
-.actor .flip{height:100%;transform:scaleX(-1)}
+.actor .flip{position:relative;height:100%;transform:scaleX(-1)}
 
 /* ---------- reward: confetti, praise word, star into the pips ---------- */
 #fxTop{position:absolute;inset:0;pointer-events:none}
