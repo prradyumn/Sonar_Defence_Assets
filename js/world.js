@@ -17,7 +17,7 @@
   const CONFIG = Object.assign({}, DEFAULTS, window.LAYOUT && LAYOUT.config);
   const X = v => CONFIG.X0 + v * CONFIG.STEP;   // scale position → stage x
   const SUB_H = 90, LINE_TOP = 584;            // .sub height · .sonarline top (game.css)
-  const play = $('#play'), fx = $('#fx'), sc = $('#scale');
+  const play = $('#play'), fx = $('#fx'), sc = $('#scale'), sg = $('#sigs');   // sg: Level 3 signals + pair buttons, above the ship
   const el = (cls, parent, css = {}) => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, css); parent.appendChild(d); return d; };
 
   /* ================= parallax ================= */
@@ -400,12 +400,12 @@
   // two rows (CONFIG.SIG_Y1 / SIG_Y2) meeting in the middle; each signal is ±1 step.
   const SIG_MID = () => (CONFIG.SIG_Y1 + CONFIG.SIG_Y2) / 2, sigX = (k, cols) => CONFIG.X0 + (k - (cols - 1) / 2) * CONFIG.SIG_GAP;
   W.signals = async (rows) => {   // rows: [{n:5,sign:+1},{n:3,sign:-1}]
-    L3.sigs = []; const mid = SIG_MID(), pod = el('pod', fx, { left: CONFIG.X0 + 'px', top: mid + 'px' });
+    L3.sigs = []; const mid = SIG_MID(), pod = el('pod', sg, { left: CONFIG.X0 + 'px', top: mid + 'px' });
     gsap.fromTo(pod, { scale: 0 }, { scale: 1, duration: .4, ease: 'back.out(2)' }); SFX.ping(); await wait(.5);
     const cols = Math.max(...rows.map(r => r.n)); L3.cols = cols;
     for (let r = 0; r < rows.length; r++) for (let k = 0; k < rows[r].n; k++) {
       const x = sigX(k, cols), y = r === 0 ? CONFIG.SIG_Y1 : CONFIG.SIG_Y2;
-      const d = el('sig' + (rows[r].sign < 0 ? ' neg' : ''), fx, { left: x + 'px', top: y + 'px' });
+      const d = el('sig' + (rows[r].sign < 0 ? ' neg' : ''), sg, { left: x + 'px', top: y + 'px' });
       const s = { d, sign: rows[r].sign, row: r, col: k, x, y, alive: true }; L3.sigs.push(s);
       gsap.fromTo(d, { left: CONFIG.X0, top: mid, opacity: 0, scale: .3 }, { left: x, top: y, opacity: 1, scale: 1, duration: .5, ease: 'back.out(1.6)' }); SFX.pop();
       await wait(.12);
@@ -425,15 +425,17 @@
     const pairs = Math.min(pos().length, neg().length);
     for (let k = 0; k < pairs; k++) {
       const p = L3.sigs.find(s => s.sign > 0 && s.col === k), n = L3.sigs.find(s => s.sign < 0 && s.col === k);
-      const b = el('pairbox', fx, { left: p.x + 'px', top: (CONFIG.SIG_Y1 - 36) + 'px' }); b._p = p; boxes.push(b); b.style.pointerEvents = 'auto';
+      const b = el('pairbox', sg, { left: p.x + 'px', top: (CONFIG.SIG_Y1 - 36) + 'px' }); b._p = p; boxes.push(b); b.style.pointerEvents = 'auto';
+      sg.insertBefore(b, L3.sigs[0].d);   // the button sits under its two arrows
+      gsap.fromTo(b, { scale: .6, opacity: 0 }, { scale: 1, opacity: 1, duration: .35, delay: k * .08, ease: 'back.out(2)' });
       gsap.to([p.d, n.d], { y: -4, duration: .5, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: k * .1 });
       b.onpointerdown = async () => {
         if (b._used) return; b._used = true; arm(); boxes.forEach(x => x.classList.remove('hint'));
         p.alive = n.alive = false; gsap.killTweensOf([p.d, n.d]); p.d.classList.add('pair'); n.d.classList.add('pair');
         const mid = SIG_MID();
         await Promise.all([gsap.to(p.d, { top: mid, duration: .28, ease: 'power2.in' }), gsap.to(n.d, { top: mid, duration: .28, ease: 'power2.in' })]);
-        SFX.pop(); const pop = el('pop', fx, { left: p.x + 'px', top: mid + 'px' }); gsap.fromTo(pop, { scale: .3 }, { scale: 1.1, opacity: 0, duration: .7, onComplete: () => pop.remove() });
-        const z = el('zero0', fx, { left: (p.x - 14) + 'px', top: (mid - 24) + 'px' }); z.textContent = '0'; gsap.to(z, { y: -60, opacity: 0, duration: 1.1, delay: .2, onComplete: () => z.remove() });
+        SFX.pop(); const pop = el('pop', sg, { left: p.x + 'px', top: mid + 'px' }); gsap.fromTo(pop, { scale: .3 }, { scale: 1.1, opacity: 0, duration: .7, onComplete: () => pop.remove() });
+        const z = el('zero0', sg, { left: (p.x - 14) + 'px', top: (mid - 24) + 'px' }); z.textContent = '0'; gsap.to(z, { y: -60, opacity: 0, duration: 1.1, delay: .2, onComplete: () => z.remove() });
         p.d.remove(); n.d.remove(); b.remove(); onPair && onPair();
         if (!boxes.some(x => !x._used)) { idleCall.kill(); res(); }
       };
@@ -441,7 +443,7 @@
     if (!pairs) { idleCall.kill(); res(); }
     W._pairBoxes = boxes;
   });
-  W.hintPairs = () => { const open = (W._pairBoxes || []).filter(b => !b._used); open.forEach(b => b.classList.add('hint')); gsap.fromTo(open, { scale: 1 }, { scale: 1.12, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' }); };
+  W.hintPairs = () => { const open = (W._pairBoxes || []).filter(b => !b._used); open.forEach(b => b.classList.add('hint')); gsap.fromTo(open, { scale: 1 }, { scale: 1.07, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' }); };
   W.pairCentre = () => { const b = (W._pairBoxes || []).find(x => !x._used); if (!b) return null; const r = b.getBoundingClientRect(), st = $('#stage').getBoundingClientRect(), k = st.width / 1920; return { x: (r.left - st.left + r.width / 2) / k, y: (r.top - st.top + r.height / 2) / k }; };
   // leftover signals fly into the marker one by one; marker steps 1 each time
   W.runMarker = async (group) => {

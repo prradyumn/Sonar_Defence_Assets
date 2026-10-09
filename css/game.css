@@ -27,7 +27,7 @@ img{-webkit-user-drag:none;user-select:none}
 #surface{position:absolute;left:0;top:226px;width:1920px;height:60px;pointer-events:none}
 
 /* ship */
-#ship{position:absolute;left:40px;top:92px;width:620px;height:227px}
+#ship{position:absolute;left:40px;top:92px;width:620px;height:227px;pointer-events:none}   /* scenery: never steals a tap from the pair buttons under the bow */
 #ship .hull{position:absolute;left:0;top:0;width:620px}
 #wakeFx,#hullFoam{position:absolute;left:-440px;top:96px;width:1160px;height:150px;overflow:visible;pointer-events:none}
 #hullFoam{filter:drop-shadow(0 0 3px rgba(255,255,255,.55))}
@@ -74,7 +74,7 @@ img{-webkit-user-drag:none;user-select:none}
 .sub .glow{position:absolute;left:-30px;top:-30px;right:-30px;bottom:-30px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,220,90,.55),rgba(255,200,60,0) 65%);opacity:0}
 .sub .shield{position:absolute;left:-26px;top:-36px;right:-26px;bottom:-36px;border-radius:50%;border:5px solid rgba(255,110,90,.9);box-shadow:0 0 22px rgba(255,90,70,.8),inset 0 0 22px rgba(255,90,70,.5);opacity:0}
 .sub.dim{opacity:.35}
-#fx{position:absolute;inset:0;pointer-events:none}
+#fx,#sigs{position:absolute;inset:0;pointer-events:none}
 .reticle{position:absolute;width:190px;height:190px;margin:-95px 0 0 -95px}
 .blast{position:absolute;width:340px;height:340px;margin:-170px 0 0 -170px;background:url(../assets/img/blast_sheet.webp) 0 0/1360px 340px no-repeat}
 .torp{position:absolute;width:120px;height:37px;margin:-18px 0 0 -60px}
@@ -87,14 +87,13 @@ img{-webkit-user-drag:none;user-select:none}
 .sweep.left{transform:scaleX(-1)}
 
 /* L3 signals + marker */
-.sig{position:absolute;width:140px;height:72px;margin:-36px 0 0 -70px;background:url(../assets/img/sig.webp) center/contain no-repeat;pointer-events:auto;cursor:pointer}
-.sig.neg{transform:scaleX(-1);filter:hue-rotate(178deg) saturate(1.7) brightness(1.05)}
+/* a dark outline keeps the pale arrows readable on the bright surface water; taps go to the pair button underneath */
+.sig{position:absolute;width:140px;height:72px;margin:-36px 0 0 -70px;background:url(../assets/img/sig.webp) center/contain no-repeat,radial-gradient(closest-side,rgba(3,22,50,.5) 45%,rgba(3,22,50,0));pointer-events:none;filter:drop-shadow(0 0 2px #06264a) drop-shadow(0 4px 5px rgba(2,16,40,.55))}
+.sig.neg{transform:scaleX(-1);filter:hue-rotate(178deg) saturate(1.7) brightness(1.05) drop-shadow(0 0 2px #4a1606) drop-shadow(0 4px 5px rgba(2,16,40,.55))}
 .sig.pair{filter:drop-shadow(0 0 14px #fff)}
 .sig.neg.pair{filter:hue-rotate(178deg) saturate(1.7) brightness(1.05) drop-shadow(0 0 14px #fff)}
 .pop{position:absolute;width:190px;height:132px;margin:-66px 0 0 -95px;background:url(../assets/img/pop.webp) center/contain no-repeat}
 .zero0{position:absolute;font:700 46px/1 Fredoka;color:#fff;text-shadow:0 0 14px #9ff,0 2px 0 #024}
-.pairbox{position:absolute;width:140px;height:140px;margin-left:-66px;border-radius:24px;border:3px dashed rgba(255,255,255,.0);pointer-events:auto;cursor:pointer}
-.pairbox.hint{border-color:rgba(255,230,120,.9);box-shadow:0 0 18px rgba(255,220,90,.6)}
 #marker{position:absolute;width:44px;height:82px;margin-left:-22px;top:380px;background:url(../assets/img/marker.webp) center/contain no-repeat;filter:drop-shadow(0 0 12px rgba(255,170,40,.7))}
 .pod{position:absolute;width:110px;height:83px;margin:-41px 0 0 -55px;background:url(../assets/img/pod.webp) center/contain no-repeat}
 .eqn{position:absolute;left:960px;top:304px;transform:translateX(-50%);font:700 46px/1 Fredoka;color:#fff;text-shadow:0 0 16px #1fd2ff,0 3px 0 #052a4c;white-space:nowrap}
@@ -212,10 +211,18 @@ img{-webkit-user-drag:none;user-select:none}
 .shock{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:10px solid rgba(255,240,200,.9);box-shadow:0 0 30px rgba(255,200,120,.8),inset 0 0 30px rgba(255,220,150,.6)}
 .debris{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:3px;background:#3b3f4a;border:2px solid #1c1f27}
 
-/* pair boxes are visible & breathing so the child knows they can be tapped */
-.pairbox{border-color:rgba(255,255,255,.5)!important;background:rgba(255,255,255,.06);animation:breathe 1.6s ease-in-out infinite}
-.pairbox.hint{border-color:rgba(255,230,120,.95)!important;box-shadow:0 0 22px rgba(255,220,90,.7)}
-@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+/* pair buttons: a dark sonar-glass tile under each ▶/◀ pair (same look as the HUD + scale), rim glow pulses so the child knows it can be tapped */
+.pairbox{position:absolute;width:142px;height:156px;margin:-8px 0 0 -71px;border-radius:28px;pointer-events:auto;cursor:pointer;
+  background:radial-gradient(120% 80% at 50% 0%,#1d5a92 0%,#0b2f5c 55%,#061d3e 100%);border:3px solid #5fe6ff;
+  box-shadow:0 0 0 4px rgba(4,20,44,.5),0 12px 22px rgba(2,16,40,.5),0 0 16px rgba(95,230,255,.5),inset 0 2px 0 rgba(255,255,255,.3),inset 0 -8px 16px rgba(0,0,0,.35);
+  animation:pairGlow 1.6s ease-in-out infinite}
+.pairbox::before{content:"";position:absolute;left:14px;right:14px;top:50%;border-top:2px dashed rgba(127,242,255,.35)}   /* the seam between the two moves */
+.pairbox:hover{border-color:#bff8ff}
+.pairbox.hint{border-color:#ffd66b;animation:pairHint .6s ease-in-out infinite}
+@keyframes pairGlow{0%,100%{box-shadow:0 0 0 4px rgba(4,20,44,.5),0 12px 22px rgba(2,16,40,.5),0 0 12px rgba(95,230,255,.35),inset 0 2px 0 rgba(255,255,255,.3),inset 0 -8px 16px rgba(0,0,0,.35)}
+  50%{box-shadow:0 0 0 4px rgba(4,20,44,.5),0 12px 22px rgba(2,16,40,.5),0 0 30px rgba(95,230,255,.85),inset 0 2px 0 rgba(255,255,255,.3),inset 0 -8px 16px rgba(0,0,0,.35)}}
+@keyframes pairHint{0%,100%{box-shadow:0 0 0 4px rgba(4,20,44,.5),0 12px 22px rgba(2,16,40,.5),0 0 14px rgba(255,214,107,.5),inset 0 2px 0 rgba(255,255,255,.3)}
+  50%{box-shadow:0 0 0 4px rgba(4,20,44,.5),0 12px 22px rgba(2,16,40,.5),0 0 34px rgba(255,214,107,.95),inset 0 2px 0 rgba(255,255,255,.3)}}
 
 /* HUD life */
 #strip::after{content:"";position:absolute;inset:0;border-radius:28px;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.22) 45%,rgba(255,255,255,0) 60%);background-size:300% 100%;background-position:120% 0;pointer-events:none}
