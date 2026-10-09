@@ -238,8 +238,8 @@ img{-webkit-user-drag:none;user-select:none}
 #story .bg{transform-origin:50% 50%}
 #storyFx,#cast{position:absolute;inset:0;pointer-events:none}
 .actor{position:absolute;bottom:0;transform-origin:50% 100%;filter:drop-shadow(0 14px 18px rgba(0,20,50,.35))}
-.actor img{display:block;height:100%}
-.actor.dim img{filter:brightness(.82) saturate(.9)}
+.actor img,.actor canvas{display:block;height:100%}
+.actor.dim img,.actor.dim canvas{filter:brightness(.82) saturate(.9)}
 .bubble{position:absolute;max-width:640px;padding:26px 34px 24px;border-radius:34px;background:#fff;color:#0d2c4f;font:600 38px/1.25 Baloo,sans-serif;
   box-shadow:0 10px 0 rgba(0,30,70,.18),0 18px 40px rgba(0,20,50,.35);border:5px solid #0d3a66;opacity:0}
 .bubble .nm{position:absolute;left:24px;top:-24px;padding:6px 18px 4px;border-radius:14px;font:800 26px/1 Baloo;background:#5fe6ff;color:#06264a;border:3px solid #0d3a66}

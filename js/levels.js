@@ -67,11 +67,11 @@
     const chk = () => { if (skipping) throw SKIP; };
 
     // data-edit gives each story element a stable name, so the layout editor can move it (js/layout.js)
-    const actor = (src, css, name, flip) => {   // flip: mirror the art so the two characters face each other
+    const actor = (who, css, name, flip) => {   // the talking sheet (core.js) · flip: mirror the art so the two characters face each other
       const d = document.createElement('div'); d.className = 'actor'; d.dataset.edit = name; Object.assign(d.style, css);
-      const im = new Image(); im.src = 'assets/img/' + src;
-      if (flip) { const f = document.createElement('div'); f.className = 'flip'; f.appendChild(im); d.appendChild(f); } else d.appendChild(im);
-      cast.appendChild(d); return { el: d, im };
+      const t = SD.talker(who);
+      if (flip) { const f = document.createElement('div'); f.className = 'flip'; f.appendChild(t.el); d.appendChild(f); } else d.appendChild(t.el);
+      cast.appendChild(d); return { el: d, talk: t.talk };
     };
     // the sonar-room doors: latch, hiss, then both halves slide apart (timing + ease from door_opening.svg: 0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1))
     async function doors() {
@@ -117,7 +117,7 @@
       gsap.fromTo(b, { scale: .5, opacity: 0, transformOrigin: origin }, { scale: 1, opacity: 1, duration: .4, ease: 'back.out(2.2)' });
       const tn = gsap.fromTo('#tapNext', { opacity: 0 }, { opacity: .85, duration: .4, delay: 1.6 });
       if (extra) extra();
-      await say(L, { bubble: b });
+      await say(L, { bubble: b, talk: a.talk });
       tn.kill(); gsap.set('#tapNext', { opacity: 0 });
       await gsap.to(b, { opacity: 0, scale: .9, duration: .2 });
     }
@@ -129,8 +129,8 @@
       bg.style.backgroundImage = 'url(assets/img/harbour.webp)';
       gsap.fromTo(bg, { scale: 1.16, x: 70 }, { scale: 1.04, x: 0, duration: 14, ease: 'none' });
       gsap.fromTo(st, { opacity: 0 }, { opacity: 1, duration: .6 });
-      const meera = actor('meera_right_big.webp', { left: '40px', height: '820px', bottom: '-70px' }, 'harbour-meera');
-      const riya = actor('riya_idle.webp', { left: '1390px', height: '640px', bottom: '-20px' }, 'harbour-riya', true);
+      const meera = actor('meera', { left: '40px', height: '820px', bottom: '-70px' }, 'harbour-meera');
+      const riya = actor('riya', { left: '1390px', height: '640px', bottom: '-20px' }, 'harbour-riya', true);
       actors = [meera, riya];
       gsap.from(meera.el, { x: -600, duration: 1, ease: 'power3.out', delay: .2 });
       gsap.from(riya.el, { x: 620, duration: .9, ease: 'power3.out', delay: .6 });
@@ -158,8 +158,8 @@
       radar.innerHTML = '<div class="sweep2"></div>';
       gsap.to(radar.firstChild, { rotation: 360, duration: 2.6, repeat: -1, ease: 'none' });
       const blip = (x, y) => { const b = document.createElement('div'); b.className = 'blip'; Object.assign(b.style, { left: x + 'px', top: y + 'px' }); radar.appendChild(b); gsap.fromTo(b, { scale: 0 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); SFX.blip(); return b; };
-      const m2 = actor('meera_right_big.webp', { left: '20px', height: '980px', bottom: '-380px' }, 'sonar-meera');   // full body (no waist-up cutout)
-      const r2 = actor('riya_idle.webp', { left: '1190px', height: '820px', bottom: '-330px' }, 'sonar-riya', true);
+      const m2 = actor('meera', { left: '20px', height: '980px', bottom: '-380px' }, 'sonar-meera');
+      const r2 = actor('riya', { left: '1190px', height: '820px', bottom: '-330px' }, 'sonar-riya', true);
       actors = [m2, r2];
       await walkIn([[m2, 640, 0], [r2, -480, .12]]); chk();
       const bM2 = bubble('meera', 'lft', { left: '600px', top: '700px' }, 'sonar-meera-bubble');
@@ -181,7 +181,6 @@
         const spots = [-3, -1, 2];
         blips.forEach((b, i) => { gsap.killTweensOf(b); if (i < spots.length) gsap.to(b, { left: 150 + 300 + spots[i] * 90, top: 330, x: 0, duration: .6, delay: 1.2 + i * .2, ease: 'back.out(1.6)' }); else gsap.to(b, { opacity: 0, duration: .4, delay: 1 }); });
       });
-      r2.im.src = 'assets/img/riya_cheer.webp'; r2.el.style.height = '760px'; r2.el.style.bottom = '-200px';
       await line(S.h8, bR2, r2);
       }
     } catch (e) { if (e !== SKIP) throw e; }

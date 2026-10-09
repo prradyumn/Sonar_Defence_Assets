@@ -39,7 +39,9 @@ story (Harbour · Control room · Dive), Teaching, every round of Level 1–3 an
 Recorded music + ambience + effects live in `assets/sfx/` (all `.ogg`): two loops composed for the game with Google Lyria (calm for the story, playful for the missions, crossfading at the dive), harbour gulls + waves, sea waves, and CC0 Freesound effects (sonar, torpedo, underwater explosion, splash, water rush, sci-fi door, bubbles) — see `assets/sfx/CREDITS.md`. Taps, chimes and the reward arpeggio are synthesized. Music dips under every voice line. Over http(s) everything plays through Web Audio; from `file://` through `<audio>` elements.
 
 ## Characters
-Still `.webp` images for now (no bounce or wobble); talking sprite sheets will replace them later. `tools/make_voices.py --mouth` can write per-line mouth-openness data (`assets/vo/vo_mouth.js`) for lip-syncing those sheets.
+In the story conversations (harbour + control room) Meera and Riya are the Ludo talking sheets `meera_talk_sheet.webp` / `riya_talk_sheet.webp`: 6×6 whole full-body frames, played exactly as drawn while that character's line is spoken (Meera 79 ms/frame, Riya 90 ms/frame). When the line ends the character runs on to the next closed-mouth frame and holds it; the listener stays still. Frame sizes and the closed-mouth frame lists are in `SHEET` in `js/core.js`; the source PNG + JSON are in the archive folder.
+
+Everywhere else (comms portrait during play, the officer on deck) they are still `.webp` images, no bounce or wobble.
 
 ## Pause + layout editor ("Figma inside the game")
 Players never see it. Open `index.html?edit=1`, or press **E** in the game.
@@ -75,7 +77,7 @@ open http://localhost:8000/?edit=1
 
 ## Placeholders still in code (replace when the art arrives)
 - launcher turret → inline SVG in index.html (`#turret`)
-- talking animation → Meera's portrait cycles `meera_talk_1..6`; characters don't bounce while speaking (real talking sprites to come)
+- talking animation → only the story conversations use talking sheets; the comms portrait and the deck officer are still images
 - rule card → CSS (`#rule`)
 - left signal → `sig.webp` mirrored + recoloured in CSS (`.sig.neg`)
 - fish & manta → inline SVG in `world.js`

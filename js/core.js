@@ -244,7 +244,36 @@
     pSpr.className = who + (mood === 'cheer' ? ' cheer' : '');
     curWho = who;
   }
-  const talking = () => {};   // characters are still images for now (talking sprite sheets come later)
+  const talking = () => {};   // portrait and deck officer stay still images
+  /* story conversations: the Ludo talking sheets (6×6 whole full-body frames, played exactly as drawn).
+     A character plays the sheet while their line is spoken, then runs on to the next closed-mouth frame and holds it. */
+  const SHEET = {
+    meera: { src: 'assets/img/meera_talk_sheet.webp', w: 385, h: 862, ms: 79, rest: [0, 1, 2, 3, 4, 5, 6, 9, 14, 24, 30, 31] },
+    riya: { src: 'assets/img/riya_talk_sheet.webp', w: 386, h: 828, ms: 90, rest: [4, 5, 6, 7, 8, 22, 23] },
+  };
+  for (const k in SHEET) { const s = SHEET[k]; s.img = new Image(); s.img.src = s.src; }
+  function talker(who) {
+    const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');
+    c.width = s.w; c.height = s.h;
+    let f = s.rest[0], on = false, acc = 0, ticking = false;
+    const draw = () => { g.clearRect(0, 0, s.w, s.h); g.drawImage(s.img, (f % 6) * s.w, (f / 6 | 0) * s.h, s.w, s.h, 0, 0, s.w, s.h); };
+    if (s.img.complete) draw(); else s.img.addEventListener('load', draw, { once: true });
+    const halt = () => { gsap.ticker.remove(tick); ticking = false; acc = 0; };
+    function tick(t, dt) {
+      if (!c.isConnected) return halt();
+      if (SD.paused) return;
+      const step = on ? s.ms : s.ms / 2;   // settling to a closed mouth runs at double speed
+      acc = Math.min(acc + dt * Math.min(SPEED, 2) * SD.rate, step * 3);
+      let moved = false;
+      while (acc >= step) {
+        acc -= step;
+        if (!on && s.rest.includes(f)) { halt(); break; }
+        f = (f + 1) % 36; moved = true;
+      }
+      if (moved) draw();
+    }
+    return { el: c, talk(v) { on = v; if (!ticking && (v || !s.rest.includes(f))) { ticking = true; gsap.ticker.add(tick); } } };
+  }
 
   /* ================= caption / speech bubble + say ================= */
   let lastLine = null, sayN = 0;
@@ -266,12 +295,14 @@
     duck(true);
     const t0 = performance.now();
     const skipP = new Promise(r => { skipFn = r; });
+    if (o.talk) o.talk(true);
     const spokeP = playVO(id).then(ok => ok || speak(text, who));
     const spoke = await Promise.race([spokeP, skipP.then(() => 'skip')]);
     if (spoke !== 'skip') {
       const spent = (performance.now() - t0) / 1000 * SPEED, min = spoke ? .25 : readTime(text);
       if (spent < min) await Promise.race([wait(min - spent), skipP]);
     } else hush();
+    if (o.talk) o.talk(false);
     skipFn = null;
     if (my !== sayN) return;
     duck(false);
@@ -281,7 +312,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, portrait, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, talker, portrait, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();
