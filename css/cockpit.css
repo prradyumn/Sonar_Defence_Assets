@@ -51,6 +51,23 @@
 #cannon .ring{width:66px;height:30px;margin:-15px 0 0 -33px;box-shadow:0 0 16px 6px rgba(73,220,255,.65),inset 0 0 12px 4px rgba(73,220,255,.5);opacity:.35}
 #cannon .flash{width:180px;height:180px;margin:-90px 0 0 -90px;background:radial-gradient(circle,#fff,rgba(201,251,255,.85) 28%,rgba(73,220,255,0) 68%);opacity:0;mix-blend-mode:screen}
 
+/* ---- fun layer ---- */
+#visitors,#glassFx{position:absolute;inset:0;pointer-events:none}
+#visitors img{position:absolute;left:0;top:0;transform-origin:50% 50%;filter:drop-shadow(0 8px 14px rgba(0,20,50,.35))}
+#depthTint{position:absolute;inset:0;background:radial-gradient(130% 100% at 50% 0%,rgba(0,18,60,.55),rgba(0,6,30,.9));opacity:0;pointer-events:none}
+#plankton{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;mix-blend-mode:screen}
+.gbub{position:absolute;border-radius:50%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.95) 0 14%,rgba(220,250,255,.35) 26%,rgba(170,235,255,.12) 62%,rgba(255,255,255,.55) 76%,rgba(255,255,255,0) 80%)}
+.knock{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:3px solid rgba(230,252,255,.85);box-shadow:0 0 14px rgba(160,240,255,.6)}
+.hitnum{position:absolute;margin:-60px 0 0 -110px;width:220px;text-align:center;font:800 92px/1 Fredoka,sans-serif;color:#fff;-webkit-text-stroke:5px #06264a;paint-order:stroke;
+  text-shadow:0 0 26px rgba(255,214,107,.9),0 6px 0 #031a33;pointer-events:none}
+.hitnum.neg{color:#ffb070}.hitnum.pos{color:#8ff3ff}.hitnum.zero{color:#ffd66b}
+.zboom{position:absolute;width:180px;height:180px;margin:-90px 0 0 -90px;border-radius:50%;border:8px solid rgba(255,230,140,.95);box-shadow:0 0 30px rgba(255,214,107,.9),inset 0 0 24px rgba(255,214,107,.7)}
+.zero0.big{font-size:92px;color:#ffd66b;-webkit-text-stroke:4px #06264a;paint-order:stroke;text-shadow:0 0 30px #ffd66b,0 0 60px rgba(255,190,60,.8)}
+#cannon.gold img{filter:drop-shadow(0 0 14px #ffd66b) drop-shadow(0 0 32px rgba(255,190,60,.75)) saturate(1.15)}
+#cannon.gold .ring{box-shadow:0 0 22px 10px rgba(255,214,107,.9),inset 0 0 14px 5px rgba(255,214,107,.7)}
+#scope .depth{position:absolute;right:24px;top:10px;font:700 20px/1 Fredoka,sans-serif;letter-spacing:2px;color:#49dcff;opacity:.75}
+.mate.party{filter:drop-shadow(0 0 26px rgba(255,214,107,.85)) drop-shadow(0 10px 18px rgba(0,10,30,.5)) brightness(1.08)}
+
 /* torpedo leaving the bow tube */
 .tubeflash{position:absolute;width:220px;height:120px;margin:-60px 0 0 -110px;border-radius:50%;pointer-events:none;
   background:radial-gradient(ellipse,rgba(230,252,255,.95),rgba(160,235,255,.4) 40%,rgba(160,235,255,0) 70%)}

@@ -69,15 +69,22 @@
       <path d="M33 6 Q37 17 33 28" stroke="${c[1]}" stroke-width="4" fill="none" opacity=".7"/>
       <circle cx="15" cy="14" r="4.6" fill="#fff"/><circle cx="14" cy="14" r="2.4" fill="#0a1f3a"/></svg>`;
   }
+  const SCHOOLS = [];
+  // an explosion nearby: the school darts away from it, then drifts back into line
+  W.scare = (x, y) => SCHOOLS.forEach(({ o, k, depth }) => {
+    const cx = o.x + 180 * depth, dx = cx - x, dy = o.y - y, d = Math.hypot(dx, dy) || 1; if (d > 900) return;
+    const f = (1 - d / 900) * 320;
+    gsap.killTweensOf(k); gsap.timeline().to(k, { x: dx / d * f * 1.4, y: dy / d * f, duration: .35, ease: 'power3.out' }).to(k, { x: 0, y: 0, duration: 2.8, ease: 'sine.inOut' });
+  });
   function school(first) {
     const n = 4 + Math.floor(Math.random() * 6), c = FISHC[Math.floor(Math.random() * FISHC.length)];
     const depth = .45 + Math.random() * .5, y = 330 + Math.random() * 380;
     const g = el('school', $('#fishL'), { opacity: .55 + depth * .4, filter: `saturate(${.6 + depth * .4}) brightness(${.8 + depth * .25})` });
     let h = ''; for (let i = 0; i < n; i++) h += fishSVG(c, { x: i * 46 + Math.random() * 30, y: (Math.random() - .5) * 70, d: Math.random() * .3 });
     g.innerHTML = h;
-    const o = { x: first ? 400 + Math.random() * 1200 : 2000, y }, v = 40 + Math.random() * 50;
-    const tick = (t, dt) => { if (SD.paused) return; o.x -= (v + 30 * depth * W.mult) * dt / 1000 * SD.rate; g.style.transform = `translate3d(${o.x}px,${o.y + Math.sin(t * .9 + y) * 14}px,0) scale(${depth})`; if (o.x < -500) { gsap.ticker.remove(tick); g.remove(); } };
-    gsap.ticker.add(tick);
+    const o = { x: first ? 400 + Math.random() * 1200 : 2000, y }, v = 40 + Math.random() * 50, k = { x: 0, y: 0 }, me = { o, k, depth };
+    const tick = (t, dt) => { if (SD.paused) return; o.x -= (v + 30 * depth * W.mult) * dt / 1000 * SD.rate; g.style.transform = `translate3d(${o.x + k.x}px,${o.y + k.y + Math.sin(t * .9 + y) * 14}px,0) scale(${depth})`; if (o.x < -500) { gsap.ticker.remove(tick); g.remove(); SCHOOLS.splice(SCHOOLS.indexOf(me), 1); } };
+    gsap.ticker.add(tick); SCHOOLS.push(me);
   }
   school(true); setTimeout(() => school(true), 300);
   setInterval(() => { if (!document.hidden && !SD.paused && $('#fishL').children.length < 4) school(false); }, 6500);
@@ -330,7 +337,12 @@
         const mid = SIG_MID();
         await Promise.all([gsap.to(p.d, { top: mid, duration: .28, ease: 'power2.in' }), gsap.to(n.d, { top: mid, duration: .28, ease: 'power2.in' })]);
         SFX.pop(); const pop = el('pop', sg, { left: p.x + 'px', top: mid + 'px' }); gsap.fromTo(pop, { scale: .3 }, { scale: 1.1, opacity: 0, duration: .7, onComplete: () => pop.remove() });
-        const z = el('zero0', sg, { left: (p.x - 14) + 'px', top: (mid - 24) + 'px' }); z.textContent = '0'; gsap.to(z, { y: -60, opacity: 0, duration: 1.1, delay: .2, onComplete: () => z.remove() });
+        // ▶ + ◀ collide: a ring bursts and a big glowing 0 springs out, then fizzles into sparkles
+        const ring = el('zboom', sg, { left: p.x + 'px', top: mid + 'px' }); gsap.fromTo(ring, { scale: .2, opacity: 1 }, { scale: 1.6, opacity: 0, duration: .6, ease: 'power2.out', onComplete: () => ring.remove() });
+        for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283, sp = el('pbub', sg, { left: p.x + 'px', top: mid + 'px', width: '10px', height: '10px', background: i % 2 ? '#ffd66b' : '#8ff3ff', border: 'none' }); gsap.to(sp, { x: Math.cos(a) * 110, y: Math.sin(a) * 80, opacity: 0, scale: .4, duration: .55, ease: 'power2.out', onComplete: () => sp.remove() }); }
+        const z = el('zero0 big', sg, { left: p.x + 'px', top: mid + 'px' }); z.textContent = '0'; gsap.set(z, { xPercent: -50, yPercent: -50 });
+        gsap.timeline({ onComplete: () => z.remove() }).fromTo(z, { scale: .2, rotation: -20 }, { scale: 1.3, rotation: 0, duration: .45, ease: 'back.out(3)' })
+          .to(z, { scale: .6, y: -50, opacity: 0, duration: .45, ease: 'power2.in', onStart: () => W.sparkle && gsap.delayedCall(.3, () => W.sparkle(p.x, mid - 50)) }, '+=.35');
         p.d.remove(); n.d.remove(); b.remove(); onPair && onPair();
         if (!boxes.some(x => !x._used)) { idleCall.kill(); res(); }
       };
