@@ -2,8 +2,9 @@
    js/cockpit.js adds the cockpit itself: the bow cannon, the crew at their stations and the console screen. */
 (function () {
   const { $, wait, fmt, SFX } = SD;
-  /* screen shake: every game layer sits in one wrapper (#shake) that moves as one piece and zooms in just enough
-     that its edges never uncover the page behind the stage (no black or blue lines). The overlays stay still. */
+  /* screen shake: every game layer sits in one wrapper (#shake) that moves as one piece, in whole pixels only.
+     It stays on its own GPU layer all the time (game.css), so a shake never makes the browser redraw the scene;
+     the few pixels it uncovers at the stage edge are the frame's navy (#stage background). The overlays stay still. */
   const stageEl = $('#stage'), shakeEl = document.createElement('div'); shakeEl.id = 'shake';
   [...stageEl.children].filter(c => !c.classList.contains('overlay')).forEach(c => shakeEl.appendChild(c));
   stageEl.insertBefore(shakeEl, stageEl.firstChild);
@@ -11,9 +12,8 @@
   gsap.ticker.add((t, dt) => {
     if (!SHK.amp) return;
     SHK.t += dt / 1000; const a = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d);
-    if (a <= .05) { SHK.amp = 0; shakeEl.style.transform = ''; return; }
-    const z = 1 + 2 * (a + 1) / 1080;   // overscan ≥ the offset on every side
-    shakeEl.style.transform = `translate(${((Math.random() - .5) * 2 * a).toFixed(2)}px,${((Math.random() - .5) * 1.2 * a).toFixed(2)}px) scale(${z.toFixed(4)})`;
+    if (a < .5) { SHK.amp = 0; shakeEl.style.transform = 'translate3d(0,0,0)'; return; }
+    shakeEl.style.transform = `translate3d(${Math.round((Math.random() - .5) * 2 * a)}px,${Math.round((Math.random() - .5) * 1.2 * a)}px,0)`;
   });
   const shake = (k = 8, d = .4) => { const left = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d); if (k < left) return; SHK.amp = k; SHK.t = 0; SHK.d = d; };
   /* positions that come from code, not CSS — tunable live in the layout editor, saved in js/layout.js (LAYOUT.config) */

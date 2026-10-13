@@ -108,19 +108,12 @@
   W.sail = async (dur = 1.6) => { kick(4, dur); visitor(); return sail0(dur); };
 
   /* ======================= fun layer ======================= */
-  const top = $('#fxTop'), glassFx = $('#glassFx'), vis = $('#visitors'), ROOT = gsap.globalTimeline, DY = () => W.CONFIG.SCALE_DY;
+  const top = $('#fxTop'), glassFx = $('#glassFx'), vis = $('#visitors'), DY = () => W.CONFIG.SCALE_DY;
   const fmt = SD.fmt || (v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v));
 
-  // 1 · direct hit: a beat of slow motion, the sea rushes in a little, the number under the sub pops up big
-  function slowMo(k = .3, ms = 260) {
-    if (SD.paused || W._slow) return; W._slow = true;
-    const ts = ROOT.timeScale(), set = v => { const t = ROOT.time(); ROOT.timeScale(v); ROOT.startTime(gsap.ticker.time - t / v); };
-    set(ts * k); setTimeout(() => { set(ts); W._slow = false; }, ms);
-  }
+  // 1 · direct hit: the number under the sub pops up big (the screen shake comes from world.js)
   function hitMoment(s) {
     const x = X(s.v), y = s.cy, ly = 488 + DY() - 70;   // just above the scale's own label
-    slowMo();
-    gsap.fromTo('#water', { scale: 1 }, { scale: 1.035, transformOrigin: `${x}px ${y}px`, duration: .16, yoyo: true, repeat: 1, ease: 'power2.out', clearProps: 'scale' });
     const lbl = document.querySelectorAll('#scale .lbl')[s.v + 8];
     if (lbl) gsap.fromTo(lbl, { scale: 1 }, { scale: 1.6, duration: .2, yoyo: true, repeat: 1, ease: 'back.out(3)' });
     const n = el('hitnum ' + (s.v < 0 ? 'neg' : s.v > 0 ? 'pos' : 'zero'), top, { left: x + 'px', top: ly + 'px' }); n.textContent = fmt(s.v);
