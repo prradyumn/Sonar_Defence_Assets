@@ -13,7 +13,7 @@
   background:linear-gradient(112deg,rgba(255,255,255,0) 26%,rgba(255,255,255,.08) 33%,rgba(255,255,255,0) 41%,rgba(255,255,255,0) 58%,rgba(255,255,255,.05) 62%,rgba(255,255,255,0) 66%),
     radial-gradient(115% 95% at 50% 42%,rgba(0,0,0,0) 62%,rgba(0,18,46,.5))}
 #cockpit{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;user-select:none;-webkit-user-drag:none}
-#crew,#lamps,#screen{position:absolute;inset:0;pointer-events:none}
+#crew,#lamps,#screen,#sunk{position:absolute;inset:0;pointer-events:none}
 
 /* warning lamps: the two caged ceiling lamps flash red on a miss */
 #lamps i{position:absolute;top:-34px;width:260px;height:260px;margin-left:-130px;border-radius:50%;opacity:0;mix-blend-mode:screen;
@@ -22,15 +22,15 @@
 #lamps .edge{position:absolute;left:72px;top:145px;width:1776px;height:612px;border-radius:120px;opacity:0;box-shadow:inset 0 0 120px 24px rgba(255,50,40,.6)}   /* the window glows red */
 
 /* the console display: dialogue appears here */
-#screen::before{content:"";position:absolute;left:412px;top:800px;width:1096px;height:244px;border-radius:30px;
+#screen::before{content:"";position:absolute;left:412px;top:904px;width:1096px;height:166px;border-radius:30px;
   background:linear-gradient(#253c5c,#14263e);box-shadow:0 10px 26px rgba(0,8,24,.55),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.35)}
-#screen::after{content:"";position:absolute;left:428px;top:816px;width:1064px;height:212px;border-radius:22px;
+#screen::after{content:"";position:absolute;left:426px;top:916px;width:1068px;height:142px;border-radius:22px;
   background:repeating-linear-gradient(rgba(127,242,255,.035) 0 2px,transparent 2px 5px),radial-gradient(120% 140% at 50% 0%,#123b66,#071d38 70%);
   border:3px solid #49dcff;box-shadow:0 0 18px rgba(73,220,255,.55),inset 0 0 26px rgba(73,220,255,.22)}
-.subview #comms{left:428px;top:816px;width:1064px;height:212px}
+.subview #comms{left:426px;top:916px;width:1068px;height:142px}
 .subview #portrait{display:none}
 .subview #pName{left:26px;top:-20px;border-radius:12px;padding:6px 18px 4px;box-shadow:0 3px 0 rgba(0,0,0,.25)}
-.subview #caption{left:0;top:0;width:100%;height:100%;max-width:none;min-height:0;box-sizing:border-box;padding:36px 40px 18px;border:none;border-radius:22px;background:none;box-shadow:none;
+.subview #caption{left:0;top:0;width:100%;height:100%;max-width:none;min-height:0;box-sizing:border-box;padding:22px 40px 10px;border:none;border-radius:22px;background:none;box-shadow:none;
   display:flex;align-items:center;font:600 36px/1.25 Baloo,sans-serif}
 .subview #comms.riya #pName{background:#ffc04d}
 
@@ -48,9 +48,16 @@
 .subview #btnSpeak{left:528px;top:34px}   /* clear of the right-hand ceiling lamp */
 
 /* idle console screen: a slow sonar trace until someone speaks */
-#scope{position:absolute;left:428px;top:816px;width:1064px;height:212px;border-radius:22px;overflow:hidden;pointer-events:none}
+#scope{position:absolute;left:426px;top:916px;width:1068px;height:142px;border-radius:22px;overflow:hidden;pointer-events:none}
 #scope svg{position:absolute;left:0;top:0;width:100%;height:100%}
-#scope .lbl2{position:absolute;right:30px;bottom:18px;font:700 20px/1 Fredoka,sans-serif;letter-spacing:3px;color:#49dcff;opacity:.55}
+#scope .lbl2{position:absolute;right:26px;bottom:12px;font:700 20px/1 Fredoka,sans-serif;letter-spacing:3px;color:#49dcff;opacity:.55}
+
+/* the bow cannon: outside the glass, front-facing; its wheels ride the console rail (hidden behind it) */
+#cannon{position:absolute;left:0;top:668px;width:210px;height:237px;margin-left:-105px;pointer-events:none;transform-origin:50% 100%;filter:drop-shadow(0 6px 10px rgba(0,12,34,.45))}
+#cannon img{display:block;width:100%;height:100%}
+#cannon i{position:absolute;left:50%;top:38px;border-radius:50%;pointer-events:none}
+#cannon .ring{width:70px;height:70px;margin:-35px 0 0 -35px;box-shadow:0 0 16px 6px rgba(73,220,255,.65),inset 0 0 12px 4px rgba(73,220,255,.5);opacity:.35}
+#cannon .flash{width:180px;height:180px;margin:-90px 0 0 -90px;background:radial-gradient(circle,#fff,rgba(201,251,255,.85) 28%,rgba(73,220,255,0) 68%);opacity:0;mix-blend-mode:screen}
 
 /* torpedo leaving the bow tube */
 .tubeflash{position:absolute;width:220px;height:120px;margin:-60px 0 0 -110px;border-radius:50%;pointer-events:none;

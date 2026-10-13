@@ -36,11 +36,12 @@ python3 tools/make_voices.py       # makes every line that has no wav yet
 ## Submarine version (`sub.html`)
 The camera is inside the submarine, looking out through the bow window (`assets/img/cockpit.webp`, the window glass is transparent).
 - The enemy submarines are out in the water; the navigation scale sits low on the glass, flat and evenly spaced (the same −8 … +8). Dotted sonar lines join each submarine to its number.
-- Torpedoes leave the bow tube at bottom-centre and run away from us (they shrink) behind the scale to the target; the cockpit jolts on launch and hit.
-- A miss flashes the two ceiling lamps red and the window edge glows red.
+- The bow cannon (`assets/img/cannon.webp`, front-facing, made with Nano Banana 2) rides the console rail under the scale. Tap a submarine and it slides along to that submarine's column (it lines up with the number), then fires straight ahead: recoil, muzzle flash, and the torpedo runs away from us (it shrinks) behind the scale to the target. Home is under 0; it glides back there between missions. The cockpit jolts on launch and hit; a hit submarine sinks behind the scale.
+- A miss: the cannon lines up under the wrong submarine and judders (no shot), the two ceiling lamps flash red and the window edge glows red.
 - Meera (left) and Riya (right) stand at their stations; whoever speaks plays their talking sheet and lights up. Dialogue appears on the console screen, which shows a slow sonar trace when nobody is talking.
 - Level 3 pair buttons sit high in the window, above the submarines.
-- Code: `world.js` is shared (it skips the ship when there is no `#ship`); `js/cockpit.js` swaps the launcher for the bow tube and adds the crew and cockpit effects; `css/sub.css` holds the layout; the layout constants for this version are in the inline `WORLD_DEFAULTS` in `sub.html` (`SUB_Y`, `SUB_ROW`, `SIG_Y1/2`, `SCALE_DY`).
+- Art: the cockpit frame (`assets/img/cockpit.webp`, glass cut out) and the cannon are Gemini images in the game's style; the cannon's muzzle position is `MUZZLE_Y` in `js/cockpit.js` (keep it in step with `#cannon` in `css/sub.css`).
+- Code: `world.js` is shared (it skips the ship when there is no `#ship`); `js/cockpit.js` swaps the launcher for the sliding bow cannon and adds the crew and cockpit effects; `css/sub.css` holds the layout; the layout constants for this version are in the inline `WORLD_DEFAULTS` in `sub.html` (`SUB_Y`, `SUB_ROW`, `SIG_Y1/2`, `SCALE_DY`).
 - Layout editor: `sub.html?edit=1` saves to `js/layout_sub.js`. QA jumper: `sub.html?qa=1`.
 
 ## QA jumper (for testers)
