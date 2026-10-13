@@ -80,11 +80,11 @@ open http://localhost:8000/?edit=1
 ## Files
 - `js/script.js` EVERY spoken line ({id, who, text}) + level data. The game and `tools/make_voices.py` both read it — edit lines here (and re-record: `--only <id> --force`).
 - `js/core.js` stage fit, sound (Web-Audio sfx + tanpura/underwater music bed, ducked under voice), voice playback (recorded VO → browser voice), captions + name tag, the talking sheets
-- `js/world.js` parallax sea (far reef, seabed, fish schools, manta, rays, caustics, marine snow, bubbles), navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/blast (flash, shockwave, debris), hints, hand demos, badges, L3 signals + defence marker
+- `js/world.js` parallax sea (far reef, seabed, fish schools, manta, rays, caustics, marine snow, bubbles), navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/blast (flash, shockwave, debris), hints, the helper glow (tutorial + nudges), badges, L3 signals + defence marker
 - `js/cockpit.js` the bow cannon + torpedo, the crew at their stations, console screen, warning lamps, hull kick
 - `js/qa.js` the QA jumper (`?qa=1`)
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
-- `js/levels.js` flow + pedagogy: hook scenes, teaching, tutorial, 3-strike (Oops + direction arrow → Hint + rule card → Nudge + hand), idle help (6 s visual → 12 s spoken → 22 s reminder), stars
+- `js/levels.js` flow + pedagogy: hook scenes, teaching, tutorial, 3-strike (Oops + direction arrow → Hint + rule card → Nudge + pulsing glow on the answer), idle help (6 s visual → 12 s spoken → 22 s reminder), stars
 - `tools/make_voices.py` makes the voice files
 - `assets/img` web versions of the art pack (all `.webp`; the sonar-room doors are `door_left/right.webp`)
 

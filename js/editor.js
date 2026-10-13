@@ -29,7 +29,7 @@
         ['.sub', 'Submarines', { cy: 'SUB_Y' }], ['#marker', 'Defence marker (L3)', { mv: 'y', sz: 'wh', mx: .5 }]]],
       ['HUD', [['#strip', 'Mission strip', { mv: 'xy', sz: 'wh', hp: 'minHeight', t: 1 }], ['#pips', 'Progress pips', { mv: 'xy', sz: 'scale' }],
         ['#btnSpeak', 'Hear-again button', { mv: 'xy', sz: 'wh' }], ['#rule', 'Rule card', { mv: 'xy', sz: 'wh', t: 1 }],
-        ['#hand', 'Helper hand', { sz: 'wh', mx: 1 / 3 }],
+        ['#hand', 'Helper glow', { sz: 'wh', mx: .5 }],
         ['#comms', 'Comms (name + caption)', { mv: 'xy', sz: 'scale' }, [
           ['#pName', 'Name tag', { mv: 'xy', t: 1 }],
           ['#caption', 'Caption', { mv: 'xy', sz: 'wh', wp: 'maxWidth', hp: 'minHeight', t: 1 }]]]]],

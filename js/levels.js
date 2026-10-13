@@ -227,11 +227,11 @@
   async function tutorial() {
     const demo = W.subAt(-3), lx = W.X(-3), ly = 488 + W.CONFIG.SCALE_DY;   // the −3 label
     const p = say(S.tut1);
-    await W.handTo(lx + 10, ly + 12, .9); await W.handTap(lx, ly);
+    await W.handTo(lx, ly, .9); await W.handTap(lx, ly);   // a glow pulses on the −3 label
     gsap.fromTo(document.querySelectorAll('.lbl')[5], { scale: 1 }, { scale: 1.45, duration: .3, yoyo: true, repeat: 3 });
     await p;
     const p2 = say(S.tut2);
-    await W.handTo(lx + 10, demo.cy + 34, 1.1);           // slide along the sonar line to the submarine
+    await W.handTo(lx, demo.cy, 1.1);                    // the glow slides along the sonar line to the submarine
     W.glow(demo, true, 'rgba(160,240,255,.6)');
     await p2;
     W.glow(demo, false); W.hand(null);
@@ -298,13 +298,12 @@
     if (!same) {
       await say(L.intro);
       W.strip('Tap a pair to cancel it: one ▶ with one ◀');
-      const showPair = async () => {                       // the hand glides to an open pair and taps it
+      const showPair = async () => {                       // a glow pulses on an open pair
         const c = W.pairCentre(); if (!c) return;
-        say(S.pairDemo); await W.handTo(c.x, c.y + 20, .9); await W.handTap(c.x, c.y);
-        gsap.to('#hand', { y: 18, duration: .45, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+        say(S.pairDemo); await W.handTo(c.x, c.y, .9); await W.handTap(c.x, c.y);
       };
       if (idx === 0) gsap.delayedCall(.1, showPair);       // first time: show where to tap
-      // idle help while pairing: 6 s the pair boxes glow · 12 s spoken hint · 22 s the hand shows a pair
+      // idle help while pairing: 6 s the pair boxes glow · 12 s spoken hint · 22 s a glow pulses on a pair
       await W.pairUp(() => W.hand(null), { idle: () => say(S.pairIdle), idle2: showPair });
       W.hand(null);
       await say(L.after);

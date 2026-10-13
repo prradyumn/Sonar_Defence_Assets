@@ -287,10 +287,11 @@
     const r = $('#rule'); if (on && r.dataset.kind !== kind) { r.innerHTML = RULES[kind]; r.dataset.kind = kind; }
     gsap.to(r, { opacity: on ? 1 : 0, y: on ? 0 : -10, scale: on ? 1 : .96, duration: .35, ease: on ? 'back.out(2)' : 'power1.out' });
   };
-  W.hand = s => { const h = $('#hand'); if (!s) return gsap.to(h, { opacity: 0, duration: .2 }); gsap.killTweensOf(h); gsap.set(h, { left: X(s.v) + 10, top: s.cy + 34, opacity: 1 }); gsap.fromTo(h, { y: 30 }, { y: 0, duration: .45, yoyo: true, repeat: -1, ease: 'sine.inOut' }); };
-  // guided hand: glide to a point, then tap (used for demos)
-  W.handTo = async (x, y, dur = .7) => { const h = $('#hand'); gsap.killTweensOf(h); if (+getComputedStyle(h).opacity < .1) gsap.set(h, { left: x + 140, top: y + 160, y: 0 }); gsap.to(h, { opacity: 1, duration: .2 }); await gsap.to(h, { left: x, top: y, y: 0, duration: dur, ease: 'power2.inOut' }); };
-  W.handTap = async (x, y) => { const h = $('#hand'); await gsap.to(h, { scale: .85, duration: .12, yoyo: true, repeat: 1 }); W.tapFx(x, y); SFX.tap(); };
+  // the helper is a pulsing gold glow (no hand): it sits right on the thing to tap (#hand keeps its id for the levels + editor)
+  W.hand = s => { const h = $('#hand'); if (!s) return gsap.to(h, { opacity: 0, duration: .2 }); gsap.killTweensOf(h); gsap.set(h, { left: X(s.v), top: s.cy, scale: 1.25 }); gsap.to(h, { opacity: 1, duration: .25 }); };
+  // guided glow: appears on (or glides to) a point, then pulses as if tapped (used for demos)
+  W.handTo = async (x, y, dur = .7) => { const h = $('#hand'); gsap.killTweensOf(h); const off = +getComputedStyle(h).opacity < .1; if (off) gsap.set(h, { left: x, top: y, scale: .4 }); gsap.to(h, { opacity: 1, scale: 1, duration: .3, ease: 'back.out(2)' }); if (!off) await gsap.to(h, { left: x, top: y, duration: dur, ease: 'power2.inOut' }); else await wait(Math.min(dur, .45)); };
+  W.handTap = async (x, y) => { const h = $('#hand'); await gsap.to(h, { scale: 1.35, duration: .14, yoyo: true, repeat: 1, ease: 'power2.out' }); W.tapFx(x, y); SFX.tap(); };
   W.clearHints = () => { hintEls.forEach(a => { gsap.killTweensOf(a); gsap.to(a, { opacity: 0, duration: .25, onComplete: () => a.remove() }); }); hintEls = []; W.hand(null); W.dimOthers(null, false); };
 
   /* ================= badges (ordering) ================= */
