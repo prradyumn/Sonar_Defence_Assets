@@ -244,30 +244,43 @@
     await howTo();
   }
 
-  /* ---------- how to play: four quick cards in the cockpit (story sheet), each lights up as Meera says it ---------- */
+  /* ---------- how to play (story sheet): a live demo round, played for the child ----------
+     Two real submarines come up; the helper glow shows the mission, the number, then the submarine;
+     the cannon slides over and fires, the torpedo hits. A step chip names each step as Meera says it. */
   async function howTo() {
-    const CARDS = [
-      [S.hp1, 'READ THE MISSION', '<div class="hscale"><i></i><i></i><i class="z"></i><i></i><i></i></div>'],
-      [S.hp2, 'FIND THE TARGET', '<img src="assets/img/sub.webp" alt="">'],
-      [S.hp3, 'AIM &amp; FIRE!', '<img src="assets/img/reticle.webp" alt="">'],
-      [S.hp4, 'TARGET HIT!', '<b class="htick">✓</b>'],
-    ];
-    const box = document.createElement('div'); box.id = 'howto';
-    box.innerHTML = '<div class="ht">HOW TO PLAY</div><div class="row">' + CARDS.map(([, t, ic], i) => `<div class="hc"><span class="n">${i + 1}</span><div class="ic">${ic}</div><div class="lb">${t}</div></div>`).join('') + '</div>';
-    $('#stage').appendChild(box);
-    const cards = box.querySelectorAll('.hc');
-    let skip = false; box.onpointerdown = () => { skip = true; SD.skip(); };
-    gsap.fromTo(box, { opacity: 0 }, { opacity: 1, duration: .3 });
-    gsap.fromTo(cards, { y: 40, opacity: 0, scale: .8 }, { y: 0, opacity: .45, scale: 1, duration: .45, stagger: .1, ease: 'back.out(2)' });
-    await wait(.5);
-    for (let i = 0; i < CARDS.length && !skip; i++) {
-      cards.forEach((c, k) => c.classList.toggle('on', k === i));
-      gsap.fromTo(cards[i], { scale: 1 }, { scale: 1.08, duration: .25, yoyo: true, repeat: 1, ease: 'back.out(3)' }); SFX.pop();
-      if (i === 3) W.sparkle(960, 470);
-      await say(CARDS[i][0]);
-      gsap.to(cards[i], { opacity: .75, duration: .3 });
-    }
-    await gsap.to(box, { opacity: 0, duration: .35 }); box.remove();
+    const chip = document.createElement('div'); chip.id = 'howchip'; $('#stage').appendChild(chip); gsap.set(chip, { xPercent: -50 });
+    const step = (n, t) => { chip.innerHTML = `<span class="k">HOW TO PLAY</span><b>${n}</b><span class="t">${t}</span>`; gsap.fromTo(chip, { y: -16, opacity: 0, scale: .9 }, { y: 0, opacity: 1, scale: 1, duration: .35, ease: 'back.out(2.4)' }); SFX.pop(); };
+    const T = 3;
+    // 1 · read the mission + check the scale
+    step(1, 'READ THE MISSION');
+    const intro = W.scaleIntro();
+    await W.spawn([-4, T], { stagger: .25 });
+    W.strip(`Fire at the submarine at <b>${f(T)}</b>.`);
+    const p1 = say(S.hp1);
+    await intro; await W.handTo(960, 72, .3); await W.handTap(960, 72);   // the glow pulses on the mission text…
+    await W.handTo(W.X(0), 488 + W.CONFIG.SCALE_DY, .7);                 // …then on 0 in the middle of the scale
+    await p1;
+    // 2 · find the submarine at the correct position: the glow runs along the scale to +3, then up its sonar line
+    step(2, 'FIND THE TARGET');
+    const sub = W.subAt(T), lx = W.X(T), ly = 488 + W.CONFIG.SCALE_DY;   // the +3 label
+    const p2 = say(S.hp2);
+    await W.handTo(lx, ly, 1); W.labelsOn([T]); await W.handTap(lx, ly);
+    await W.handTo(lx, sub.cy, .8); W.glow(sub, true, 'rgba(255,214,107,.6)');
+    await p2;
+    // 3 · aim: tap it, the target locks and the cannon slides under it
+    step(3, 'AIM & FIRE!');
+    const p3 = say(S.hp3);
+    await W.handTap(lx, sub.cy); W.tapFx(lx, sub.cy); SFX.tap(); W.hand(null);
+    const ret = await W.lock(sub); SFX.right();
+    await p3;
+    // 4 · fire: the torpedo runs out and hits
+    step(4, 'TARGET HIT!');
+    const p4 = say(S.hp4);
+    W.glow(sub, false); await W.fire(sub, ret);
+    W.sparkle(lx, sub.cy - 40); await p4; await wait(.8);
+    gsap.to(chip, { opacity: 0, duration: .3, onComplete: () => chip.remove() });
+    await W.clearSubs(); W.stripOff(); W.labelsOn([]);
+    await gsap.to('#scale', { opacity: 0, duration: .4 });   // the teaching switches the scale on again, properly
   }
 
   /* ---------- Teaching the navigation scale ---------- */

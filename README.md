@@ -4,7 +4,7 @@ Open `index.html` in Chrome: double-click it, or press **Go Live** in VS Code (L
 
 The game is played from inside the submarine cockpit (see *The cockpit* below).
 
-Flow: Story (from the story sheet, with Commander Meera & Cadet Riya: harbour with enemy submarines slipping in → the control-room doors open on a red alert → the navigation screen with defence line 0 → submarines at −6 and +5 → missiles launch → targets confirmed, MISSION 1 → dive through the porthole → How to play cards) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
+Flow: Story (from the story sheet, with Commander Meera & Cadet Riya: harbour with enemy submarines slipping in → the control-room doors open on a red alert → the navigation screen with defence line 0 → submarines at −6 and +5 → missiles launch → targets confirmed, MISSION 1 → dive through the porthole → How to play: a live demo round in the cockpit — the glow shows the mission, the number and the submarine, the cannon slides over and fires, with a step chip for each of the sheet's four steps) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
 
 ```
 index.html          the game
@@ -94,4 +94,5 @@ open http://localhost:8000/?edit=1
 - fish & manta → inline SVG in `world.js`
 
 ## HUD
+During play, what Meera or Riya says appears in a speech bubble beside her (Meera bottom-left, Riya bottom-right) with its tail pointing at the speaker.
 One bar on the ceiling holds the hear-again button, the mission text and the progress pips (`#hudbar`). The ceiling lamps are toned down (`#lampDim`), the crew are 15 % smaller and dim until they speak, the console shows the sonar trace + depth only between missions, fish swim below the scale (never behind the submarine row), and number labels not in play are faded to 50 %.
