@@ -34,9 +34,9 @@ python3 tools/make_voices.py       # makes every line that has no wav yet
 - Without recorded files the game falls back to the browser's voice (en-IN when the computer has one), then to reading time.
 
 ## Submarine version (`sub.html`)
-The camera is inside the submarine, looking out through the bow window (`assets/img/cockpit.webp`, the window glass is transparent).
+The camera is inside the submarine, looking out through the big bow window (`assets/img/cockpit.webp`, the window glass is transparent; glass y 112–914).
 - The enemy submarines are out in the water; the navigation scale sits low on the glass, flat and evenly spaced (the same −8 … +8). Dotted sonar lines join each submarine to its number.
-- The bow cannon (`assets/img/cannon.webp`, front-facing, made with Nano Banana 2) rides the console rail under the scale. Tap a submarine and it slides along to that submarine's column (it lines up with the number), then fires straight ahead: recoil, muzzle flash, and the torpedo runs away from us (it shrinks) behind the scale to the target. Home is under 0; it glides back there between missions. The cockpit jolts on launch and hit; a hit submarine sinks behind the scale.
+- The bow cannon (`assets/img/cannon.webp`, made with Nano Banana 2) is seen from behind, aiming out to sea, and rides the console rail under the scale. Tap a submarine and it slides along to that submarine's column (it lines up with the number), then fires straight ahead: recoil, muzzle flash, and the torpedo runs away from us (it shrinks) behind the scale to the target. Home is under 0; it glides back there between missions. The cockpit jolts on launch and hit; a hit submarine sinks behind the scale.
 - A miss: the cannon lines up under the wrong submarine and judders (no shot), the two ceiling lamps flash red and the window edge glows red.
 - Meera (left) and Riya (right) stand at their stations; whoever speaks plays their talking sheet and lights up. Dialogue appears on the console screen, which shows a slow sonar trace when nobody is talking.
 - Level 3 pair buttons sit high in the window, above the submarines.

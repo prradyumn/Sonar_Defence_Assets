@@ -17,14 +17,15 @@
 
   /* ---- console screen: a slow sonar trace while nobody is talking (dialogue appears on the same screen) ---- */
   const scope = $('#scope'), comms = $('#comms');
-  scope.innerHTML = '<svg viewBox="0 0 1064 142" preserveAspectRatio="none"><path d="M0 71 H1064" stroke="rgba(73,220,255,.18)" stroke-width="2"/>' +
+  const SW = scope.clientWidth || 1068, SH = scope.clientHeight || 102, MID = SH / 2;
+  scope.innerHTML = `<svg viewBox="0 0 ${SW} ${SH}" preserveAspectRatio="none"><path d="M0 ${MID} H${SW}" stroke="rgba(73,220,255,.18)" stroke-width="2"/>` +
     '<path id="trace" fill="none" stroke="#49dcff" stroke-width="3" stroke-linejoin="round" opacity=".7"/></svg><span class="lbl2">SONAR</span>';
   const trace = $('#trace');
   gsap.ticker.add(t => {
     const talk = +gsap.getProperty(comms, 'opacity'); scope.style.opacity = (1 - talk) * .9;
     if (talk > .95 || SD.paused) return;
     const ph = (t * .35) % 1.3 - .15; let d = '';
-    for (let x = 0; x <= 1064; x += 8) { const u = x / 1064, k = Math.exp(-Math.pow((u - ph) / .035, 2)); d += (x ? ' L' : 'M') + x + ' ' + (71 - Math.sin(u * 90) * 34 * k - Math.sin(u * 13 + t * 2) * 3).toFixed(1); }
+    for (let x = 0; x <= SW; x += 8) { const u = x / SW, k = Math.exp(-Math.pow((u - ph) / .035, 2)); d += (x ? ' L' : 'M') + x + ' ' + (MID - Math.sin(u * 90) * MID * .55 * k - Math.sin(u * 13 + t * 2) * 3).toFixed(1); }
     trace.setAttribute('d', d);
   });
 
@@ -32,7 +33,7 @@
      the scale to the column of the submarine you tap, so it lines up with that number, then fires straight ahead.
      Home is under 0; it glides back there between missions. ---- */
   const cn = $('#cannon'), cflash = cn.querySelector('.flash'), cring = cn.querySelector('.ring');
-  const MUZZLE_Y = 668 + .159 * 237;                 // stage y of the muzzle ring (sub.css: top + 15.9 % of the height)
+  const ccs = getComputedStyle(cn), MUZZLE_Y = parseFloat(ccs.top) + .05 * parseFloat(ccs.height);   // the barrel's far end (5 % down the sprite)
   const C = { x: X(0) }, place = () => gsap.set(cn, { x: C.x });
   place();
   gsap.to(cring, { opacity: .9, duration: 1.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
