@@ -285,19 +285,20 @@
 
     /* ---------------- save / export ---------------- */
     const payload = () => ({ overrides: state.overrides, config: state.config });
-    const fileText = L => '/* layout overrides written by the in-game editor (index.html?edit=1 → Save). Hand-editing is fine. */\nwindow.LAYOUT = ' + JSON.stringify(L, null, 2) + ';\n';
+    const SUBV = document.body.classList.contains('subview'), LFILE = SUBV ? 'layout_sub.js' : 'layout.js';   // sub.html keeps its own layout
+    const fileText = L => `/* layout overrides written by the in-game editor (${SUBV ? 'sub' : 'index'}.html?edit=1 → Save). Hand-editing is fine. */\n` + 'window.LAYOUT = ' + JSON.stringify(L, null, 2) + ';\n';
     const served = /^https?:$/.test(location.protocol);
-    q('savehint').innerHTML = served ? 'Saves through <code>tools/dev_server.py</code> into <code>js/layout.js</code>.'
+    q('savehint').innerHTML = served ? 'Saves through <code>tools/dev_server.py</code> into <code>js/' + LFILE + '</code>.'
       : 'Opened from a file: Save can’t write files. Run <code>python3 tools/dev_server.py</code> and open <code>localhost:8000/?edit=1</code>, or use Copy / Download.';
     async function save() {
       flush();
       if (!served) return exportDialog('This page was opened from a file, so the browser can’t write js/layout.js. Download it into the js/ folder (or run python3 tools/dev_server.py and open http://localhost:8000/?edit=1):');
       try {
-        const r = await fetch('save-layout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
+        const r = await fetch('save-layout' + (SUBV ? '?file=sub' : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.ok) throw new Error(j.error || 'HTTP ' + r.status);
         saved = snap(); window.LAYOUT = clone(payload()); try { sessionStorage.removeItem(DRAFT); } catch (e) {}
-        barUI(); toast('Saved js/layout.js ✓');
+        barUI(); toast('Saved js/' + LFILE + ' ✓');
       } catch (err) { exportDialog(`Save didn’t reach the dev server (${err.message}). Start it with python3 tools/dev_server.py, or export instead:`); }
     }
     function exportDialog(msg) { q('mmsg').textContent = msg; q('mtext').value = fileText(payload()); q('modal').hidden = false; }
@@ -309,7 +310,7 @@
     };
     q('dl').onclick = () => {
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([fileText(payload())], { type: 'text/javascript' }));
-      a.download = 'layout.js'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('layout.js downloaded: move it into js/');
+      a.download = LFILE; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast(LFILE + ' downloaded: move it into js/');
     };
 
     /* ---------------- selection ---------------- */

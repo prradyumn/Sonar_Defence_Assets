@@ -2,12 +2,14 @@
 
 Open `index.html` in Chrome: double-click it, or press **Go Live** in VS Code (Live Server serves this folder, so the game opens straight away).
 
+**Two versions, one game.** `index.html` plays on the coast-guard ship at the surface. `sub.html` plays from inside the submarine cockpit (see *Submarine version* below). Both share the story, levels, pedagogy, script, voices and sound; only the scene differs.
+
 Flow: Hook (Commander Meera & Cadet Riya: harbour → the sonar-room doors slide open → sonar room → dive through the porthole) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
 
 ```
-index.html          the game
-css/                game.css (layout, stage px) · editor.css (layout editor only)
-js/                 script.js (every spoken line) · core · world · levels · editor · layout.js · gsap.min.js
+index.html          the game (ship version)          sub.html   the submarine cockpit version
+css/                game.css (layout, stage px) · sub.css (cockpit differences) · editor.css (layout editor only)
+js/                 script.js (every spoken line) · core · world · levels · cockpit (sub.html only) · editor · layout.js / layout_sub.js · gsap.min.js
 assets/img/         all art, .webp (cover.webp = the title screen)      assets/vo/   all voice lines, .ogg + vo_manifest.js      assets/fonts/
 tools/              make_voices.py (records the voices) · dev_server.py (lets the editor save)
 ```
@@ -30,6 +32,16 @@ python3 tools/make_voices.py       # makes every line that has no wav yet
 - The director's notes (accent, acting) are `PROFILE` at the top of the script. Audio is trimmed, faded and normalised to −1 dBFS (`--no-polish` keeps it raw). Newer TTS models return a whole WAV with a C2PA block: only its audio data is kept.
 - Rate limits are retried automatically; if the daily quota runs out, just run it again later — finished lines are skipped.
 - Without recorded files the game falls back to the browser's voice (en-IN when the computer has one), then to reading time.
+
+## Submarine version (`sub.html`)
+The camera is inside the submarine, looking out through the bow window (`assets/img/cockpit.webp`, the window glass is transparent).
+- The enemy submarines are out in the water; the navigation scale sits low on the glass, flat and evenly spaced (the same −8 … +8). Dotted sonar lines join each submarine to its number.
+- Torpedoes leave the bow tube at bottom-centre and run away from us (they shrink) behind the scale to the target; the cockpit jolts on launch and hit.
+- A miss flashes the two ceiling lamps red and the window edge glows red.
+- Meera (left) and Riya (right) stand at their stations; whoever speaks plays their talking sheet and lights up. Dialogue appears on the console screen, which shows a slow sonar trace when nobody is talking.
+- Level 3 pair buttons sit high in the window, above the submarines.
+- Code: `world.js` is shared (it skips the ship when there is no `#ship`); `js/cockpit.js` swaps the launcher for the bow tube and adds the crew and cockpit effects; `css/sub.css` holds the layout; the layout constants for this version are in the inline `WORLD_DEFAULTS` in `sub.html` (`SUB_Y`, `SUB_ROW`, `SIG_Y1/2`, `SCALE_DY`).
+- Layout editor: `sub.html?edit=1` saves to `js/layout_sub.js`. QA jumper: `sub.html?qa=1`.
 
 ## QA jumper (for testers)
 Add `?qa=1` to the URL (e.g. `https://<your-vercel-link>/?qa=1`). A small **QA ▾** panel (top-left) jumps straight into any part and starts playing:

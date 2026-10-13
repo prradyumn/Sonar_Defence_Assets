@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sonar Defence · Submarine</title>
+<link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/sub.css">
+<link rel="stylesheet" href="css/editor.css">
+</head>
+<body class="subview">
+<div id="stage">
+  <!-- WORLD: back → front -->
+  <div id="water">
+    <div class="grad"></div>
+    <div id="manta"></div>
+    <div class="track" id="far"></div>
+    <div id="fishL"></div>
+    <div id="rays"></div>
+    <div class="track" id="seabed"></div>
+    <div id="caustics"></div>
+    <canvas id="snow" width="1920" height="832"></canvas>
+    <div class="deep"></div>
+  </div>
+  <div id="bubbles"></div>
+
+  <div id="scale"></div>
+  <div id="play" class="abs" style="width:1920px;height:1080px"></div>
+  <div id="fx"></div>
+
+  <div id="sigs"></div>
+
+  <!-- COCKPIT: we are inside the submarine, looking out through the bow window -->
+  <div id="vignette"></div>
+  <div id="glass"></div>
+  <img id="cockpit" src="assets/img/cockpit.webp" alt="">
+  <div id="lamps"><div class="edge"></div><i class="l"></i><i class="r"></i></div>
+  <div id="screen"></div>
+  <div id="scope"></div>
+  <div id="crew"></div>
+
+  <div id="flash"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="strip"></div>
+    <div id="pips"></div>
+    <div id="rule"><span class="l"><i>◀</i> Left → Smaller</span><span class="r">Right → Greater <i>▶</i></span></div>
+    <div id="comms"><div id="portrait"><div id="pSpr" class="meera"><img id="pImg" src="assets/img/meera_talk_1.webp" alt=""></div></div><div id="pName">Commander Meera</div><div id="caption"></div></div>
+    <div id="hand"></div>
+    <div class="ibtn" id="btnSpeak" title="Hear it again"></div>
+  </div>
+  <div id="fxTop"></div>
+
+  <!-- OVERLAYS -->
+  <div class="overlay hidden" id="story"><div class="bg" id="storyBg"></div><div id="storyFx"></div><div id="cast"></div><div id="skipStory">Skip story ▸▸</div><div id="tapNext">tap to continue ▸</div></div>
+  <div class="overlay hidden" id="banner"><div class="rings"><i></i><i></i><i></i></div><div class="card"><div class="k" id="bk"></div><div class="t" id="bt"></div><div class="s" id="bs"></div></div></div>
+  <div class="overlay hidden" id="done"><div class="card"><div class="t" id="dt"></div><div class="s" id="ds"></div><div class="stars" id="dstars"></div><div class="chain" id="dchain"></div><div class="cta" id="dcta">Next mission</div></div></div>
+  <div class="overlay" id="title"><div class="art" role="img" aria-label="Sonar Defence"></div><div class="pings"><i></i><i></i><i></i></div><div class="logo">SONAR DEFENCE</div><div class="sub2">Guard the sea route · Integers on the navigation scale</div><div class="bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div id="start" role="button" tabindex="0" aria-label="Start the game" title="Play"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M38 25.5c0-4.2 4.6-6.8 8.2-4.6l34.6 21.6c3.4 2.1 3.4 7 0 9.1L46.2 73.2C42.6 75.4 38 72.8 38 68.6z"/></svg><i class="shine"></i></div></div>
+</div>
+<script src="js/gsap.min.js"></script>
+<script src="js/script.js"></script>
+<script src="js/layout_sub.js"></script>
+<script>window.WORLD_DEFAULTS = { SUB_Y: 420, SUB_ROW: -105, SIG_Y1: 215, SIG_Y2: 283, SCALE_DY: 100 };   /* cockpit: subs out in the water, the scale low on the glass */</script>
+<script src="assets/vo/vo_manifest.js"></script>
+<script src="js/core.js"></script>
+<script src="js/world.js"></script>
+<script src="js/cockpit.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/qa.js"></script>
+<script src="js/editor.js"></script>
+</body>
+</html>

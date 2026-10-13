@@ -225,13 +225,13 @@
 
   /* ---------- first-mission tutorial: show HOW to read a submarine's position (without giving the answer) ---------- */
   async function tutorial() {
-    const demo = W.subAt(-3), lx = W.X(-3);
+    const demo = W.subAt(-3), lx = W.X(-3), ly = 488 + W.CONFIG.SCALE_DY;   // the −3 label
     const p = say(S.tut1, { pose: 'idle' });
-    await W.handTo(lx + 10, 500, .9); await W.handTap(lx, 488);
+    await W.handTo(lx + 10, ly + 12, .9); await W.handTap(lx, ly);
     gsap.fromTo(document.querySelectorAll('.lbl')[5], { scale: 1 }, { scale: 1.45, duration: .3, yoyo: true, repeat: 3 });
     await p;
     const p2 = say(S.tut2, { pose: 'left' });
-    await W.handTo(lx + 10, demo.cy + 34, 1.1);           // slide down the sonar line to the submarine
+    await W.handTo(lx + 10, demo.cy + 34, 1.1);           // slide along the sonar line to the submarine
     W.glow(demo, true, 'rgba(160,240,255,.6)');
     await p2;
     W.glow(demo, false); W.hand(null);

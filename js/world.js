@@ -1,8 +1,9 @@
-/* world: parallax sea, ship + launcher, navigation scale, submarines, targeting & effects, HUD. */
+/* world: parallax sea, ship + launcher, navigation scale, submarines, targeting & effects, HUD.
+   Shared by both versions: index.html (the ship on the surface) and sub.html (inside the submarine, js/cockpit.js). */
 (function () {
   const { $, wait, fmt, SFX } = SD;
   /* positions that come from code, not CSS — tunable live in the layout editor, saved in js/layout.js (LAYOUT.config) */
-  const DEFAULTS = {
+  const DEFAULTS = Object.assign({
     X0: 960,        // stage x of 0 on the navigation scale
     STEP: 100,      // px between whole numbers (scale shows −8 … +8)
     SUB_Y: 695,     // submarine centre y (row 1)
@@ -13,10 +14,18 @@
     PIV_X: 600,     // launcher pivot on stage
     PIV_Y: 196,
     MUZZLE: 82,     // pivot → muzzle, where the torpedo starts
-  };
+    SCALE_DY: 0,    // moves the whole scale group (bar, numbers, marker, hints) down
+  }, window.WORLD_DEFAULTS);   // sub.html: the cockpit puts the submarines above the scale
   const CONFIG = Object.assign({}, DEFAULTS, window.LAYOUT && LAYOUT.config);
   const X = v => CONFIG.X0 + v * CONFIG.STEP;   // scale position → stage x
-  const SUB_H = 90, LINE_TOP = 584;            // .sub height · .sonarline top (game.css)
+  const SUB_H = 90, LINE_TOP = 584, BAR_TOP = 446;   // .sub height · .sonarline top · #scaleBack top (game.css)
+  const SHIP = !!$('#ship');                          // false in sub.html (no ship, wake or launcher)
+  // the dotted sonar line joins a submarine to the scale: down from the rail (subs below) or down from the sub (subs above)
+  const lineAt = (ln, cy) => {   // (the line lives in #scale, which is shifted by SCALE_DY)
+    const t = cy - SUB_H / 2, dy = CONFIG.SCALE_DY;
+    if (t > BAR_TOP + dy) { ln.style.top = LINE_TOP + 'px'; ln.style.height = (t - dy - LINE_TOP) + 'px'; }
+    else { ln.style.top = (t + SUB_H - dy) + 'px'; ln.style.height = (BAR_TOP + dy - t - SUB_H) + 'px'; }
+  };
   const play = $('#play'), fx = $('#fx'), sc = $('#scale'), sg = $('#sigs');   // sg: Level 3 signals + pair buttons, above the ship
   const el = (cls, parent, css = {}) => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, css); parent.appendChild(d); return d; };
 
@@ -24,7 +33,7 @@
   // Each strip is mirrored (A | flipped A) so the joins always match; the track wraps every 2 widths.
   const LAYERS = [];
   function strip(id, src, h, w, speed) {
-    const t = $('#' + id); for (let i = 0; i < 4; i++) { const im = new Image(); im.src = 'assets/img/' + src; im.style.width = w + 'px'; if (i % 2) im.className = 'flip'; t.appendChild(im); }
+    const t = $('#' + id); if (!t) return; for (let i = 0; i < 4; i++) { const im = new Image(); im.src = 'assets/img/' + src; im.style.width = w + 'px'; if (i % 2) im.className = 'flip'; t.appendChild(im); }
     t.style.width = (4 * w) + 'px'; LAYERS.push({ t, w, speed, x: 0 });
   }
   strip('skyTrack', 'sky_surface.webp', 300, 3200, 6);
@@ -41,12 +50,12 @@
     const s = dt / 1000 * W.mult * SD.rate; W.t = time;
     for (const L of LAYERS) { L.x = (L.x + L.speed * s) % (2 * L.w); L.t.style.transform = `translate3d(${-L.x}px,0,0)`; }
     caus.x = (caus.x + 26 * s) % 512; cEl.style.transform = `translate3d(${-caus.x}px,${Math.sin(time * .6) * 6}px,0)`;
-    w1.setAttribute('d', wavePath(time, 6, 3, 0)); w2.setAttribute('d', wavePath(time * .8, 9, 4, 1.7));
-    wakeFrame(time, dt / 1000 * SD.rate);
+    if (w1) { w1.setAttribute('d', wavePath(time, 6, 3, 0)); w2.setAttribute('d', wavePath(time * .8, 9, 4, 1.7)); }
+    if (SHIP) wakeFrame(time, dt / 1000 * SD.rate);
   });
   gsap.to('#rays', { rotation: 3.5, x: 60, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#rays', { opacity: .3, duration: 3.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  gsap.fromTo('#kelp', { '--sk': '-3deg' }, { '--sk': '3.5deg', duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  if ($('#kelp')) gsap.fromTo('#kelp', { '--sk': '-3deg' }, { '--sk': '3.5deg', duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#caustics', { opacity: .34, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#far', { y: 8, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
 
@@ -94,9 +103,12 @@
   gsap.to('#mantaWing', { scaleY: .55, transformOrigin: '50% 45%', duration: 1.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   setTimeout(manta, 4000);
   // ship & officer ride the swell
-  gsap.to('#ship', { y: 4, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  gsap.set('#offImg,#pSpr', { xPercent: -50 });
-  gsap.to('#ship', { rotation: .7, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut', transformOrigin: '50% 75%' });
+  if (SHIP) {
+    gsap.to('#ship', { y: 4, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    gsap.set('#offImg', { xPercent: -50 });
+    gsap.to('#ship', { rotation: .7, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut', transformOrigin: '50% 75%' });
+  }
+  gsap.set('#pSpr', { xPercent: -50 });
   // bubbles drifting past (rise + go backwards = we are moving forward)
   const bub = $('#bubbles');
   function spawnBubble(big) {
@@ -111,11 +123,11 @@
   W.sail = async (dur = 1.6) => {     // short "full speed ahead" burst between missions
     SFX.sail();
     gsap.to(W, { mult: 9, duration: .5, ease: 'power2.in' });
-    gsap.to('#ship', { x: 30, duration: .6, ease: 'power2.out' });
+    if (SHIP) gsap.to('#ship', { x: 30, duration: .6, ease: 'power2.out' });
     for (let i = 0; i < 10; i++) setTimeout(() => spawnBubble(true), i * 70);
     await wait(.5 + dur * .5);
     gsap.to(W, { mult: 1, duration: dur * .6, ease: 'power2.out' });
-    gsap.to('#ship', { x: 0, duration: 1, ease: 'power2.inOut' });
+    if (SHIP) gsap.to('#ship', { x: 0, duration: 1, ease: 'power2.inOut' });
     await wait(dur * .5);
   };
 
@@ -124,7 +136,7 @@
           Everything follows the sailing speed W.mult: a gentle lap at rest, white water at full speed. ---- */
   const NS = 'http://www.w3.org/2000/svg', WL = 160, STERN = 22, BOW = 598, SCREW = { x: 48, y: 194 };
   const svg = (tag, a, parent) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); parent.appendChild(e); return e; };
-  const wakeSvg = $('#wakeFx'), foamSvg = $('#hullFoam');
+  const wakeSvg = $('#wakeFx') || document.createElementNS(NS, 'svg'), foamSvg = $('#hullFoam') || document.createElementNS(NS, 'svg');
   wakeSvg.innerHTML = foamSvg.innerHTML = '';
   const grad = (id, stops, [x1, y1, x2, y2], parent) => { const g = svg('linearGradient', { id, gradientUnits: 'userSpaceOnUse', x1, y1, x2, y2 }, svg('defs', {}, parent)); stops.forEach(([o, c, a]) => svg('stop', { offset: o, 'stop-color': c, 'stop-opacity': a }, g)); };
   grad('wkTrail', [[0, '#ffffff', .95], [.3, '#eafcff', .75], [1, '#bff3ff', 0]], [STERN, 0, -420, 0], wakeSvg);
@@ -206,7 +218,7 @@
     const l = el('lbl' + side(v), sc, { left: X(v) + 'px' }); l.textContent = fmt(v); LBL[v] = l;
   }
   const scan = el('', sc); scan.id = 'scan';
-  W.X = X; W.CONFIG = CONFIG; W.CONFIG_DEFAULTS = DEFAULTS;
+  W.X = X; W.CONFIG = CONFIG; W.CONFIG_DEFAULTS = DEFAULTS; W.el = el; W.spawnBubble = big => spawnBubble(big);
   W.labelsOn = vals => { for (let v = -8; v <= 8; v++) LBL[v].classList.toggle('on', vals.includes(v)); };
   // power-on: the glass bar unfolds from 0, the rail draws out, ticks and numbers ripple outwards, a light sweeps left → right
   W.scaleIntro = async () => {
@@ -242,7 +254,7 @@
     const list = vals.map((v, i) => {
       const dy = depth[v] * CONFIG.SUB_ROW;
       const d = el('sub', play, { left: X(v) + 'px', top: (CONFIG.SUB_Y - SUB_H / 2 + dy) + 'px' }); d.dataset.v = v;
-      const line = el('sonarline', sc, { left: X(v) + 'px', height: (CONFIG.SUB_Y - SUB_H / 2 + dy - LINE_TOP) + 'px' });
+      const line = el('sonarline', sc, { left: X(v) + 'px' }); lineAt(line, CONFIG.SUB_Y + dy);
       const bob = el('bob', d); el('glow', bob); el('shield', bob); el('ring', bob);
       const im = new Image(); im.src = 'assets/img/' + VAR[o.variant || 'sub']; bob.appendChild(im); if (o.variant && o.variant !== 'sub') Object.assign(im.style, { width: '200px', left: '25px', top: '-23px' });
       gsap.to(bob, { y: 6, duration: 1.4 + i * .17, yoyo: true, repeat: -1, ease: 'sine.inOut' });
@@ -251,7 +263,7 @@
     SUBS.push(...list);
     W.labelsOn(SUBS.filter(s => s.alive).map(s => s.v));
     // rise in from the deep, one by one, with a sonar ping
-    for (const s of list) { gsap.fromTo(s.d, { y: 160, opacity: 0 }, { y: 0, opacity: 1, duration: .8, ease: 'power2.out' }); gsap.fromTo(s.line, { scaleY: 0, transformOrigin: '50% 0' }, { scaleY: 1, duration: .5, delay: .5 }); SFX.ping(); await wait(o.stagger == null ? .28 : o.stagger); }
+    for (const s of list) { gsap.fromTo(s.d, { y: 160, opacity: 0 }, { y: 0, opacity: 1, duration: .8, ease: 'power2.out' }); gsap.fromTo(s.line, { scaleY: 0, transformOrigin: s.cy < BAR_TOP + CONFIG.SCALE_DY ? '50% 100%' : '50% 0' }, { scaleY: 1, duration: .5, delay: .5 }); SFX.ping(); await wait(o.stagger == null ? .28 : o.stagger); }
     await wait(.5);
     return list;
   };
@@ -297,8 +309,8 @@
   W.cancelTap = () => { tapRes = null; };
 
   /* ================= launcher, torpedo, blast ================= */
-  function aim(x, y, dur = .45) { const a = Math.atan2(y - CONFIG.PIV_Y, x - CONFIG.PIV_X) * 180 / Math.PI; return gsap.to('#barrel', { rotation: a, svgOrigin: '0 0', duration: dur, ease: 'back.out(1.6)' }); }
-  gsap.set('#barrel', { rotation: 35, svgOrigin: '0 0' });
+  function aim(x, y, dur = .45) { if (W.aimHook) return W.aimHook(x, y, dur); const a = Math.atan2(y - CONFIG.PIV_Y, x - CONFIG.PIV_X) * 180 / Math.PI; return gsap.to('#barrel', { rotation: a, svgOrigin: '0 0', duration: dur, ease: 'back.out(1.6)' }); }
+  if (SHIP) gsap.set('#barrel', { rotation: 35, svgOrigin: '0 0' });
   W.aimAt = s => aim(X(s.v), s.cy);
   W.lock = async (s, color) => {
     const r = new Image(); r.src = 'assets/img/reticle.webp'; r.className = 'reticle'; Object.assign(r.style, { left: X(s.v) + 'px', top: s.cy + 'px' });
@@ -450,7 +462,7 @@
     const left = group || W.sigAlive();
     for (const s of left) {
       const to = L3.mv + s.sign;
-      await gsap.to(s.d, { left: X(L3.mv), top: parseFloat(getComputedStyle(L3.marker).top) + 20, scale: .5, duration: .35, ease: 'power2.in' });
+      await gsap.to(s.d, { left: X(L3.mv), top: parseFloat(getComputedStyle(L3.marker).top) + 20 + CONFIG.SCALE_DY, scale: .5, duration: .35, ease: 'power2.in' });
       s.alive = false; s.d.remove(); SFX.step();
       await gsap.to(L3.marker, { left: X(to), duration: .3, ease: 'power2.out' }); L3.mv = to;
       gsap.fromTo(LBL[to], { scale: 1.5 }, { scale: 1, duration: .3 });
@@ -500,12 +512,13 @@
 
   /* re-place everything that was positioned from CONFIG (the editor calls this after a constant changes) */
   W.applyConfig = () => {
+    sc.style.transform = CONFIG.SCALE_DY ? `translateY(${CONFIG.SCALE_DY}px)` : '';
     for (let v = -8; v <= 8; v++) TICK[v].style.left = LBL[v].style.left = X(v) + 'px';
     rail.style.left = X(-8.5) + 'px'; rail.style.width = 17 * CONFIG.STEP + 'px';
     back.style.left = (X(-8.5) - 44) + 'px'; back.style.width = (17 * CONFIG.STEP + 88) + 'px';
     for (const s of SUBS) {
       const dy = s.depth * CONFIG.SUB_ROW; s.cy = CONFIG.SUB_Y + dy;
-      s.d.style.left = s.line.style.left = X(s.v) + 'px'; s.d.style.top = (s.cy - SUB_H / 2) + 'px'; s.line.style.height = (s.cy - SUB_H / 2 - LINE_TOP) + 'px';
+      s.d.style.left = s.line.style.left = X(s.v) + 'px'; s.d.style.top = (s.cy - SUB_H / 2) + 'px'; lineAt(s.line, s.cy);
     }
     BADGES.forEach(b => { b.style.left = X(b._v) + 'px'; });
     for (const s of L3.sigs) if (s.alive) { s.x = sigX(s.col, L3.cols); s.y = s.row === 0 ? CONFIG.SIG_Y1 : CONFIG.SIG_Y2; gsap.set(s.d, { left: s.x, top: s.y }); }

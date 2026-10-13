@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""dev_server: serve the game folder and let the in-game layout editor save js/layout.js.
+"""dev_server: serve the game folder and let the in-game layout editor save js/layout.js (sub.html: js/layout_sub.js).
 
     python3 tools/dev_server.py            # then open http://localhost:8000/?edit=1
     python3 tools/dev_server.py --port 8123
 
 POST /save-layout with {"overrides": {selector: {prop: number}}, "config": {name: number}}
-rewrites js/layout.js. Listens on 127.0.0.1 only. Standard library only.
+rewrites js/layout.js (?file=sub: js/layout_sub.js). Listens on 127.0.0.1 only. Standard library only.
 """
 import argparse
 import functools
@@ -16,8 +16,8 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LAYOUT = os.path.join(ROOT, 'js', 'layout.js')
-HEADER = '/* layout overrides written by the in-game editor (index.html?edit=1 → Save). Hand-editing is fine. */\n'
+LAYOUTS = {'': 'layout.js', 'sub': 'layout_sub.js'}   # ?file=sub → the submarine version (sub.html)
+HEADER = '/* layout overrides written by the in-game editor (%s.html?edit=1 → Save). Hand-editing is fine. */\n'
 SELECTOR = re.compile(r'^[\w\s#.\-\[\]="\':>*()+~,]{1,200}$')   # no { } ; < … so a key can never break out of its CSS rule
 PROPS = {'left', 'top', 'width', 'height', 'minHeight', 'maxWidth', 'marginLeft', 'fontSize', 'zIndex', 'rotate', 'scale', 'opacity'}
 CONST = re.compile(r'^[A-Z][A-Z0-9_]{0,31}$')
@@ -73,12 +73,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             data = check(json.loads(self.rfile.read(n).decode('utf-8')))
         except (ValueError, UnicodeDecodeError) as e:
             return self.reply(400, {'ok': False, 'error': str(e)})
+        q = self.path.split('?')[1] if '?' in self.path else ''
+        which = q[5:] if q.startswith('file=') else ''
+        if which not in LAYOUTS:
+            return self.reply(400, {'ok': False, 'error': 'unknown layout file'})
+        name = LAYOUTS[which]; LAYOUT = os.path.join(ROOT, 'js', name)
         tmp = LAYOUT + '.part'
         with open(tmp, 'w', encoding='utf-8') as f:
-            f.write(HEADER + 'window.LAYOUT = ' + json.dumps(data, indent=2, ensure_ascii=False) + ';\n')
+            f.write(HEADER % ('sub' if which else 'index') + 'window.LAYOUT = ' + json.dumps(data, indent=2, ensure_ascii=False) + ';\n')
         os.replace(tmp, LAYOUT)
-        sys.stderr.write('saved js/layout.js (%d overrides, %d constants)\n' % (len(data['overrides']), len(data['config'])))
-        self.reply(200, {'ok': True, 'path': 'js/layout.js'})
+        sys.stderr.write('saved js/%s (%d overrides, %d constants)\n' % (name, len(data['overrides']), len(data['config'])))
+        self.reply(200, {'ok': True, 'path': 'js/' + name})
 
     def log_message(self, fmt, *args):
         if self.command != 'GET' or (args and str(args[1])[:1] in '45'):   # keep the console quiet: POSTs and errors only

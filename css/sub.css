@@ -1,0 +1,57 @@
+/* sub.html: the game seen from inside the submarine. Loaded after game.css; only the cockpit differences live here. */
+
+/* the sea fills the bow window (no sky, no surface: we are deep) */
+.subview #water{top:0;height:1080px}
+.subview #water .deep{background:linear-gradient(rgba(0,40,90,.12),rgba(0,40,90,0) 30%,rgba(0,22,60,.5) 75%)}
+.subview #far{top:330px}
+.subview #seabed{top:560px}
+.subview #manta{top:170px}
+.subview #vignette{top:0;height:1080px}
+
+/* glass: a faint sheen and darker edges, under the frame */
+#glass{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(112deg,rgba(255,255,255,0) 26%,rgba(255,255,255,.08) 33%,rgba(255,255,255,0) 41%,rgba(255,255,255,0) 58%,rgba(255,255,255,.05) 62%,rgba(255,255,255,0) 66%),
+    radial-gradient(115% 95% at 50% 42%,rgba(0,0,0,0) 62%,rgba(0,18,46,.5))}
+#cockpit{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;user-select:none;-webkit-user-drag:none}
+#crew,#lamps,#screen{position:absolute;inset:0;pointer-events:none}
+
+/* warning lamps: the two caged ceiling lamps flash red on a miss */
+#lamps i{position:absolute;top:-34px;width:260px;height:260px;margin-left:-130px;border-radius:50%;opacity:0;mix-blend-mode:screen;
+  background:radial-gradient(circle,rgba(255,80,60,.95) 0 14%,rgba(255,60,40,.45) 32%,rgba(255,40,30,0) 66%)}
+#lamps .l{left:66px}#lamps .r{left:1854px}
+#lamps .edge{position:absolute;left:72px;top:145px;width:1776px;height:612px;border-radius:120px;opacity:0;box-shadow:inset 0 0 120px 24px rgba(255,50,40,.6)}   /* the window glows red */
+
+/* the console display: dialogue appears here */
+#screen::before{content:"";position:absolute;left:412px;top:800px;width:1096px;height:244px;border-radius:30px;
+  background:linear-gradient(#253c5c,#14263e);box-shadow:0 10px 26px rgba(0,8,24,.55),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.35)}
+#screen::after{content:"";position:absolute;left:428px;top:816px;width:1064px;height:212px;border-radius:22px;
+  background:repeating-linear-gradient(rgba(127,242,255,.035) 0 2px,transparent 2px 5px),radial-gradient(120% 140% at 50% 0%,#123b66,#071d38 70%);
+  border:3px solid #49dcff;box-shadow:0 0 18px rgba(73,220,255,.55),inset 0 0 26px rgba(73,220,255,.22)}
+.subview #comms{left:428px;top:816px;width:1064px;height:212px}
+.subview #portrait{display:none}
+.subview #pName{left:26px;top:-20px;border-radius:12px;padding:6px 18px 4px;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.subview #caption{left:0;top:0;width:100%;height:100%;max-width:none;min-height:0;box-sizing:border-box;padding:36px 40px 18px;border:none;border-radius:22px;background:none;box-shadow:none;
+  display:flex;align-items:center;font:600 36px/1.25 Baloo,sans-serif}
+.subview #comms.riya #pName{background:#ffc04d}
+
+/* Meera (left) and Riya (right) at their stations, in front of the console; the speaker lights up */
+.mate{position:absolute;height:862px;bottom:-522px;filter:drop-shadow(0 10px 18px rgba(0,10,30,.5)) brightness(.92);transition:filter .25s}
+.mate canvas{display:block;height:100%}
+.mate .flip{height:100%;transform:scaleX(-1)}
+.mate.meera{left:-6px}.mate.riya{left:1541px}
+.mate.speaking{filter:drop-shadow(0 0 22px rgba(127,242,255,.55)) drop-shadow(0 10px 18px rgba(0,10,30,.5)) brightness(1.04)}
+.mate.riya.speaking{filter:drop-shadow(0 0 22px rgba(255,200,90,.55)) drop-shadow(0 10px 18px rgba(0,10,30,.5)) brightness(1.04)}
+
+/* the scale sits low on the glass (world SCALE_DY), kept inside the window frame */
+.subview #scaleBack{left:98px!important;width:1724px!important}
+.subview #rule{left:1170px;top:166px;width:640px}
+.subview #btnSpeak{left:528px;top:34px}   /* clear of the right-hand ceiling lamp */
+
+/* idle console screen: a slow sonar trace until someone speaks */
+#scope{position:absolute;left:428px;top:816px;width:1064px;height:212px;border-radius:22px;overflow:hidden;pointer-events:none}
+#scope svg{position:absolute;left:0;top:0;width:100%;height:100%}
+#scope .lbl2{position:absolute;right:30px;bottom:18px;font:700 20px/1 Fredoka,sans-serif;letter-spacing:3px;color:#49dcff;opacity:.55}
+
+/* torpedo leaving the bow tube */
+.tubeflash{position:absolute;width:220px;height:120px;margin:-60px 0 0 -110px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse,rgba(230,252,255,.95),rgba(160,235,255,.4) 40%,rgba(160,235,255,0) 70%)}

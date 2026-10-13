@@ -229,7 +229,7 @@
   const POSE = { idle: 'off_idle', right: 'off_right', left: 'off_left', thumb: 'off_thumb', cheer: 'off_cheer', think: 'off_think', bino: 'off_bino' };
   const offImg = $('#offImg');
   function pose(p) {
-    const f = POSE[p] || POSE.idle; if (offImg.src.endsWith(f + '.webp')) return;
+    const f = POSE[p] || POSE.idle; if (!offImg || offImg.src.endsWith(f + '.webp')) return;   // sub.html has no deck officer
     offImg.src = 'assets/img/' + f + '.webp';   // still images: the pose just changes, no squash
   }
   // comms portrait next to the caption: still images (Meera waist-up / Riya)
@@ -295,14 +295,15 @@
     duck(true);
     const t0 = performance.now();
     const skipP = new Promise(r => { skipFn = r; });
-    if (o.talk) o.talk(true);
+    const talk = o.talk || (SD.crew && SD.crew[who]);   // story bubbles pass their actor; in the cockpit the crew member on screen talks
+    if (talk) talk(true);
     const spokeP = playVO(id).then(ok => ok || speak(text, who));
     const spoke = await Promise.race([spokeP, skipP.then(() => 'skip')]);
     if (spoke !== 'skip') {
       const spent = (performance.now() - t0) / 1000 * SPEED, min = spoke ? .25 : readTime(text);
       if (spent < min) await Promise.race([wait(min - spent), skipP]);
     } else hush();
-    if (o.talk) o.talk(false);
+    if (talk) talk(false);
     skipFn = null;
     if (my !== sayN) return;
     duck(false);
