@@ -49,13 +49,13 @@
 
   /* ---- marine snow (tiny drifting specks: the strongest "we are underwater" cue) ---- */
   const snow = $('#snow'), sctx = snow.getContext('2d'), SN = [];
-  for (let i = 0; i < 110; i++) SN.push({ x: Math.random() * 1920, y: Math.random() * 832, z: .3 + Math.random() * .7, ph: Math.random() * 6 });
+  for (let i = 0; i < 110; i++) SN.push({ x: Math.random() * 1920, y: Math.random() * 1080, z: .3 + Math.random() * .7, ph: Math.random() * 6 });
   gsap.ticker.add((t, dt) => {
     if (SD.paused) return;
-    const s = dt / 1000 * SD.rate; sctx.clearRect(0, 0, 1920, 832);
+    const s = dt / 1000 * SD.rate; sctx.clearRect(0, 0, 1920, 1080);
     for (const p of SN) {
       p.y += (6 + 14 * p.z) * s; p.x -= (8 + 34 * p.z) * s * W.mult; p.x += Math.sin(t * .8 + p.ph) * .25;
-      if (p.y > 840) p.y = -6; if (p.x < -10) p.x = 1930;
+      if (p.y > 1088) p.y = -6; if (p.x < -10) p.x = 1930;
       sctx.globalAlpha = .25 + .5 * p.z; sctx.fillStyle = '#e6fbff'; sctx.beginPath(); sctx.arc(p.x, p.y, .7 + 1.8 * p.z, 0, 6.283); sctx.fill();
     }
   });

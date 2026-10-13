@@ -37,6 +37,14 @@
   const C = { x: X(0) }, place = () => gsap.set(cn, { x: C.x });
   place();
   gsap.to(cring, { opacity: .9, duration: 1.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  // it sits out in the water: a few bubbles drift up off the muzzle now and then
+  setInterval(() => {
+    if (document.hidden || SD.paused) return;
+    for (let i = 0; i < 2; i++) {
+      const r = 3 + Math.random() * 4, b = el('pbub', sea, { left: (C.x + (Math.random() - .5) * 24) + 'px', top: (MUZZLE_Y + 4) + 'px', width: 2 * r + 'px', height: 2 * r + 'px' });
+      gsap.to(b, { y: -70 - Math.random() * 60, x: (Math.random() - .5) * 40, opacity: 0, duration: 1.8 + Math.random(), delay: i * .25, ease: 'sine.out', onComplete: () => b.remove() });
+    }
+  }, 1100);
   let move = null;
   function slideTo(x, dur) {
     if (move) move.kill();

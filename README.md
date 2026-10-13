@@ -45,8 +45,8 @@ The camera is inside the submarine, looking out through the big bow window (`ass
 - The earlier ship-at-the-surface version was removed; it is still in the git history (before commit "Keep only the submarine cockpit version").
 
 ## QA jumper (for testers)
-Add `?qa=1` to the URL (e.g. `https://<your-vercel-link>/?qa=1`). A small **QA ▾** panel (top-left) jumps straight into any part and starts playing:
-story (Harbour · Control room · Dive), Teaching, every round of Level 1–3 and the Final mission. While playing: **Skip line**, **Answer ✓** (taps the right submarine / pair), **Restart part**; choose 1×/2×/3× speed and sound for the next jump. Players never see it. (URL equivalents: `?at=hook&scene=2`, `?at=l3&round=4`, `?at=final&round=3`.)
+Press **Q** in the game (Q again hides it), or add `?qa=1` to the URL (e.g. `https://<your-vercel-link>/?qa=1`). A small **QA ▾** panel (top-left) jumps straight into any part and starts playing:
+story (Harbour · Control room · Dive), Teaching, every round of Level 1–3 and the Final mission. While playing: **Skip line**, **Answer ✓** (taps the right submarine / pair), **Restart part**; choose 1×/2×/3× speed and sound for the next jump. After a jump the panel stays on. (URL equivalents: `?at=hook&scene=2`, `?at=l3&round=4`, `?at=final&round=3`.)
 
 ## Sound
 Recorded music + ambience + effects live in `assets/sfx/` (all `.ogg`): two loops composed for the game with Google Lyria (calm for the story, playful for the missions, crossfading at the dive), harbour gulls + waves, sea waves, and CC0 Freesound effects (sonar, torpedo, underwater explosion, splash, water rush, sci-fi door, bubbles) — see `assets/sfx/CREDITS.md`. Taps, chimes and the reward arpeggio are synthesized. Music dips under every voice line. Over http(s) everything plays through Web Audio; from `file://` through `<audio>` elements.

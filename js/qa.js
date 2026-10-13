@@ -1,8 +1,14 @@
-/* qa: a jump menu for testers (not the layout editor). Only with ?qa=1 — players never see it.
+/* qa: a jump menu for testers (not the layout editor). Press Q in the game, or open with ?qa=1 (Q again hides it).
    Jump to any story scene, the teaching, any round of any level; set speed / sound; skip a line or answer for you. */
 (function () {
   const Q = new URLSearchParams(location.search);
-  if (Q.get('qa') !== '1') return;
+  let root = null;
+  addEventListener('keydown', e => {
+    if ((e.key !== 'q' && e.key !== 'Q') || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+    if (!root) build(true); else root.hidden = !root.hidden;
+  });
+  if (Q.get('qa') === '1') build(false);
+  function build(open) {
   const PARTS = [
     ['Story', [['Harbour', { at: 'hook', scene: 1 }], ['Control room', { at: 'hook', scene: 2 }], ['Dive', { at: 'hook', scene: 3 }]]],
     ['Teaching', [['Number line', { at: 'teach' }]]],
@@ -20,14 +26,14 @@
   #qa .tog{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:20px;background:rgba(6,24,46,.92);border:2px solid #f08a10;box-shadow:0 6px 18px rgba(0,0,0,.35)}
   #qa .tog b{color:#ffd38a}
   #qa .panel{margin-top:8px;width:min(440px,calc(100vw - 24px));max-height:calc(100vh - 80px);overflow:auto;padding:12px;border-radius:14px;background:rgba(6,24,46,.96);border:1px solid #2f5d86;box-shadow:0 14px 40px rgba(0,0,0,.45)}
-  #qa .panel[hidden]{display:none}
+  #qa .panel[hidden],#qa[hidden]{display:none}
   #qa h5{margin:10px 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8fc1e3}
   #qa h5:first-child{margin-top:0}
   #qa .row{display:flex;flex-wrap:wrap;gap:6px}
   #qa .row button.here{outline:2px solid #7ff2ff}
   #qa hr{border:0;border-top:1px solid #2f5d86;margin:12px 0}`;
   document.head.appendChild(css);
-  const root = document.createElement('div'); root.id = 'qa';
+  root = document.createElement('div'); root.id = 'qa';
   const keep = { speed: Q.get('speed') || '1', mute: Q.get('mute') === '1' };
   const jump = p => {
     const u = new URLSearchParams({ qa: '1', autostart: '1', at: p.at });
@@ -50,6 +56,7 @@
         <button data-a="mute"${keep.mute ? ' class="on"' : ''}>Sound off</button></div></div>`;
   document.body.appendChild(root);
   const panel = root.querySelector('.panel'), where = root.querySelector('#qaWhere');
+  if (open) panel.hidden = false;
   root.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.g != null) return jump(PARTS[b.dataset.g][1][b.dataset.i][1]);
@@ -67,4 +74,5 @@
   });
   // the current part, kept up to date
   setInterval(() => { const w = (window.SD && SD.where) || {}; where.innerHTML = w.at ? `<b>${w.at}</b>${w.at !== 'title' && w.at !== 'hook' && w.at !== 'teach' ? ' · R' + w.round : ''}` : ''; }, 500);
+  }
 })();

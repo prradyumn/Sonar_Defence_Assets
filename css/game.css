@@ -15,11 +15,11 @@ img{-webkit-user-drag:none;user-select:none}
 .track img.flip{transform:scaleX(-1)}
 #water{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden}
 #water .grad{position:absolute;inset:0;background:url(../assets/img/water.webp) center/100% 100% no-repeat}
-#water .deep{position:absolute;inset:0;background:linear-gradient(rgba(0,40,90,.12),rgba(0,40,90,0) 30%,rgba(0,22,60,.5) 75%)}
-#far{position:absolute;left:0;top:330px;height:440px;opacity:.85}
+#water .deep{position:absolute;inset:0;background:linear-gradient(rgba(0,40,90,.12),rgba(0,40,90,0) 30%,rgba(0,30,70,.18) 62%,rgba(40,150,205,.22))}
+#far{position:absolute;left:0;top:330px;height:440px;opacity:.7}
 #rays{position:absolute;left:-200px;top:-40px;width:2320px;height:900px;background:url(../assets/img/rays.webp) center/100% 100%;mix-blend-mode:screen;opacity:.55;transform-origin:30% 0}
-#seabed{position:absolute;left:0;top:560px;height:260px}
-#caustics{position:absolute;left:0;top:0;width:3840px;height:832px;background:url(../assets/img/caustics.webp) 0 0/512px 512px repeat;mix-blend-mode:overlay;opacity:.22}
+#seabed{position:absolute;left:0;top:560px;height:260px;opacity:.82;filter:saturate(.7) brightness(.9);-webkit-mask-image:linear-gradient(#000 45%,transparent 92%);mask-image:linear-gradient(#000 45%,transparent 92%)}   /* the reef fades into open water below */
+#caustics{position:absolute;left:0;top:0;width:3840px;height:1080px;background:url(../assets/img/caustics.webp) 0 0/512px 512px repeat;mix-blend-mode:overlay;opacity:.22}
 #bubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .bub{position:absolute;border-radius:50%;background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.95) 0 12%,rgba(200,245,255,.35) 22%,rgba(160,230,255,.12) 60%,rgba(255,255,255,.45) 72%,rgba(255,255,255,0) 76%)}
 
@@ -171,7 +171,7 @@ img{-webkit-user-drag:none;user-select:none}
 .school svg{position:absolute;overflow:visible}
 .fish .tail{transform-box:fill-box;transform-origin:0% 50%;animation:tail .32s ease-in-out infinite alternate}
 @keyframes tail{from{transform:scaleY(.6) skewY(-10deg)}to{transform:scaleY(1.05) skewY(10deg)}}
-#snow{position:absolute;left:0;top:0;width:1920px;height:832px;pointer-events:none;opacity:.9}
+#snow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;opacity:.9}
 #vignette{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;
   background:radial-gradient(ellipse 75% 70% at 50% 38%,rgba(0,0,0,0) 55%,rgba(0,18,48,.5) 100%),linear-gradient(rgba(0,0,0,0) 70%,rgba(0,14,40,.35))}
 #flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at var(--fx,50%) var(--fy,60%),rgba(255,245,200,.85),rgba(255,200,120,.25) 30%,rgba(0,0,0,0) 60%);opacity:0;mix-blend-mode:screen}
