@@ -54,7 +54,8 @@
   }
 
   /* =====================================================================
-     HOOK — Commander Meera & Cadet Riya: harbour → sonar room → dive
+     HOOK — the story sheet with Commander Meera & Cadet Riya: harbour → control room (alert) → navigation screen
+     → two submarines → missiles → targets confirmed, MISSION 1 → dive → how to play
      ===================================================================== */
   async function hook() {
     const st = $('#story'), bg = $('#storyBg'), cast = $('#cast'), sfx = $('#storyFx');
@@ -122,10 +123,14 @@
       await gsap.to(b, { opacity: 0, scale: .9, duration: .2 });
     }
 
+    // the big screen in the control room: a navigation scale −8 … +8 with defence line 0 in the middle
+    const NAV = { x0: 420, step: 44, y: 330 }, nx = v => NAV.x0 + v * NAV.step;
+    const ost = (text, cls = '') => { const o = document.createElement('div'); o.className = 'ost ' + cls; o.textContent = text; sfx.appendChild(o); gsap.fromTo(o, { scale: .4, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'back.out(2.4)' }); return o; };
+
     const SCENE = Q.get('at') === 'hook' ? +(Q.get('scene') || 1) : 1;   // QA: start at scene 2 (control room) or 3 (dive)
     try {
       if (SCENE < 2) {
-      /* ---- Scene 1 · the harbour at sunrise ---- */
+      /* ---- Scene 1 · the harbour: the Coast Guard ship on patrol, enemy submarines slip in under the water ---- */
       bg.style.backgroundImage = 'url(assets/img/harbour.webp)';
       gsap.fromTo(bg, { scale: 1.16, x: 70 }, { scale: 1.04, x: 0, duration: 14, ease: 'none' });
       gsap.fromTo(st, { opacity: 0 }, { opacity: 1, duration: .6 });
@@ -135,18 +140,20 @@
       gsap.from(meera.el, { x: -600, duration: 1, ease: 'power3.out', delay: .2 });
       gsap.from(riya.el, { x: 620, duration: .9, ease: 'power3.out', delay: .6 });
       await wait(1.1); chk();
-      const bR = bubble('riya', 'tr', { left: '780px', top: '220px' }, 'harbour-riya-bubble');
       const bM = bubble('meera', 'tl', { left: '470px', top: '150px' }, 'harbour-meera-bubble');
-      await line(S.h1, bR, riya);
-      const alarm = document.createElement('div'); alarm.className = 'alarmglow'; sfx.appendChild(alarm);
-      await line(S.h2, bM, meera, () => {
-        gsap.delayedCall(.8, () => { SFX.alarm(); SFX.ping(); gsap.to(alarm, { opacity: 1, duration: .35, yoyo: true, repeat: 5 }); });
+      await line(S.s1, bM, meera, () => {
+        [[2000, 760, 0], [2150, 870, 1.1], [2300, 975, 2.2]].forEach(([x, y, dl]) => {   // three dark shapes glide in under the surface
+          const u = new Image(); u.src = 'assets/img/sub.webp'; u.className = 'shadowsub'; Object.assign(u.style, { left: x + 'px', top: y + 'px' }); sfx.appendChild(u);
+          gsap.to(u, { x: -1240 - Math.random() * 200, duration: 6.5, delay: dl, ease: 'sine.out' });
+          gsap.to(u, { y: 10, duration: 1.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+          gsap.delayedCall(dl + .4, SFX.blip);
+        });
       });
       chk();
       }
 
       if (SCENE < 3) {
-      /* ---- Scene 2 · the sonar-room doors open, Meera and Riya walk in ---- */
+      /* ---- Scene 2 · the control-room doors open: red warning lights, the alarm ---- */
       SFX.swoosh();
       await gsap.to([bg, cast, sfx], { opacity: 0, duration: .4, ease: 'power2.in' });
       gsap.killTweensOf(bg); cast.innerHTML = sfx.innerHTML = ''; SD.ambience(null);   // indoors: no sea
@@ -157,31 +164,68 @@
       const radar = document.createElement('div'); radar.className = 'radar'; sfx.appendChild(radar);
       radar.innerHTML = '<div class="sweep2"></div>';
       gsap.to(radar.firstChild, { rotation: 360, duration: 2.6, repeat: -1, ease: 'none' });
-      const blip = (x, y) => { const b = document.createElement('div'); b.className = 'blip'; Object.assign(b.style, { left: x + 'px', top: y + 'px' }); radar.appendChild(b); gsap.fromTo(b, { scale: 0 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); SFX.blip(); return b; };
+      const alarm = document.createElement('div'); alarm.className = 'alarmglow'; sfx.appendChild(alarm);
       const m2 = actor('meera', { left: '20px', height: '980px', bottom: '-380px' }, 'sonar-meera');
       const r2 = actor('riya', { left: '1190px', height: '820px', bottom: '-330px' }, 'sonar-riya', true);
       actors = [m2, r2];
       await walkIn([[m2, 640, 0], [r2, -480, .12]]); chk();
       const bM2 = bubble('meera', 'lft', { left: '600px', top: '700px' }, 'sonar-meera-bubble');
       const bR2 = bubble('riya', 'rgt', { right: '790px', top: '650px' }, 'sonar-riya-bubble');
-      const blips = [];
-      await line(S.h3, bM2, m2, () => { [[560, 120], [690, 300], [480, 250]].forEach(([x, y], i) => gsap.delayedCall(.4 + i * .5, () => blips.push(blip(x, y)))); });
-      await line(S.h4, bR2, r2, () => { [[770, 150], [620, 390], [720, 220], [520, 360]].forEach(([x, y], i) => gsap.delayedCall(.2 + i * .3, () => blips.push(blip(x, y)))); });
-      await line(S.h5, bM2, m2, () => {
-        const dl = document.createElement('div'); dl.className = 'dline'; dl.innerHTML = '<span>DEFENCE LINE</span>'; radar.appendChild(dl);
-        gsap.fromTo(dl, { scaleY: 0, transformOrigin: '50% 0' }, { scaleY: 1, duration: .6, delay: .6 });
-        blips.forEach(b => gsap.to(b, { x: -60 - Math.random() * 40, duration: 8, ease: 'none' }));
+      const alert = ost('ALERT! ALERT!', 'red');
+      const flash = gsap.to(alarm, { opacity: 1, duration: .4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      gsap.to(alert, { opacity: .35, duration: .4, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: .45 });
+      SFX.alarm();
+      await line(S.s2, bR2, r2, () => gsap.delayedCall(1.2, SFX.alarm));
+      await line(S.s3, bM2, m2);
+      flash.kill(); gsap.to(alarm, { opacity: .25, duration: .5 }); gsap.killTweensOf(alert); gsap.to(alert, { opacity: 0, scale: .8, duration: .3, onComplete: () => alert.remove() });
+
+      /* ---- Scene 3 · the navigation screen: a horizontal scale, 0 in the centre is our defence line ---- */
+      const nav = document.createElement('div'); nav.className = 'nav'; radar.appendChild(nav);
+      let h = '<div class="bar"></div>';
+      for (let v = -8; v <= 8; v++) h += `<i class="${v ? '' : 'z'}" style="left:${nx(v)}px"></i><b class="${v < 0 ? 'n' : v > 0 ? 'p' : 'z'}" style="left:${nx(v)}px">${f(v)}</b>`;
+      nav.innerHTML = h + `<div class="navd" style="left:${nx(0)}px"><span>DEFENCE LINE 0</span></div>`;
+      const dline = nav.querySelector('.navd');
+      await line(S.s4, bM2, m2, () => {
+        gsap.fromTo(nav.querySelector('.bar'), { scaleX: 0 }, { scaleX: 1, duration: .6, ease: 'power2.out' });
+        gsap.fromTo(nav.querySelectorAll('i,b'), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .3, stagger: { each: .025, from: 'center' }, delay: .3 });
+        gsap.fromTo(dline, { scaleY: 0, transformOrigin: '50% 100%' }, { scaleY: 1, duration: .5, delay: .9, ease: 'back.out(2)' });
+        SFX.ping();
       });
-      await line(S.h6, bR2, r2);
-      await line(S.h7, bM2, m2, () => {
-        const mini = document.createElement('div'); mini.className = 'mini'; radar.appendChild(mini);
-        mini.innerHTML = [-3, -2, -1, 0, 1, 2, 3].map(v => `<i class="${v ? '' : 'z'}" style="left:${300 + v * 90}px"></i><b class="${v ? '' : 'z'}" style="left:${300 + v * 90}px">${f(v)}</b>`).join('');
-        gsap.fromTo(mini, { scaleX: 0 }, { scaleX: 1, duration: .6, delay: .5, ease: 'power2.out' });
-        // blips snap onto marked positions above the mini scale
-        const spots = [-3, -1, 2];
-        blips.forEach((b, i) => { gsap.killTweensOf(b); if (i < spots.length) gsap.to(b, { left: 150 + 300 + spots[i] * 90, top: 330, x: 0, duration: .6, delay: 1.2 + i * .2, ease: 'back.out(1.6)' }); else gsap.to(b, { opacity: 0, duration: .4, delay: 1 }); });
+
+      /* ---- Scene 4 · two submarines at −6 and +5: +5 blinks, it is closer to the defence line ---- */
+      const blip = v => { const b = document.createElement('div'); b.className = 'blip'; Object.assign(b.style, { left: nx(v) + 'px', top: (NAV.y - 70) + 'px' }); radar.appendChild(b); gsap.fromTo(b, { scale: 0 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); SFX.blip(); return b; };
+      const dist = (v, cls) => { const d = document.createElement('div'); d.className = 'dist ' + cls; const a = Math.min(nx(0), nx(v)); Object.assign(d.style, { left: a + 'px', width: Math.abs(nx(v) - nx(0)) + 'px', top: (NAV.y - 30) + 'px' }); d.innerHTML = `<span>${Math.abs(v)}</span>`; radar.appendChild(d); gsap.fromTo(d, { scaleX: 0, transformOrigin: v < 0 ? '100% 50%' : '0% 50%' }, { scaleX: 1, duration: .6, ease: 'power2.out' }); return d; };
+      let bN, bP;
+      await line(S.s5, bM2, m2, () => {
+        bN = blip(-6); gsap.delayedCall(.3, () => { bP = blip(5); });
+        gsap.delayedCall(.8, () => { dist(-6, 'n'); dist(5, 'p'); });
+        gsap.delayedCall(1.4, () => { gsap.to(bP, { scale: 1.5, duration: .3, yoyo: true, repeat: 7, ease: 'sine.inOut' }); gsap.fromTo(dline, { filter: 'brightness(1)' }, { filter: 'brightness(1.8)', duration: .3, yoyo: true, repeat: 5 }); });
       });
-      await line(S.h8, bR2, r2);
+
+      /* ---- Scene 5 · their missile bays open: red missiles launch, the sonar flashes red ---- */
+      const missiles = [];
+      const launch = (from, dl) => gsap.delayedCall(dl, () => {
+        const m = document.createElement('div'); m.className = 'rmis'; Object.assign(m.style, { left: nx(from) + 'px', top: (NAV.y - 70) + 'px' }); radar.appendChild(m); missiles.push(m);
+        gsap.to(m, { left: nx(from) + (from < 0 ? 1 : -1) * (60 + Math.random() * 60), top: NAV.y - 150 - Math.random() * 70, duration: 1.2, ease: 'power1.out' }); SFX.launch();
+      });
+      const wave = () => { const w = document.createElement('div'); w.className = 'sonarwave'; radar.appendChild(w); gsap.fromTo(w, { scale: .1, opacity: .9 }, { scale: 2.4, opacity: 0, duration: 1.6, ease: 'power1.out', onComplete: () => w.remove() }); };
+      await line(S.s6, bM2, m2, () => { [-6, 5, -6, 5].forEach((v, i) => launch(v, .3 + i * .35)); });
+      await line(S.s7, bM2, m2, () => {
+        radar.classList.add('red'); SFX.alarm(); for (let i = 0; i < 4; i++) gsap.delayedCall(i * .5, wave);
+        gsap.fromTo(alarm, { opacity: .25 }, { opacity: .9, duration: .35, yoyo: true, repeat: 3 });
+      });
+
+      /* ---- Scene 6 · targets confirmed: each missile gets a targeting circle, 0 glows → MISSION 1 ---- */
+      await line(S.s8, bM2, m2, () => {
+        radar.classList.remove('red');
+        missiles.forEach((m, i) => gsap.delayedCall(.2 + i * .25, () => { const r = new Image(); r.src = 'assets/img/reticle.webp'; r.className = 'navlock'; m.appendChild(r); gsap.fromTo(r, { scale: 2, rotation: -90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: .35, ease: 'back.out(2)' }); SFX.lock(); }));
+        gsap.delayedCall(1.4, () => gsap.fromTo(nav.querySelectorAll('.z'), { filter: 'brightness(1)' }, { filter: 'brightness(2)', duration: .35, yoyo: true, repeat: 5 }));
+      });
+      await line(S.s9, bM2, m2);
+      await line(S.s10, bM2, m2);
+      await line(S.s11, bM2, m2);
+      const m1 = ost('MISSION 1', 'stamp'); SFX.ping(); SFX.reward && SFX.reward(true);
+      await wait(1.4); chk(); gsap.to(m1, { opacity: 0, scale: 1.2, duration: .3 });
       }
     } catch (e) { if (e !== SKIP) throw e; }
 
@@ -197,6 +241,33 @@
     await gsap.to(st, { opacity: 0, duration: .45 });
     st.classList.add('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([st, bg, cast, sfx], { clearProps: 'all' });
     await W.sail(1.4);
+    await howTo();
+  }
+
+  /* ---------- how to play: four quick cards in the cockpit (story sheet), each lights up as Meera says it ---------- */
+  async function howTo() {
+    const CARDS = [
+      [S.hp1, 'READ THE MISSION', '<div class="hscale"><i></i><i></i><i class="z"></i><i></i><i></i></div>'],
+      [S.hp2, 'FIND THE TARGET', '<img src="assets/img/sub.webp" alt="">'],
+      [S.hp3, 'AIM &amp; FIRE!', '<img src="assets/img/reticle.webp" alt="">'],
+      [S.hp4, 'TARGET HIT!', '<b class="htick">✓</b>'],
+    ];
+    const box = document.createElement('div'); box.id = 'howto';
+    box.innerHTML = '<div class="ht">HOW TO PLAY</div><div class="row">' + CARDS.map(([, t, ic], i) => `<div class="hc"><span class="n">${i + 1}</span><div class="ic">${ic}</div><div class="lb">${t}</div></div>`).join('') + '</div>';
+    $('#stage').appendChild(box);
+    const cards = box.querySelectorAll('.hc');
+    let skip = false; box.onpointerdown = () => { skip = true; SD.skip(); };
+    gsap.fromTo(box, { opacity: 0 }, { opacity: 1, duration: .3 });
+    gsap.fromTo(cards, { y: 40, opacity: 0, scale: .8 }, { y: 0, opacity: .45, scale: 1, duration: .45, stagger: .1, ease: 'back.out(2)' });
+    await wait(.5);
+    for (let i = 0; i < CARDS.length && !skip; i++) {
+      cards.forEach((c, k) => c.classList.toggle('on', k === i));
+      gsap.fromTo(cards[i], { scale: 1 }, { scale: 1.08, duration: .25, yoyo: true, repeat: 1, ease: 'back.out(3)' }); SFX.pop();
+      if (i === 3) W.sparkle(960, 470);
+      await say(CARDS[i][0]);
+      gsap.to(cards[i], { opacity: .75, duration: .3 });
+    }
+    await gsap.to(box, { opacity: 0, duration: .35 }); box.remove();
   }
 
   /* ---------- Teaching the navigation scale ---------- */
@@ -355,7 +426,8 @@
     SD.where = { at: 'final', round: 3 };
     await signalRound(D.FIN_SIG, 5);
     W.pips(3, 3);
-    await say(S.finEnd);
+    const end = W.banner('MISSION COMPLETE', 'ROUTE CLEARED!', 'The sea route is safe again!', 3.4);   // story sheet ending
+    await say(S.finEnd); await end;
     await complete('fin', 'Sea route protected!', 'You compared, ordered and combined integers.', 'Compare · Order · Combine', 'Play again');
   }
 

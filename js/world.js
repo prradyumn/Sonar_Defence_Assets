@@ -92,7 +92,7 @@
   });
   function school(first) {
     const n = 4 + Math.floor(Math.random() * 6), c = FISHC[Math.floor(Math.random() * FISHC.length)];
-    const depth = .45 + Math.random() * .5, y = 330 + Math.random() * 380;
+    const depth = .45 + Math.random() * .5, y = 725 + Math.random() * 70;   // below the scale: never behind the submarine row
     const g = el('school', $('#fishL'), { opacity: .55 + depth * .4, filter: `saturate(${.6 + depth * .4}) brightness(${.8 + depth * .25})` });
     let h = ''; for (let i = 0; i < n; i++) h += fishSVG(c, { x: i * 46 + Math.random() * 30, y: (Math.random() - .5) * 70, d: Math.random() * .3 });
     g.innerHTML = h;
@@ -149,7 +149,7 @@
     gsap.fromTo('#rail', { scaleX: 0, transformOrigin: '50% 50%' }, { scaleX: 1, duration: .7, ease: 'power3.out', delay: .1 });
     const ts = Object.values(TICK), ls = Object.values(LBL);
     gsap.fromTo(ts, { scaleY: 0 }, { scaleY: 1, duration: .35, ease: 'back.out(3)', stagger: { each: .03, from: 'center' }, delay: .3 });
-    gsap.fromTo(ls, { opacity: 0, y: 14, scale: .6 }, { opacity: i => i === 8 ? 1 : .8, y: 0, scale: 1, duration: .4, ease: 'back.out(2.5)', stagger: { each: .03, from: 'center' }, delay: .4, clearProps: 'opacity,scale' });
+    gsap.fromTo(ls, { opacity: 0, y: 14, scale: .6 }, { opacity: i => i === 8 ? 1 : .5, y: 0, scale: 1, duration: .4, ease: 'back.out(2.5)', stagger: { each: .03, from: 'center' }, delay: .4, clearProps: 'opacity,scale' });
     gsap.fromTo(sheen, { left: '-30%' }, { left: '110%', duration: 1.1, ease: 'power2.inOut', delay: .55 });
     SFX.ping(); await wait(1.1);
   };
@@ -300,7 +300,7 @@
   W.clearBadges = () => { BADGES.forEach(b => gsap.to(b, { opacity: 0, duration: .3, onComplete: () => b.remove() })); BADGES = []; };
 
   /* ================= HUD ================= */
-  W.strip = (html, o = {}) => { const s = $('#strip'); s.innerHTML = o.big ? `<span class="big">${html}</span>` : html; s.classList.remove('glint'); void s.offsetWidth; s.classList.add('glint'); gsap.fromTo(s, { opacity: 0, y: -24, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .45, ease: 'back.out(2)' }); };
+  W.strip = (html, o = {}) => { $('#hudbar').classList.add('live'); const s = $('#strip'); s.innerHTML = o.big ? `<span class="big">${html}</span>` : html; s.classList.remove('glint'); void s.offsetWidth; s.classList.add('glint'); gsap.fromTo(s, { opacity: 0, y: -24, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .45, ease: 'back.out(2)' }); };
   W.stripOff = () => gsap.to('#strip', { opacity: 0, duration: .3 });
   W.pips = (n, done) => { const p = $('#pips'); p.innerHTML = ''; W.pipDone = done; for (let i = 0; i < n; i++) { const im = new Image(); im.src = 'assets/img/' + (i < done ? 'pip_on' : 'pip_off') + '.webp'; p.appendChild(im); } if (done > 0) gsap.fromTo(p.children[done - 1], { scale: 1.8 }, { scale: 1, duration: .4, ease: 'back.out(3)' }); if (p.children[done]) p.children[done].classList.add('now'); };
   W.banner = async (k, t, s, hold = 1.7) => {

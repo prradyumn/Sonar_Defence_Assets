@@ -4,7 +4,7 @@ Open `index.html` in Chrome: double-click it, or press **Go Live** in VS Code (L
 
 The game is played from inside the submarine cockpit (see *The cockpit* below).
 
-Flow: Hook (Commander Meera & Cadet Riya: harbour → the sonar-room doors slide open → sonar room → dive through the porthole) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
+Flow: Story (from the story sheet, with Commander Meera & Cadet Riya: harbour with enemy submarines slipping in → the control-room doors open on a red alert → the navigation screen with defence line 0 → submarines at −6 and +5 → missiles launch → targets confirmed, MISSION 1 → dive through the porthole → How to play cards) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
 
 ```
 index.html          the game
@@ -84,7 +84,7 @@ open http://localhost:8000/?edit=1
 - `js/cockpit.js` the bow cannon + torpedo, the crew at their stations, console screen, warning lamps, hull kick
 - `js/qa.js` the QA jumper (`?qa=1`)
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
-- `js/levels.js` flow + pedagogy: hook scenes, teaching, tutorial, 3-strike (Oops + direction arrow → Hint + rule card → Nudge + pulsing glow on the answer), idle help (6 s visual → 12 s spoken → 22 s reminder), stars
+- `js/levels.js` flow + pedagogy: story scenes (lines `s1`–`s11`, how-to `hp1`–`hp4`, ending `finEnd` → ROUTE CLEARED!), teaching, tutorial, 3-strike (Oops + direction arrow → Hint + rule card → Nudge + pulsing glow on the answer), idle help (6 s visual → 12 s spoken → 22 s reminder), stars
 - `tools/make_voices.py` makes the voice files
 - `assets/img` web versions of the art pack (all `.webp`; the sonar-room doors are `door_left/right.webp`)
 
@@ -92,3 +92,6 @@ open http://localhost:8000/?edit=1
 - rule card → CSS (`#rule`)
 - left signal → `sig.webp` mirrored + recoloured in CSS (`.sig.neg`)
 - fish & manta → inline SVG in `world.js`
+
+## HUD
+One bar on the ceiling holds the hear-again button, the mission text and the progress pips (`#hudbar`). The ceiling lamps are toned down (`#lampDim`), the crew are 15 % smaller and dim until they speak, the console shows the sonar trace + depth only between missions, fish swim below the scale (never behind the submarine row), and number labels not in play are faded to 50 %.

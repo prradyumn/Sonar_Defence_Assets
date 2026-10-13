@@ -27,8 +27,8 @@
       ['Cockpit', [['#cannon', 'Bow cannon (reload after moving it)', { mv: 'y', sz: 'wh' }]]],
       ['Navigation scale', [['#scaleBack', 'Scale panel', { mv: 'xy', sz: 'wh' }], ['#rail', 'Scale rail', { mv: 'xy', sz: 'wh' }], ['.lbl', 'Scale numbers', { mv: 'y', sz: 'w', mx: .5, t: 1 }],
         ['.sub', 'Submarines', { cy: 'SUB_Y' }], ['#marker', 'Defence marker (L3)', { mv: 'y', sz: 'wh', mx: .5 }]]],
-      ['HUD', [['#strip', 'Mission strip', { mv: 'xy', sz: 'wh', hp: 'minHeight', t: 1 }], ['#pips', 'Progress pips', { mv: 'xy', sz: 'scale' }],
-        ['#btnSpeak', 'Hear-again button', { mv: 'xy', sz: 'wh' }], ['#rule', 'Rule card', { mv: 'xy', sz: 'wh', t: 1 }],
+      ['HUD', [['#hudbar', 'HUD bar (hear-again · mission · progress)', { mv: 'xy', sz: 'w' }, [['#strip', 'Mission text', { t: 1 }], ['#pips', 'Progress pips', { sz: 'scale' }],
+        ['#btnSpeak', 'Hear-again button', { sz: 'wh' }]]], ['#rule', 'Rule card', { mv: 'xy', sz: 'wh', t: 1 }],
         ['#hand', 'Helper glow', { sz: 'wh', mx: .5 }],
         ['#comms', 'Comms (name + caption)', { mv: 'xy', sz: 'scale' }, [
           ['#pName', 'Name tag', { mv: 'xy', t: 1 }],

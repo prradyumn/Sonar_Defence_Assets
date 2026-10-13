@@ -11,15 +11,23 @@
 
   /* ---------- static lines ---------- */
   const S = {
-    // hook — harbour, then the sonar room
-    h1: R('h1', 'Good morning, Commander Meera! The sea looks so calm today.'),
-    h2: M('h2', 'Not for long, Riya. Listen… the sonar is beeping!'),
-    h3: M('h3', 'Enemy submarines have entered our guarded sea route.'),
-    h4: R('h4', 'So many of them! Where are they hiding?'),
-    h5: M('h5', 'At different marked positions. We must find the right targets before they cross the defence line.'),
-    h6: R('h6', 'But how will we know which one to hit?'),
-    h7: M('h7', 'With the navigation scale! Read each mission, find the submarine, and fire at the right target.'),
-    h8: R('h8', 'Ready, Commander! Let’s protect the route!'),
+    // hook — the story sheet (Integers- Submarine - Story): harbour → control room → navigation screen → missiles → mission 1
+    s1: M('s1', 'Enemy submarines have entered the guarded sea route. Officers must stop them. They hide at different positions.'),
+    s2: R('s2', 'Alert! Alert! Alert!'),
+    s3: M('s3', 'Oh no! Enemy submarines are entering our sea.'),
+    s4: M('s4', 'We must find their positions before they cross our defence line!'),
+    s5: M('s5', 'The submarine at +5 is closer to our defence line!'),
+    s6: M('s6', 'Some of them started firing.'),
+    s7: M('s7', 'Contact defence station! Enemy submarines are releasing missiles. Prepare for counterattack!'),
+    s8: M('s8', 'Targets confirmed. Execute the counterattack!'),
+    s9: M('s9', 'Let’s find the right target and fire!'),
+    s10: M('s10', 'Don’t let those sneaky submarines escape!'),
+    s11: M('s11', 'Ready? Launch the missiles.'),
+    // how to play (four quick cards in the cockpit)
+    hp1: M('hp1', 'Check the navigation scale.'),
+    hp2: M('hp2', 'Find the submarine at the correct position!'),
+    hp3: M('hp3', 'Aim at the right submarine to hit!'),
+    hp4: M('hp4', 'Tap Fire!'),
     // on patrol — teaching the scale
     g1: R('g1', 'Whoa! The navigation scale is switching on!'),
     t1: M('t1', 'This is our navigation scale. The centre point is zero.'),
@@ -49,7 +57,7 @@
     l3idle: M('l3idle', 'Where will the marker stop? Fire at that submarine.'),
     pairIdle: M('pairIdle', 'Tap where a right signal and a left signal stand together.'),
     pairDemo: M('pairDemo', 'Tap here! One right signal and one left signal cancel each other.'),
-    finEnd: M('finEnd', 'Mission complete! The sea route is safe.'),
+    finEnd: M('finEnd', 'All enemy submarines are stopped. Mission complete! The sea route is safe again!'),   // story sheet ending
   };
   S.hits = [S.hit1, S.hit2, S.hit3, S.hit4];
 

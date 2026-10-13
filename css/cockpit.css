@@ -26,18 +26,26 @@
 .cockpit #comms.riya #pName{background:#ffc04d}
 
 /* Meera (left) and Riya (right) at their stations, in front of the console; the speaker lights up */
-.mate{position:absolute;height:862px;bottom:-522px;filter:drop-shadow(0 10px 18px rgba(0,10,30,.5)) brightness(.92);transition:filter .25s}
+.mate{position:absolute;height:733px;bottom:-444px;filter:drop-shadow(0 10px 18px rgba(0,10,30,.5)) brightness(.78) saturate(.85);transition:filter .25s}   /* 15 % smaller; dimmer until they speak */
 .mate canvas{display:block;height:100%}
 .mate .flip{height:100%;transform:scaleX(-1)}
-.mate.meera{left:-6px}.mate.riya{left:1541px}
+.mate.meera{left:-6px}.mate.riya{left:1598px}
 .mate.speaking{filter:drop-shadow(0 0 22px rgba(127,242,255,.55)) drop-shadow(0 10px 18px rgba(0,10,30,.5)) brightness(1.04)}
 .mate.riya.speaking{filter:drop-shadow(0 0 22px rgba(255,200,90,.55)) drop-shadow(0 10px 18px rgba(0,10,30,.5)) brightness(1.04)}
 
 /* the scale sits low on the glass (world SCALE_DY), kept inside the window frame */
 .cockpit #scaleBack{left:98px!important;width:1724px!important}
 .cockpit #rule{left:1170px;top:166px;width:640px}
-.cockpit #btnSpeak{left:528px;top:34px}   /* clear of the right-hand ceiling lamp */
-.cockpit #pips{top:40px;padding:10px 14px;border-radius:30px;background:rgba(4,20,44,.88);border:2px solid rgba(88,226,255,.55);box-shadow:0 4px 12px rgba(0,8,24,.45)}   /* off the frame rivets */
+/* one HUD bar on the ceiling: hear-again button · mission text · progress pips */
+#hudbar{position:absolute;left:470px;top:26px;width:1180px;min-height:100px;box-sizing:border-box;display:flex;align-items:center;gap:22px;padding:10px 26px 10px 16px;border-radius:30px;
+  background:linear-gradient(rgba(10,44,86,.94),rgba(5,28,58,.94));border:3px solid #58e2ff;box-shadow:0 0 22px rgba(60,210,255,.4),inset 0 1px 0 rgba(255,255,255,.18);opacity:0;pointer-events:none}
+#hudbar.live{opacity:1;transition:opacity .4s}
+#hudbar #btnSpeak{position:relative;left:auto;top:auto;flex:none;width:72px;height:72px;pointer-events:auto}
+#hudbar #strip{position:relative;left:auto;top:auto;flex:1;width:auto;min-height:0;padding:6px 0;background:none;border:none;box-shadow:none;font-size:36px}
+#hudbar #strip::before{display:none}
+#hudbar #pips{position:relative;right:auto;top:auto;flex:none}
+#lampDim{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;
+  background:radial-gradient(circle 170px at 81px 99px,rgba(40,52,92,.6),rgba(40,52,92,0)),radial-gradient(circle 170px at 1839px 98px,rgba(40,52,92,.6),rgba(40,52,92,0))}
 
 /* idle console screen: a slow sonar trace until someone speaks */
 #scope{position:absolute;left:426px;top:962px;width:1068px;height:102px;border-radius:22px;overflow:hidden;pointer-events:none}

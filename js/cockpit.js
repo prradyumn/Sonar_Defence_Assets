@@ -23,7 +23,8 @@
     '<path id="trace" fill="none" stroke="#49dcff" stroke-width="3" stroke-linejoin="round" opacity=".7"/></svg><span class="lbl2">SONAR</span>';
   const trace = $('#trace');
   gsap.ticker.add(t => {
-    const talk = +gsap.getProperty(comms, 'opacity'); scope.style.opacity = (1 - talk) * .9;
+    const talk = +gsap.getProperty(comms, 'opacity'), mission = +gsap.getProperty('#strip', 'opacity');
+    scope.style.opacity = (1 - talk) * (1 - mission) * .9;   // quiet during a mission: the trace + depth show only between missions
     if (talk > .95 || SD.paused) return;
     const ph = (t * .35) % 1.3 - .15; let d = '';
     for (let x = 0; x <= SW; x += 8) { const u = x / SW, k = Math.exp(-Math.pow((u - ph) / .035, 2)); d += (x ? ' L' : 'M') + x + ' ' + (MID - Math.sin(u * 90) * MID * .55 * k - Math.sin(u * 13 + t * 2) * 3).toFixed(1); }
