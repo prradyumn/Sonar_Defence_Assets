@@ -2,6 +2,20 @@
    js/cockpit.js adds the cockpit itself: the bow cannon, the crew at their stations and the console screen. */
 (function () {
   const { $, wait, fmt, SFX } = SD;
+  /* screen shake: every game layer sits in one wrapper (#shake) that moves as one piece and zooms in just enough
+     that its edges never uncover the page behind the stage (no black or blue lines). The overlays stay still. */
+  const stageEl = $('#stage'), shakeEl = document.createElement('div'); shakeEl.id = 'shake';
+  [...stageEl.children].filter(c => !c.classList.contains('overlay')).forEach(c => shakeEl.appendChild(c));
+  stageEl.insertBefore(shakeEl, stageEl.firstChild);
+  const SHK = { amp: 0, t: 0, d: 1 };
+  gsap.ticker.add((t, dt) => {
+    if (!SHK.amp) return;
+    SHK.t += dt / 1000; const a = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d);
+    if (a <= .05) { SHK.amp = 0; shakeEl.style.transform = ''; return; }
+    const z = 1 + 2 * (a + 1) / 1080;   // overscan ≥ the offset on every side
+    shakeEl.style.transform = `translate(${((Math.random() - .5) * 2 * a).toFixed(2)}px,${((Math.random() - .5) * 1.2 * a).toFixed(2)}px) scale(${z.toFixed(4)})`;
+  });
+  const shake = (k = 8, d = .4) => { const left = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d); if (k < left) return; SHK.amp = k; SHK.t = 0; SHK.d = d; };
   /* positions that come from code, not CSS — tunable live in the layout editor, saved in js/layout.js (LAYOUT.config) */
   const DEFAULTS = {
     X0: 960,        // stage x of 0 on the navigation scale
@@ -126,7 +140,7 @@
     const l = el('lbl' + side(v), sc, { left: X(v) + 'px' }); l.textContent = fmt(v); LBL[v] = l;
   }
   const scan = el('', sc); scan.id = 'scan';
-  W.X = X; W.CONFIG = CONFIG; W.CONFIG_DEFAULTS = DEFAULTS; W.el = el; W.spawnBubble = big => spawnBubble(big);
+  W.X = X; W.CONFIG = CONFIG; W.CONFIG_DEFAULTS = DEFAULTS; W.el = el; W.shake = shake; W.spawnBubble = big => spawnBubble(big);
   W.labelsOn = vals => { for (let v = -8; v <= 8; v++) LBL[v].classList.toggle('on', vals.includes(v)); };
   // power-on: the glass bar unfolds from 0, the rail draws out, ticks and numbers ripple outwards, a light sweeps left → right
   W.scaleIntro = async () => {
@@ -227,7 +241,7 @@
   W.blast = async s => {
     SFX.boom(); s.alive = false;
     const b = el('blast', fx, { left: X(s.v) + 'px', top: s.cy + 'px' });
-    const shake = { x: 0 }; gsap.to(shake, { x: 1, duration: .45, onUpdate() { const k = (1 - shake.x) * 9; $('#stage').style.translate = `${(Math.random() - .5) * k}px ${(Math.random() - .5) * k}px`; }, onComplete: () => { $('#stage').style.translate = ''; } });
+    shake(5, .45);
     const fl = $('#flash'); fl.style.setProperty('--fx', X(s.v) + 'px'); fl.style.setProperty('--fy', s.cy + 'px');
     gsap.fromTo(fl, { opacity: 1 }, { opacity: 0, duration: .6, ease: 'power2.out' });
     const sh = el('shock', fx, { left: X(s.v) + 'px', top: s.cy + 'px' });

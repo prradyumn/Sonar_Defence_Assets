@@ -4,6 +4,7 @@
 @font-face{font-family:Fredoka;font-weight:700;src:url(../assets/fonts/fredoka-latin-700-normal.woff2)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:#04121f;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#shake{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:50% 50%}
 #stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:#0b3d66;font-family:Baloo,Fredoka,sans-serif;color:#fff}
 .abs{position:absolute;left:0;top:0}
 .hidden{display:none!important}

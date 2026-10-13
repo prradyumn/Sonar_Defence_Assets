@@ -63,10 +63,7 @@
   W.clearSubs = () => { slideTo(X(0), .9); return clear0(); };
 
   /* ---- hull kick: the whole cockpit jolts ---- */
-  const kick = (k = 10, d = .35) => {
-    const o = { t: 0 }, parts = ['#cockpit', '#crew', '#screen', '#scope', '#lamps', '#hud'];
-    gsap.to(o, { t: 1, duration: d, onUpdate() { const a = (1 - o.t) * k; gsap.set(parts, { x: (Math.random() - .5) * a, y: (Math.random() - .5) * a * .6 }); }, onComplete: () => gsap.set(parts, { x: 0, y: 0 }) });
-  };
+  const kick = (k = 10, d = .35) => W.shake(k / 2, d);   // the whole view shakes as one piece (world.js)
 
   /* ---- torpedo: out of the cannon's muzzle, running away from us (it shrinks) to the target ---- */
   W.fire = async (s, ret) => {
