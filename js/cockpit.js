@@ -1,4 +1,4 @@
-/* cockpit: sub.html only — the same game seen from inside the submarine.
+/* cockpit: the game is seen from inside the submarine.
    world.js still draws the sea, the scale, the enemy submarines and every effect; this file swaps the ship's launcher for the
    bow cannon that slides along under the scale and fires the torpedoes, puts Meera and Riya at their stations (their talking sheets play while they speak) and adds cockpit
    feedback: red warning lamps on a miss, a hull kick when a torpedo leaves, the engines rumbling when we sail on. */

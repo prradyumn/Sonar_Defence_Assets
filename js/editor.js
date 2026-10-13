@@ -21,20 +21,17 @@
     /* ---------------- what can be edited ----------------
        mv: CSS axes you can drag (x → left, y → top) · sz: '' | 'w' | 'h' | 'wh' | 'scale' · wp / hp: CSS property behind W / H
        mx: margin-left follows −W·mx (element sits centred on a script-set x) · cy: vertical drag edits this game constant
-       also: mirror a property onto another selector · t: text (font size) · piv: moving it re-aims the launcher pivot */
+       also: mirror a property onto another selector · t: text (font size) */
     const GROUPS = [
-      ['World', [['#far', 'Far reef', { mv: 'y' }], ['#seabed', 'Seabed', { mv: 'y' }], ['#kelp', 'Kelp (front)', { mv: 'y' }]]],
-      ['Ship', [['#ship', 'Ship', { mv: 'xy', sz: 'scale', piv: 1 }, [
-        ['#officer', 'Commander Meera (deck)', { mv: 'xy', sz: 'h', also: { height: '#officer img' } }],
-        ['#deckRail', 'Deck rail', { mv: 'xy', sz: 'wh' }],
-        ['#turret', 'Launcher', { mv: 'xy', sz: 'wh', piv: 1 }]]]]],
+      ['World', [['#far', 'Far reef', { mv: 'y' }], ['#seabed', 'Seabed', { mv: 'y' }]]],
+      ['Cockpit', [['#cannon', 'Bow cannon (reload after moving it)', { mv: 'y', sz: 'wh' }]]],
       ['Navigation scale', [['#scaleBack', 'Scale panel', { mv: 'xy', sz: 'wh' }], ['#rail', 'Scale rail', { mv: 'xy', sz: 'wh' }], ['.lbl', 'Scale numbers', { mv: 'y', sz: 'w', mx: .5, t: 1 }],
         ['.sub', 'Submarines', { cy: 'SUB_Y' }], ['#marker', 'Defence marker (L3)', { mv: 'y', sz: 'wh', mx: .5 }]]],
       ['HUD', [['#strip', 'Mission strip', { mv: 'xy', sz: 'wh', hp: 'minHeight', t: 1 }], ['#pips', 'Progress pips', { mv: 'xy', sz: 'scale' }],
         ['#btnSpeak', 'Hear-again button', { mv: 'xy', sz: 'wh' }], ['#rule', 'Rule card', { mv: 'xy', sz: 'wh', t: 1 }],
         ['#hand', 'Helper hand', { sz: 'wh', mx: 1 / 3 }],
-        ['#comms', 'Comms (portrait + caption)', { mv: 'xy', sz: 'scale' }, [
-          ['#portrait', 'Portrait', { mv: 'xy', sz: 'wh' }], ['#pName', 'Name tag', { mv: 'xy', t: 1 }],
+        ['#comms', 'Comms (name + caption)', { mv: 'xy', sz: 'scale' }, [
+          ['#pName', 'Name tag', { mv: 'xy', t: 1 }],
           ['#caption', 'Caption', { mv: 'xy', sz: 'wh', wp: 'maxWidth', hp: 'minHeight', t: 1 }]]]]],
       ['Cards', [['#banner .card', 'Level banner', { mv: 'xy', sz: 'wh' }], ['#done .card', 'Level-complete card', { mv: 'xy', sz: 'wh' }, [
         ['#dt', 'Title', { mv: 'xy', sz: 'w', t: 1 }], ['#ds', 'Subtitle', { mv: 'xy', sz: 'w', t: 1 }], ['#dstars', 'Stars', { mv: 'xy', sz: 'w' }],
@@ -131,17 +128,7 @@
       viewCSS(); barUI(); syncInspector();
       if (!light) { renderInspector(); renderTree(true); }
     }
-    function syncPivot() {   // the launcher fires from the turret wherever the ship / turret now sit
-      const ship = $('#ship'), tur = $('#turret'), sv = p => (state.overrides[p.sel] || {});
-      const so = sv(ENT['#ship']), to = sv(ENT['#turret']), s = so.scale == null ? 1 : so.scale;
-      const sl = so.left != null ? so.left : cssVal(ship, 'left'), st = so.top != null ? so.top : cssVal(ship, 'top');
-      const [ox, oy] = getComputedStyle(ship).transformOrigin.split(' ').map(parseFloat);
-      const tw = to.width != null ? to.width : cssVal(tur, 'width'), th = to.height != null ? to.height : cssVal(tur, 'height');
-      const tl = to.left != null ? to.left : cssVal(tur, 'left'), tt = to.top != null ? to.top : cssVal(tur, 'top');
-      setConfig('PIV_X', Math.round(sl + ox + (tl + tw / 2 - ox) * s)); setConfig('PIV_Y', Math.round(st + oy + (tt + th / 2 - oy) * s));
-      setConfig('MUZZLE', Math.round(82 * tw / 120 * s));
-    }
-    function edited(e) { if (e && e.o.piv) syncPivot(); }
+    function edited() {}
 
     /* ---------------- pause / step / speed ----------------
        The root timeline renders at (ticker time − its startTime) × timeScale and has no parent to re-align it,
@@ -285,8 +272,8 @@
 
     /* ---------------- save / export ---------------- */
     const payload = () => ({ overrides: state.overrides, config: state.config });
-    const SUBV = document.body.classList.contains('subview'), LFILE = SUBV ? 'layout_sub.js' : 'layout.js';   // sub.html keeps its own layout
-    const fileText = L => `/* layout overrides written by the in-game editor (${SUBV ? 'sub' : 'index'}.html?edit=1 → Save). Hand-editing is fine. */\n` + 'window.LAYOUT = ' + JSON.stringify(L, null, 2) + ';\n';
+    const LFILE = 'layout.js';
+    const fileText = L => `/* layout overrides written by the in-game editor (index.html?edit=1 → Save). Hand-editing is fine. */\n` + 'window.LAYOUT = ' + JSON.stringify(L, null, 2) + ';\n';
     const served = /^https?:$/.test(location.protocol);
     q('savehint').innerHTML = served ? 'Saves through <code>tools/dev_server.py</code> into <code>js/' + LFILE + '</code>.'
       : 'Opened from a file: Save can’t write files. Run <code>python3 tools/dev_server.py</code> and open <code>localhost:8000/?edit=1</code>, or use Copy / Download.';
@@ -294,7 +281,7 @@
       flush();
       if (!served) return exportDialog('This page was opened from a file, so the browser can’t write js/layout.js. Download it into the js/ folder (or run python3 tools/dev_server.py and open http://localhost:8000/?edit=1):');
       try {
-        const r = await fetch('save-layout' + (SUBV ? '?file=sub' : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
+        const r = await fetch('save-layout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.ok) throw new Error(j.error || 'HTTP ' + r.status);
         saved = snap(); window.LAYOUT = clone(payload()); try { sessionStorage.removeItem(DRAFT); } catch (e) {}
@@ -564,11 +551,11 @@
       });
       q('consts').querySelectorAll('.sde-k').forEach(r => { const inp = r.querySelector('input'), k = r.dataset.k; if (document.activeElement !== inp) inp.value = W.CONFIG[k]; r.classList.toggle('set', state.config[k] != null); });
     }
-    const CNOTE = { X0: 'x of 0 on the scale', STEP: 'px per whole number', SUB_Y: 'submarine centre y', SUB_ROW: 'extra depth for a close neighbour', SIG_Y1: 'L3 top signal row', SIG_Y2: 'L3 bottom signal row', SIG_GAP: 'px between signal columns', PIV_X: 'launcher pivot x', PIV_Y: 'launcher pivot y', MUZZLE: 'pivot → torpedo start' };
+    const CNOTE = { X0: 'x of 0 on the scale', STEP: 'px per whole number', SUB_Y: 'submarine centre y', SUB_ROW: 'row 2 offset for a close neighbour (negative = higher)', SIG_Y1: 'L3 top signal row', SIG_Y2: 'L3 bottom signal row', SIG_GAP: 'px between signal columns', SCALE_DY: 'moves the whole scale group down' };
     let constsBuilt = false;
     function renderConsts() {
       if (constsBuilt) return syncInspector(); constsBuilt = true;
-      q('consts').innerHTML = `<h4>Game constants <button id="sde-piv" title="Aim from the turret's current position">Pivot ← turret</button></h4>` +
+      q('consts').innerHTML = `<h4>Game constants</h4>` +
         Object.keys(W.CONFIG_DEFAULTS).map(k => `<div class="sde-k" data-k="${k}"><span>${k}<small>${CNOTE[k] || ''} · default ${W.CONFIG_DEFAULTS[k]}</small></span><input type="number" step="1"><button class="rs" title="Back to ${W.CONFIG_DEFAULTS[k]}">↺</button></div>`).join('');
       q('consts').querySelectorAll('.sde-k').forEach(r => {
         const k = r.dataset.k, inp = r.querySelector('input');
@@ -576,7 +563,6 @@
         inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') inp.blur(); });
         r.querySelector('.rs').onclick = () => { flush(); begin(); setConfig(k, null); end(); apply(); };
       });
-      q('piv').onclick = () => { flush(); begin(); syncPivot(); end(); apply(); toast('Launcher pivot follows the turret'); };
       syncInspector();
     }
 

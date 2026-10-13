@@ -1,61 +1,49 @@
-/* world: parallax sea, ship + launcher, navigation scale, submarines, targeting & effects, HUD.
-   Shared by both versions: index.html (the ship on the surface) and sub.html (inside the submarine, js/cockpit.js). */
+/* world: the sea outside the bow window, the navigation scale, submarines, targeting & effects, HUD.
+   js/cockpit.js adds the cockpit itself: the bow cannon, the crew at their stations and the console screen. */
 (function () {
   const { $, wait, fmt, SFX } = SD;
   /* positions that come from code, not CSS — tunable live in the layout editor, saved in js/layout.js (LAYOUT.config) */
-  const DEFAULTS = Object.assign({
+  const DEFAULTS = {
     X0: 960,        // stage x of 0 on the navigation scale
     STEP: 100,      // px between whole numbers (scale shows −8 … +8)
-    SUB_Y: 695,     // submarine centre y (row 1)
-    SUB_ROW: 100,   // extra depth for a neighbour less than 2 apart
-    SIG_Y1: 298,    // L3 signal rows: top
-    SIG_Y2: 366,    //                 bottom
+    SUB_Y: 440,     // submarine centre y (row 1), out in the water above the scale
+    SUB_ROW: -105,  // row 2 (a neighbour less than 2 apart) sits this much lower (negative = higher)
+    SIG_Y1: 200,    // L3 signal rows: top
+    SIG_Y2: 268,    //                 bottom
     SIG_GAP: 160,   // px between signal columns
-    PIV_X: 600,     // launcher pivot on stage
-    PIV_Y: 196,
-    MUZZLE: 82,     // pivot → muzzle, where the torpedo starts
-    SCALE_DY: 0,    // moves the whole scale group (bar, numbers, marker, hints) down
-  }, window.WORLD_DEFAULTS);   // sub.html: the cockpit puts the submarines above the scale
+    SCALE_DY: 100,  // moves the whole scale group (bar, numbers, marker, hints) down, low on the glass
+  };
   const CONFIG = Object.assign({}, DEFAULTS, window.LAYOUT && LAYOUT.config);
   const X = v => CONFIG.X0 + v * CONFIG.STEP;   // scale position → stage x
   const SUB_H = 90, LINE_TOP = 584, BAR_TOP = 446;   // .sub height · .sonarline top · #scaleBack top (game.css)
-  const SHIP = !!$('#ship');                          // false in sub.html (no ship, wake or launcher)
   // the dotted sonar line joins a submarine to the scale: down from the rail (subs below) or down from the sub (subs above)
   const lineAt = (ln, cy) => {   // (the line lives in #scale, which is shifted by SCALE_DY)
     const t = cy - SUB_H / 2, dy = CONFIG.SCALE_DY;
     if (t > BAR_TOP + dy) { ln.style.top = LINE_TOP + 'px'; ln.style.height = (t - dy - LINE_TOP) + 'px'; }
     else { ln.style.top = (t + SUB_H - dy) + 'px'; ln.style.height = (BAR_TOP + dy - t - SUB_H) + 'px'; }
   };
-  const play = $('#play'), fx = $('#fx'), sc = $('#scale'), sg = $('#sigs');   // sg: Level 3 signals + pair buttons, above the ship
+  const play = $('#play'), fx = $('#fx'), sc = $('#scale'), sg = $('#sigs');   // sg: Level 3 signals + pair buttons
   const el = (cls, parent, css = {}) => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, css); parent.appendChild(d); return d; };
 
   /* ================= parallax ================= */
   // Each strip is mirrored (A | flipped A) so the joins always match; the track wraps every 2 widths.
   const LAYERS = [];
   function strip(id, src, h, w, speed) {
-    const t = $('#' + id); if (!t) return; for (let i = 0; i < 4; i++) { const im = new Image(); im.src = 'assets/img/' + src; im.style.width = w + 'px'; if (i % 2) im.className = 'flip'; t.appendChild(im); }
+    const t = $('#' + id); for (let i = 0; i < 4; i++) { const im = new Image(); im.src = 'assets/img/' + src; im.style.width = w + 'px'; if (i % 2) im.className = 'flip'; t.appendChild(im); }
     t.style.width = (4 * w) + 'px'; LAYERS.push({ t, w, speed, x: 0 });
   }
-  strip('skyTrack', 'sky_surface.webp', 300, 3200, 6);
   strip('far', 'far.webp', 440, 2414, 18);
   strip('seabed', 'seabed.webp', 260, 2377, 46);
-  strip('kelp', 'kelp.webp', 280, 1344, 115);
   const caus = { x: 0 }, cEl = $('#caustics');
   const W = { mult: 1, t: 0 };
-  // surface waves
-  const w1 = $('#wave1'), w2 = $('#wave2');
-  function wavePath(t, a, b, ph) { let d = 'M0 60 L0 ' + (24 + a * Math.sin(ph)); for (let x = 0; x <= 1920; x += 40) d += ` L${x} ${(24 + a * Math.sin(x * .011 + t * 1.6 + ph) + b * Math.sin(x * .027 - t * 2.4)).toFixed(1)}`; return d + ' L1920 60 Z'; }
   gsap.ticker.add((time, dt) => {
     if (SD.paused) return;
     const s = dt / 1000 * W.mult * SD.rate; W.t = time;
     for (const L of LAYERS) { L.x = (L.x + L.speed * s) % (2 * L.w); L.t.style.transform = `translate3d(${-L.x}px,0,0)`; }
     caus.x = (caus.x + 26 * s) % 512; cEl.style.transform = `translate3d(${-caus.x}px,${Math.sin(time * .6) * 6}px,0)`;
-    if (w1) { w1.setAttribute('d', wavePath(time, 6, 3, 0)); w2.setAttribute('d', wavePath(time * .8, 9, 4, 1.7)); }
-    if (SHIP) wakeFrame(time, dt / 1000 * SD.rate);
   });
   gsap.to('#rays', { rotation: 3.5, x: 60, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#rays', { opacity: .3, duration: 3.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  if ($('#kelp')) gsap.fromTo('#kelp', { '--sk': '-3deg' }, { '--sk': '3.5deg', duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#caustics', { opacity: .34, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#far', { y: 8, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
 
@@ -102,13 +90,6 @@
   }
   gsap.to('#mantaWing', { scaleY: .55, transformOrigin: '50% 45%', duration: 1.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   setTimeout(manta, 4000);
-  // ship & officer ride the swell
-  if (SHIP) {
-    gsap.to('#ship', { y: 4, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-    gsap.set('#offImg', { xPercent: -50 });
-    gsap.to('#ship', { rotation: .7, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut', transformOrigin: '50% 75%' });
-  }
-  gsap.set('#pSpr', { xPercent: -50 });
   // bubbles drifting past (rise + go backwards = we are moving forward)
   const bub = $('#bubbles');
   function spawnBubble(big) {
@@ -123,91 +104,11 @@
   W.sail = async (dur = 1.6) => {     // short "full speed ahead" burst between missions
     SFX.sail();
     gsap.to(W, { mult: 9, duration: .5, ease: 'power2.in' });
-    if (SHIP) gsap.to('#ship', { x: 30, duration: .6, ease: 'power2.out' });
     for (let i = 0; i < 10; i++) setTimeout(() => spawnBubble(true), i * 70);
     await wait(.5 + dur * .5);
     gsap.to(W, { mult: 1, duration: dur * .6, ease: 'power2.out' });
-    if (SHIP) gsap.to('#ship', { x: 0, duration: 1, ease: 'power2.inOut' });
     await wait(dur * .5);
   };
-
-  /* ---- ship wake (SVG, ship px). Behind the hull: the long foam trail + propeller bubbles. In front: the sea itself
-          (a translucent water layer so the lower hull sits IN the water), its foam edge, the bow wave + spray, the stern churn.
-          Everything follows the sailing speed W.mult: a gentle lap at rest, white water at full speed. ---- */
-  const NS = 'http://www.w3.org/2000/svg', WL = 160, STERN = 22, BOW = 598, SCREW = { x: 48, y: 194 };
-  const svg = (tag, a, parent) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); parent.appendChild(e); return e; };
-  const wakeSvg = $('#wakeFx') || document.createElementNS(NS, 'svg'), foamSvg = $('#hullFoam') || document.createElementNS(NS, 'svg');
-  wakeSvg.innerHTML = foamSvg.innerHTML = '';
-  const grad = (id, stops, [x1, y1, x2, y2], parent) => { const g = svg('linearGradient', { id, gradientUnits: 'userSpaceOnUse', x1, y1, x2, y2 }, svg('defs', {}, parent)); stops.forEach(([o, c, a]) => svg('stop', { offset: o, 'stop-color': c, 'stop-opacity': a }, g)); };
-  grad('wkTrail', [[0, '#ffffff', .95], [.3, '#eafcff', .75], [1, '#bff3ff', 0]], [STERN, 0, -420, 0], wakeSvg);
-  grad('wkSheen', [[0, '#ffffff', .55], [.35, '#c8f4ff', .28], [1, '#7fd8ff', 0]], [0, WL - 2, 0, WL + 22], foamSvg);
-  grad('wkBow', [[0, '#ffffff', 0], [.55, '#ffffff', .8], [1, '#ffffff', 1]], [BOW - 190, 0, BOW + 20, 0], foamSvg);
-  grad('wkBow2', [[0, '#bff3ff', 0], [1, '#e9fcff', .7]], [BOW - 230, 0, BOW + 30, 0], foamSvg);
-  // soft ends: the waterline sheen fades out before the stern and past the bow (no hard edges)
-  const fadeG = svg('linearGradient', { id: 'wkFadeX', gradientUnits: 'userSpaceOnUse', x1: -10, y1: 0, x2: BOW + 40, y2: 0 }, svg('defs', {}, foamSvg));
-  [[0, 0], [.1, 1], [.88, 1], [1, 0]].forEach(([o, a]) => svg('stop', { offset: o, 'stop-color': '#fff', 'stop-opacity': a }, fadeG));
-  const mask = svg('mask', { id: 'wkMask', maskUnits: 'userSpaceOnUse', x: -440, y: 96, width: 1160, height: 150 }, foamSvg.querySelector('defs'));
-  svg('rect', { x: -440, y: 96, width: 1160, height: 150, fill: 'url(#wkFadeX)' }, mask);
-  const trail = svg('path', { fill: 'url(#wkTrail)' }, wakeSvg);
-  const bubs = Array.from({ length: 26 }, () => ({ e: svg('circle', { fill: 'rgba(255,255,255,.2)', stroke: 'rgba(235,252,255,.95)', 'stroke-width': 1.2, opacity: 0 }, wakeSvg), life: Math.random() }));
-  const front = svg('g', { mask: 'url(#wkMask)' }, foamSvg);
-  const sheenP = svg('path', { fill: 'url(#wkSheen)' }, front);
-  const wash = svg('path', { fill: '#ffffff' }, front);
-  const edge = svg('path', { fill: 'none', stroke: '#ffffff', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, front);
-  const bowBack = svg('path', { fill: 'url(#wkBow2)' }, foamSvg), bowWave = svg('path', { fill: 'url(#wkBow)' }, foamSvg);
-  const churn = Array.from({ length: 9 }, () => ({ e: svg('ellipse', { fill: '#ffffff', opacity: 0 }, foamSvg), life: Math.random() }));
-  const spray = Array.from({ length: 16 }, () => ({ e: svg('circle', { fill: '#ffffff', opacity: 0 }, foamSvg), life: 1 }));
-  const surf = (x, t, K) => WL + Math.sin(x * .045 + t * 2.2) * (1.6 + 1.4 * K) + Math.sin(x * .13 - t * 3.4) * (.7 + .9 * K);
-  function wakeFrame(t, s) {
-    const K = .15 + .85 * Math.min(1, Math.max(0, (W.mult - 1) / 8));
-    // long foam trail behind the stern (behind the hull)
-    let top = '', bot = ''; const len = 90 + 330 * K;
-    for (let i = 0; i <= 26; i++) {
-      const u = i / 26, x = STERN + 8 - u * len, f = Math.pow(1 - u, .7), hgt = 2 + (6 + 26 * K) * f;
-      const c = (Math.sin(x * .11 + t * 7) * 2.6 + Math.sin(x * .3 - t * 12) * 1.4) * K * f;
-      top += (i ? ' L' : 'M') + x.toFixed(1) + ' ' + (WL - hgt * .65 + c).toFixed(1);
-      bot = ' L' + x.toFixed(1) + ' ' + (WL + hgt * .35).toFixed(1) + bot;
-    }
-    trail.setAttribute('d', top + bot + ' Z');
-    // the water's surface in front of the hull: a lapping foam line over a soft sheen (the hull sits IN the water)
-    let line = '', under = ''; for (let x = -10; x <= BOW + 40; x += 14) { const y = surf(x, t, K); line += (line ? ' L' : 'M') + x + ' ' + y.toFixed(1); under = ' L' + x + ' ' + (y + 20).toFixed(1) + under; }
-    sheenP.setAttribute('d', line + under + ' Z');
-    edge.setAttribute('d', line); edge.setAttribute('stroke-width', (2.6 + 4.5 * K).toFixed(2)); edge.setAttribute('opacity', (.7 + .3 * K).toFixed(2));
-    // white water pushed along the hull, thickest at the bow, only when she runs
-    let wt = '', wb = '';
-    for (let i = 0; i <= 20; i++) {
-      const u = i / 20, x = STERN + u * (BOW - STERN), th = (3 + 20 * Math.pow(u, 1.8)) * (K - .15) * 1.25, y = surf(x, t, K);
-      wt += (i ? ' L' : 'M') + x.toFixed(1) + ' ' + (y - th + Math.sin(x * .2 + t * 9) * th * .25).toFixed(1); wb = ' L' + x.toFixed(1) + ' ' + (y + 1).toFixed(1) + wb;
-    }
-    wash.setAttribute('d', wt + wb + ' Z'); wash.setAttribute('opacity', Math.max(0, (K - .2) * 1.1).toFixed(2));
-    // bow wave: two crests climbing the stem (a pale back one, a white front one) with a curling lip
-    const h = 6 + 40 * K, w = 90 + 140 * K, wob = Math.sin(t * 6.5) * 2.4 * K, yb = surf(BOW, t, K);
-    const crest = (hh, ww, dx) => `M${BOW - ww} ${yb + 1} Q${BOW - ww * .45} ${yb - hh * .3} ${BOW - 8 + dx} ${yb - hh + wob} Q${BOW + 6 + dx} ${yb - hh * 1.06} ${BOW + 18 + dx} ${yb - hh * .62} Q${BOW + 10 + dx} ${yb - hh * .45} ${BOW + 22 + dx} ${yb + 1} L${BOW + 22 + dx} ${yb + 10} Q${BOW - ww * .5} ${yb + 8} ${BOW - ww} ${yb + 1} Z`;
-    bowBack.setAttribute('d', crest(h * 1.25, w * 1.2, 8)); bowBack.setAttribute('opacity', (.3 + .6 * K).toFixed(2));
-    bowWave.setAttribute('d', crest(h, w, 0));
-    // stern churn: foam boiling up where the propeller wash breaks the surface
-    for (const c of churn) {
-      c.life += s * (.7 + 1.4 * K);
-      if (c.life >= 1) { c.life = 0; c.x = STERN - 6 + Math.random() * 34; c.r = 7 + Math.random() * 12; }
-      c.x -= (20 + 120 * K) * s; const g = Math.sin(c.life * Math.PI);
-      c.e.setAttribute('cx', c.x.toFixed(1)); c.e.setAttribute('cy', (WL - 1 - g * 4 * K).toFixed(1));
-      c.e.setAttribute('rx', (c.r * (.6 + K) * (.6 + c.life)).toFixed(1)); c.e.setAttribute('ry', (c.r * .45 * (.6 + K)).toFixed(1)); c.e.setAttribute('opacity', (g * (.25 + .7 * K)).toFixed(2));
-    }
-    // propeller bubbles stream back and rise
-    for (const b of bubs) {
-      b.life += s * (.5 + 1.2 * K);
-      if (b.life >= 1) { b.life = 0; b.x = SCREW.x - 4 + Math.random() * 8; b.y = SCREW.y - 4 + Math.random() * 10; b.v = (40 + 190 * K) * (.6 + Math.random() * .6); b.r = 1.4 + Math.random() * 3.4; }
-      b.x -= b.v * s; b.y = Math.max(WL + 6, b.y - (12 + 18 * K) * s);
-      b.e.setAttribute('cx', b.x.toFixed(1)); b.e.setAttribute('cy', b.y.toFixed(1)); b.e.setAttribute('r', (b.r * (1 + .8 * b.life)).toFixed(2));
-      b.e.setAttribute('opacity', (Math.sin(b.life * Math.PI) * (.35 + .6 * K)).toFixed(2));
-    }
-    // spray thrown off the bow at speed
-    for (const p of spray) {
-      if (p.life >= 1) { if (K < .4 || Math.random() > .35) { p.e.setAttribute('opacity', 0); continue; } p.life = 0; p.x = BOW + 4 + Math.random() * 10; p.y = yb - h * .9; p.vx = 20 + Math.random() * 120; p.vy = -(80 + Math.random() * 150) * K; p.r = 1.5 + Math.random() * 3; }
-      p.life += s * 1.7; p.x += p.vx * s; p.vy += 560 * s; p.y += p.vy * s;
-      p.e.setAttribute('cx', p.x.toFixed(1)); p.e.setAttribute('cy', p.y.toFixed(1)); p.e.setAttribute('r', p.r.toFixed(1)); p.e.setAttribute('opacity', (Math.max(0, 1 - p.life) * K).toFixed(2));
-    }
-  }
 
   /* ================= navigation scale ================= */
   const back = el('', sc); back.id = 'scaleBack'; const sheen = el('sheen', back);
@@ -246,7 +147,6 @@
   };
 
   /* ================= submarines ================= */
-  const VAR = { sub: 'sub.webp', teal: 'sub_teal.webp', plum: 'sub_plum.webp' };
   let SUBS = [];
   W.spawn = async (vals, o = {}) => {
     const sorted = [...vals].sort((a, b) => a - b), depth = {};
@@ -256,7 +156,7 @@
       const d = el('sub', play, { left: X(v) + 'px', top: (CONFIG.SUB_Y - SUB_H / 2 + dy) + 'px' }); d.dataset.v = v;
       const line = el('sonarline', sc, { left: X(v) + 'px' }); lineAt(line, CONFIG.SUB_Y + dy);
       const bob = el('bob', d); el('glow', bob); el('shield', bob); el('ring', bob);
-      const im = new Image(); im.src = 'assets/img/' + VAR[o.variant || 'sub']; bob.appendChild(im); if (o.variant && o.variant !== 'sub') Object.assign(im.style, { width: '200px', left: '25px', top: '-23px' });
+      const im = new Image(); im.src = 'assets/img/sub.webp'; bob.appendChild(im);
       gsap.to(bob, { y: 6, duration: 1.4 + i * .17, yoyo: true, repeat: -1, ease: 'sine.inOut' });
       const s = { v, d, bob, im, line, alive: true, depth: depth[v], cy: CONFIG.SUB_Y + dy }; d._s = s; return s;
     });
@@ -308,31 +208,14 @@
   W.tapFx = (x, y) => { const t = el('tapfx', fx, { left: x + 'px', top: y + 'px' }); gsap.fromTo(t, { scale: .3, opacity: 1 }, { scale: 1.6, opacity: 0, duration: .45, onComplete: () => t.remove() }); };
   W.cancelTap = () => { tapRes = null; };
 
-  /* ================= launcher, torpedo, blast ================= */
-  function aim(x, y, dur = .45) { if (W.aimHook) return W.aimHook(x, y, dur); const a = Math.atan2(y - CONFIG.PIV_Y, x - CONFIG.PIV_X) * 180 / Math.PI; return gsap.to('#barrel', { rotation: a, svgOrigin: '0 0', duration: dur, ease: 'back.out(1.6)' }); }
-  if (SHIP) gsap.set('#barrel', { rotation: 35, svgOrigin: '0 0' });
-  W.aimAt = s => aim(X(s.v), s.cy);
+  /* ================= targeting & blast (the cannon and its torpedo live in cockpit.js: W.aimHook, W.fire) ================= */
+  const aim = (x, y, dur) => W.aimHook && W.aimHook(x, y, dur);
   W.lock = async (s, color) => {
     const r = new Image(); r.src = 'assets/img/reticle.webp'; r.className = 'reticle'; Object.assign(r.style, { left: X(s.v) + 'px', top: s.cy + 'px' });
     if (color === 'red') r.style.filter = 'hue-rotate(165deg) saturate(2.2)';
     fx.appendChild(r); SFX.lock(); aim(X(s.v), s.cy);
     await gsap.fromTo(r, { scale: 1.9, rotation: -90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: .38, ease: 'back.out(2)' });
     return r;
-  };
-  W.fire = async (s, ret) => {
-    const a = gsap.getProperty('#barrel', 'rotation') * Math.PI / 180, mx = CONFIG.PIV_X + CONFIG.MUZZLE * Math.cos(a), my = CONFIG.PIV_Y + CONFIG.MUZZLE * Math.sin(a);
-    const tx = X(s.v), ty = s.cy, cx = (mx + tx) / 2, cy = Math.max(my, ty) + 40;
-    SFX.launch(); gsap.fromTo('#barrel', { x: 0 }, { x: -8, duration: .08, yoyo: true, repeat: 1 });
-    const t = new Image(); t.src = 'assets/img/torpedo.webp'; t.className = 'torp'; fx.appendChild(t);
-    const o = { p: 0 }; let last = 0;
-    await new Promise(r => gsap.to(o, { p: 1, duration: .75, ease: 'power1.in', onUpdate() {
-      const p = o.p, q = 1 - p, x = q * q * mx + 2 * q * p * cx + p * p * tx, y = q * q * my + 2 * q * p * cy + p * p * ty;
-      const dx = 2 * q * (cx - mx) + 2 * p * (tx - cx), dy = 2 * q * (cy - my) + 2 * p * (ty - cy);
-      t.style.left = x + 'px'; t.style.top = y + 'px'; t.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
-      if (p - last > .05) { last = p; const b = el('tbub', fx, { left: x + 'px', top: y + 'px', width: '12px', height: '12px' }); gsap.to(b, { y: -40 - Math.random() * 30, x: -20, scale: 1.8, opacity: 0, duration: 1.2, onComplete: () => b.remove() }); }
-    }, onComplete: r }));
-    t.remove(); if (ret) ret.remove();
-    await W.blast(s);
   };
   W.blast = async s => {
     SFX.boom(); s.alive = false;

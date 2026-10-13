@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Sonar Defence</title>
 <link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/cockpit.css">
 <link rel="stylesheet" href="css/editor.css">
 </head>
-<body>
+<body class="cockpit">
 <div id="stage">
   <!-- WORLD: back → front -->
-  <div id="sky"><div class="track" id="skyTrack"></div></div>
   <div id="water">
     <div class="grad"></div>
     <div id="manta"></div>
@@ -22,49 +22,26 @@
     <canvas id="snow" width="1920" height="832"></canvas>
     <div class="deep"></div>
   </div>
-  <svg id="surface" viewBox="0 0 1920 60" preserveAspectRatio="none">
-    <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9fdff" stop-opacity=".95"/><stop offset="1" stop-color="#7fe0ff" stop-opacity="0"/></linearGradient></defs>
-    <path id="wave2" fill="rgba(160,235,255,.35)" d=""/>
-    <path id="wave1" fill="url(#sg)" d=""/>
-  </svg>
   <div id="bubbles"></div>
+  <div id="sunk"></div>
+  <!-- the bow cannon, outside the glass (behind the scale on the glass): it rides the console rail, js/cockpit.js -->
+  <div id="cannon"><img src="assets/img/cannon.webp" alt=""><i class="ring"></i><i class="flash"></i></div>
 
   <div id="scale"></div>
   <div id="play" class="abs" style="width:1920px;height:1080px"></div>
   <div id="fx"></div>
 
-  <div id="ship">
-    <!-- wake: foam trailing the stern + propeller bubbles (behind the hull); waterline foam + bow wave (in front) — drawn in world.js -->
-    <svg id="wakeFx" viewBox="-440 96 1160 150" aria-hidden="true"></svg>
-    <img class="hull" src="assets/img/ship.webp" alt="">
-    <!-- Commander Meera stands on the fore-deck, behind the bulwark and rail, and rocks with the ship -->
-    <div id="officer"><img id="offImg" src="assets/img/off_idle.webp" alt=""></div>
-    <img class="hull front" src="assets/img/ship.webp" alt="">
-    <svg id="hullFoam" viewBox="-440 96 1160 150" aria-hidden="true"></svg>
-    <svg id="deckRail" viewBox="0 0 120 40" aria-hidden="true">
-      <g stroke="#1b3558" stroke-linecap="round">
-        <path d="M4 8 H116" stroke-width="4"/><path d="M4 22 H116" stroke-width="3"/>
-        <path d="M6 8 V38 M30 8 V38 M54 8 V38 M78 8 V38 M102 8 V38" stroke-width="3.4"/>
-      </g>
-      <path d="M4 7 H116" stroke="#4d79a8" stroke-width="1.4" stroke-linecap="round"/>
-    </svg>
-    <svg id="turret" viewBox="-60 -60 120 120">
-      <g id="barrel">
-        <rect x="6" y="-11" width="70" height="22" rx="10" fill="#f4f7fb" stroke="#123a66" stroke-width="4"/>
-        <rect x="40" y="-11" width="12" height="22" fill="#f39a1e"/>
-        <rect x="68" y="-14" width="14" height="28" rx="6" fill="#123a66"/>
-        <circle cx="82" cy="0" r="6" fill="#7ff2ff"/>
-      </g>
-      <path d="M-34 14 A34 34 0 0 1 34 14 Z" fill="#1d4f86" stroke="#0c2c52" stroke-width="4"/>
-      <circle cx="0" cy="0" r="17" fill="#f4f7fb" stroke="#0c2c52" stroke-width="4"/>
-      <circle cx="0" cy="0" r="6" fill="#f39a1e"/>
-      <rect x="-40" y="12" width="80" height="12" rx="5" fill="#0c2c52"/>
-    </svg>
-  </div>
   <div id="sigs"></div>
 
-  <div class="track" id="kelp"></div>
+  <!-- COCKPIT: we are inside the submarine, looking out through the bow window -->
   <div id="vignette"></div>
+  <div id="glass"></div>
+  <img id="cockpit" src="assets/img/cockpit.webp" alt="">
+  <div id="lamps"><div class="edge"></div><i class="l"></i><i class="r"></i></div>
+  <div id="screen"></div>
+  <div id="scope"></div>
+  <div id="crew"></div>
+
   <div id="flash"></div>
 
   <!-- HUD -->
@@ -72,7 +49,7 @@
     <div id="strip"></div>
     <div id="pips"></div>
     <div id="rule"><span class="l"><i>◀</i> Left → Smaller</span><span class="r">Right → Greater <i>▶</i></span></div>
-    <div id="comms"><div id="portrait"><div id="pSpr" class="meera"><img id="pImg" src="assets/img/meera_talk_1.webp" alt=""></div></div><div id="pName">Commander Meera</div><div id="caption"></div></div>
+    <div id="comms"><div id="pName">Commander Meera</div><div id="caption"></div></div>
     <div id="hand"></div>
     <div class="ibtn" id="btnSpeak" title="Hear it again"></div>
   </div>
@@ -90,6 +67,7 @@
 <script src="assets/vo/vo_manifest.js"></script>
 <script src="js/core.js"></script>
 <script src="js/world.js"></script>
+<script src="js/cockpit.js"></script>
 <script src="js/levels.js"></script>
 <script src="js/qa.js"></script>
 <script src="js/editor.js"></script>

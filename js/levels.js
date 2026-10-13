@@ -21,8 +21,8 @@
     let wrong = 0; W.expect = m.target;
     for (;;) {
       const s = await W.waitTap({
-        onIdle: () => { say(m.lines.idleL || S.idle, { pose: 'think' }); W.pulseAll(); },
-        onIdle2: () => say(S.take, { pose: 'idle' }),
+        onIdle: () => { say(m.lines.idleL || S.idle); W.pulseAll(); },
+        onIdle2: () => say(S.take),
         only: wrong >= 3 ? W.subAt(m.target) : null });
       SD.skip();
       if (s.v === m.target) {
@@ -35,21 +35,21 @@
       const dir = Math.sign(m.target - s.v);
       const red = await W.lock(s, 'red'); await W.wrong(s); red.remove();
       W.clearHints();
-      if (wrong === 1) { W.hintArrow(s.v, dir); await say(m.lines.oopsL, { pose: 'think' }); }
-      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true, 'compare'); await say(m.lines.hintL, { pose: dir > 0 ? 'right' : 'left' }); }
-      else { const t = W.subAt(m.target); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true, 'compare'); await say(m.lines.nudgeL, { pose: dir > 0 ? 'right' : 'left' }); }
+      if (wrong === 1) { W.hintArrow(s.v, dir); await say(m.lines.oopsL); }
+      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true, 'compare'); await say(m.lines.hintL); }
+      else { const t = W.subAt(m.target); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true, 'compare'); await say(m.lines.nudgeL); }
     }
   }
   async function mission(m, o = {}) {
     W.strip(m.text);
-    if (o.intro !== false) await say(m.sayL, { pose: 'bino' });
+    if (o.intro !== false) await say(m.sayL);
     const first = await strike(m);
-    mark(first); SD.pose('thumb');
+    mark(first);
     const cheer = first || Math.random() < .5 ? rnd(S.hits) : null;
     W.reward({ big: first, word: cheer && cheer.text, pip: W.pipDone });
-    if (cheer) await say(cheer, { mood: 'cheer' });
+    if (cheer) await say(cheer);
     if (m.show) W.strip(m.show, { big: true });
-    await say(m.okL, { pose: 'thumb' });
+    await say(m.okL);
     return first;
   }
 
@@ -202,35 +202,35 @@
   /* ---------- Teaching the navigation scale ---------- */
   async function teach() {
     W.pips(0, 0);
-    const intro = W.scaleIntro(); await say(S.g1, { mood: 'cheer' }); await intro; W.zeroGlow();
+    const intro = W.scaleIntro(); await say(S.g1); await intro; W.zeroGlow();
     W.strip('Navigation scale · <b>0</b> is the centre');
-    await say(S.t1, { pose: 'idle' });
-    let scan = W.scan(8, 'Greater ▶'), line = say(S.t2, { pose: 'right' });   // she narrates while the light sweeps
+    await say(S.t1);
+    let scan = W.scan(8, 'Greater ▶'), line = say(S.t2);   // she narrates while the light sweeps
     let off = await scan; await line; off();
-    scan = W.scan(-8, '◀ Smaller'); line = say(S.t3, { pose: 'left' });
+    scan = W.scan(-8, '◀ Smaller'); line = say(S.t3);
     off = await scan; await line; off();
     await W.spawn([-3, 2]);
     W.glow(W.subAt(2), true); W.strip('<b>+2</b> is farther to the right', {});
-    await say(S.t4, { pose: 'right' });
+    await say(S.t4);
     W.strip('+2 > −3', { big: true }); await wait(1.2);
     await W.clearSubs();
     await W.spawn([-2, -6]);
     W.glow(W.subAt(-6), true, 'rgba(255,150,90,.6)'); W.strip('<b>−6</b> is farther to the left');
-    await say(S.t5, { pose: 'left' });
+    await say(S.t5);
     W.strip('−6 < −2', { big: true }); W.rule(true, 'compare');
-    await say(S.t6, { pose: 'thumb' });
-    await say(S.t7, { mood: 'cheer' });
+    await say(S.t6);
+    await say(S.t7);
     await W.clearSubs(); W.rule(false); W.stripOff();
   }
 
   /* ---------- first-mission tutorial: show HOW to read a submarine's position (without giving the answer) ---------- */
   async function tutorial() {
     const demo = W.subAt(-3), lx = W.X(-3), ly = 488 + W.CONFIG.SCALE_DY;   // the −3 label
-    const p = say(S.tut1, { pose: 'idle' });
+    const p = say(S.tut1);
     await W.handTo(lx + 10, ly + 12, .9); await W.handTap(lx, ly);
     gsap.fromTo(document.querySelectorAll('.lbl')[5], { scale: 1 }, { scale: 1.45, duration: .3, yoyo: true, repeat: 3 });
     await p;
-    const p2 = say(S.tut2, { pose: 'left' });
+    const p2 = say(S.tut2);
     await W.handTo(lx + 10, demo.cy + 34, 1.1);           // slide along the sonar line to the submarine
     W.glow(demo, true, 'rgba(160,240,255,.6)');
     await p2;
@@ -247,13 +247,13 @@
       const R = D.L1[r]; await W.spawn(R.subs);
       for (let i = 0; i < R.m.length; i++) {
         const m = R.m[i];
-        if (r === 0 && i === 0) { await tutorial(); W.strip(m.text); await say(S.tut3, { pose: 'bino' }); await mission(m, { intro: false }); }
+        if (r === 0 && i === 0) { await tutorial(); W.strip(m.text); await say(S.tut3); await mission(m, { intro: false }); }
         else await mission(m);
         done++; W.pips(total, done); await wait(.4);
       }
       await W.clearSubs(); W.stripOff(); if (r < D.L1.length - 1) await W.sail();
     }
-    await say(S.l1end, { pose: 'cheer' });
+    await say(S.l1end);
     await complete('l1', 'Level 1 cleared!', 'You compared positions on the scale.', 'Right → Greater &nbsp; Left → Smaller');
   }
 
@@ -264,7 +264,7 @@
     const seq = [...R.subs].sort((a, b) => R.dir * (a - b));
     const txt = R.dir > 0 ? 'Clear the route from <b>left to right</b>.' : 'Clear the route from <b>right to left</b>.';
     W.strip(txt); W.sweepArrow(R.dir);                       // mission-start cue: which way to sweep
-    await say(ORD.say(R.dir), { pose: R.dir > 0 ? 'right' : 'left' });
+    await say(ORD.say(R.dir));
     let allFirst = true;
     for (let i = 0; i < seq.length; i++) {
       const next = seq[i];
@@ -274,16 +274,16 @@
       W.badge(next, i + 1); SFX.right(); W.sparkle(W.lastHit.x, W.lastHit.y); await wait(.3);
     }
     W.clearHints(); mark(allFirst);
-    W.strip(R.chain, { big: true }); SD.pose('thumb');
+    W.strip(R.chain, { big: true });
     const cheer = rnd(S.hits); W.reward({ big: allFirst, word: cheer.text, pip: W.pipDone });
-    await say(cheer, { mood: 'cheer' });
-    await say(R.okL, { pose: 'thumb' });
+    await say(cheer);
+    await say(R.okL);
     await wait(.6); W.clearBadges(); await W.clearSubs(); W.stripOff();
   }
   async function level2(start = 0) {
     LV = 'l2'; await W.banner('LEVEL 2', 'Order the Submarines', 'The launcher fires in a sweep');
     W.pips(D.L2.length, start);
-    if (start === 0) await say(S.l2intro, { pose: 'bino' });
+    if (start === 0) await say(S.l2intro);
     for (let r = start; r < D.L2.length; r++) { SD.where = { at: 'l2', round: r + 1 }; await orderRound(D.L2[r]); W.pips(D.L2.length, r + 1); if (r < D.L2.length - 1) await W.sail(); }
     await complete('l2', 'Level 2 cleared!', 'You ordered the submarines.', 'Left → Right: smallest to greatest');
   }
@@ -296,28 +296,28 @@
     W.marker(0);
     await W.signals([{ n: Math.abs(R.a), sign: Math.sign(R.a) }, { n: Math.abs(R.b), sign: Math.sign(R.b) }]);
     if (!same) {
-      await say(L.intro, { pose: 'idle' });
+      await say(L.intro);
       W.strip('Tap a pair to cancel it: one ▶ with one ◀');
       const showPair = async () => {                       // the hand glides to an open pair and taps it
         const c = W.pairCentre(); if (!c) return;
-        say(S.pairDemo, { pose: 'right' }); await W.handTo(c.x, c.y + 20, .9); await W.handTap(c.x, c.y);
+        say(S.pairDemo); await W.handTo(c.x, c.y + 20, .9); await W.handTap(c.x, c.y);
         gsap.to('#hand', { y: 18, duration: .45, yoyo: true, repeat: -1, ease: 'sine.inOut' });
       };
       if (idx === 0) gsap.delayedCall(.1, showPair);       // first time: show where to tap
       // idle help while pairing: 6 s the pair boxes glow · 12 s spoken hint · 22 s the hand shows a pair
-      await W.pairUp(() => W.hand(null), { idle: () => say(S.pairIdle, { pose: 'think' }), idle2: showPair });
+      await W.pairUp(() => W.hand(null), { idle: () => say(S.pairIdle), idle2: showPair });
       W.hand(null);
-      await say(L.after, { pose: res > 0 ? 'right' : res < 0 ? 'left' : 'thumb' });
+      await say(L.after);
     } else {
-      await say(L.intro, { pose: R.a > 0 ? 'right' : 'left' });
+      await say(L.intro);
     }
     W.strip(eq(R.a, R.b) + ' = <b>?</b>', { big: true });
     await W.spawn(R.opts, { stagger: .15 });
-    await say(S.l3ask, { pose: 'bino' });
+    await say(S.l3ask);
     // 3-strike, but on the right answer the marker moves first, then we fire
     let wrong = 0; W.expect = res;
     for (;;) {
-      const s = await W.waitTap({ onIdle: () => { say(S.l3idle, { pose: 'think' }); W.pulseAll(); }, onIdle2: () => say(S.take, { pose: 'idle' }), only: wrong >= 3 ? W.subAt(res) : null });
+      const s = await W.waitTap({ onIdle: () => { say(S.l3idle); W.pulseAll(); }, onIdle2: () => say(S.take), only: wrong >= 3 ? W.subAt(res) : null });
       SD.skip();
       if (s.v === res) {
         W.clearHints(); const r = await W.lock(s); SFX.right();
@@ -327,22 +327,22 @@
       }
       wrong++; const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); W.clearHints();
       const dir = Math.sign(res - s.v);
-      if (wrong === 1) { W.hintArrow(s.v, dir); await say(L.oops, { pose: 'think' }); }
-      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true, same ? 'same' : 'pairs'); await say(L.hint, { pose: dir > 0 ? 'right' : 'left' }); }
-      else { const t = W.subAt(res); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true, same ? 'same' : 'pairs'); await say(L.nudge, { pose: dir > 0 ? 'right' : 'left' }); }
+      if (wrong === 1) { W.hintArrow(s.v, dir); await say(L.oops); }
+      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true, same ? 'same' : 'pairs'); await say(L.hint); }
+      else { const t = W.subAt(res); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true, same ? 'same' : 'pairs'); await say(L.nudge); }
     }
     W.rule(false); mark(wrong === 0);
     const cheer = wrong === 0 ? rnd(S.hits) : null;
     W.reward({ big: wrong === 0, word: cheer && cheer.text, pip: W.pipDone });
-    if (cheer) await say(cheer, { mood: 'cheer' });
+    if (cheer) await say(cheer);
     W.strip(eq(R.a, R.b) + ' = ' + f(res), { big: true });
-    await say(L.ok, { pose: 'thumb' });
+    await say(L.ok);
     W.clearSignals(); W.markerOff(); await W.clearSubs(); W.stripOff();
   }
   async function level3(start = 0) {
     LV = 'l3'; await W.banner('LEVEL 3', 'Additive Integer Defence', 'Signals move the defence marker');
     W.pips(D.L3.length, start);
-    if (start === 0) await say(S.l3intro, { pose: 'idle' });
+    if (start === 0) await say(S.l3intro);
     for (let r = start; r < D.L3.length; r++) { SD.where = { at: 'l3', round: r + 1 }; await signalRound(D.L3[r], r); W.pips(D.L3.length, r + 1); if (r < D.L3.length - 1) await W.sail(); }
     await complete('l3', 'Level 3 cleared!', 'You combined positive and negative moves.', 'Opposites cancel: +4 and −4 make 0');
   }
@@ -356,7 +356,7 @@
     SD.where = { at: 'final', round: 3 };
     await signalRound(D.FIN_SIG, 5);
     W.pips(3, 3);
-    await say(S.finEnd, { pose: 'cheer' });
+    await say(S.finEnd);
     await complete('fin', 'Sea route protected!', 'You compared, ordered and combined integers.', 'Compare · Order · Combine', 'Play again');
   }
 
@@ -366,14 +366,14 @@
     (window.GAME_RESULT = window.GAME_RESULT || {})[lv] = { stars, firstTry: firsts, missions: n };
     $('#dt').textContent = t; $('#ds').textContent = s; $('#dchain').innerHTML = chain; $('#dcta').textContent = cta;
     $('#dstars').innerHTML = [0, 1, 2].map(i => `<img src="assets/img/${i < stars ? 'star_gold' : 'star_silver'}.webp" class="${i < stars ? '' : 'off'}">`).join('');
-    const d = $('#done'); d.classList.remove('hidden'); SFX.tada(); SD.pose('cheer');
+    const d = $('#done'); d.classList.remove('hidden'); SFX.tada();
     gsap.fromTo('#done .card', { scale: .5, opacity: 0 }, { scale: 1, opacity: 1, duration: .55, ease: 'back.out(1.7)' });
     gsap.fromTo('#dstars img', { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: .45, stagger: .18, delay: .4, ease: 'back.out(3)', onStart: () => SFX.pop() });
     gsap.fromTo('#dcta', { scale: 1 }, { scale: 1.07, duration: .6, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.2 });
-    const cheer = say(cta === 'Play again' ? S.doneF : S.done1, { mood: 'cheer' });
+    const cheer = say(cta === 'Play again' ? S.doneF : S.done1);
     await new Promise(r => { let c = null; cheer.then(() => { c = gsap.delayedCall(cta === 'Play again' ? 999 : 3, r); }); $('#dcta').onclick = () => { if (c) c.kill(); SD.skip(); r(); }; });
     gsap.killTweensOf('#dcta'); gsap.set('#dcta', { scale: 1 });
-    await gsap.to('#done .card', { scale: .8, opacity: 0, duration: .3 }); d.classList.add('hidden'); SD.pose('idle');
+    await gsap.to('#done .card', { scale: .8, opacity: 0, duration: .3 }); d.classList.add('hidden');
     await W.sail();
   }
 

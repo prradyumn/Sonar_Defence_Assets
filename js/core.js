@@ -225,27 +225,10 @@
   function hush() { if (curAudio) { curAudio.pause(); curAudio = null; } if ('speechSynthesis' in window) speechSynthesis.cancel(); }
 
   /* ================= characters ================= */
-  // Commander Meera on the ship deck (full-body poses)
-  const POSE = { idle: 'off_idle', right: 'off_right', left: 'off_left', thumb: 'off_thumb', cheer: 'off_cheer', think: 'off_think', bino: 'off_bino' };
-  const offImg = $('#offImg');
-  function pose(p) {
-    const f = POSE[p] || POSE.idle; if (!offImg || offImg.src.endsWith(f + '.webp')) return;   // sub.html has no deck officer
-    offImg.src = 'assets/img/' + f + '.webp';   // still images: the pose just changes, no squash
-  }
-  // comms portrait next to the caption: still images (Meera waist-up / Riya)
-  const pImg = $('#pImg'), pSpr = $('#pSpr'), pName = $('#pName'), comms = $('#comms');
-  ['assets/img/riya_idle.webp', 'assets/img/riya_cheer.webp'].forEach(s => { const i = new Image(); i.src = s; });
-  let curWho = null;
-  function portrait(who, mood) {
-    comms.classList.toggle('riya', who === 'riya');
-    pName.textContent = SCRIPT.WHO[who].name;
-    const name = who === 'riya' ? (mood === 'cheer' ? 'riya_cheer' : 'riya_idle') : 'meera_talk_1';
-    if (!pImg.src.endsWith(name + '.webp')) pImg.src = `assets/img/${name}.webp`;
-    pSpr.className = who + (mood === 'cheer' ? ' cheer' : '');
-    curWho = who;
-  }
-  const talking = () => {};   // portrait and deck officer stay still images
-  /* story conversations: the Ludo talking sheets (6×6 whole full-body frames, played exactly as drawn).
+  // the speaker's name tag on the console screen (Riya's is orange)
+  const pName = $('#pName'), comms = $('#comms');
+  function nameTag(who) { comms.classList.toggle('riya', who === 'riya'); pName.textContent = SCRIPT.WHO[who].name; }
+  /* the Ludo talking sheets, in the story and at the cockpit stations (6×6 whole full-body frames, played exactly as drawn).
      A character plays the sheet while their line is spoken, then runs on to the next closed-mouth frame and holds it. */
   const SHEET = {
     meera: { src: 'assets/img/meera_talk_sheet.webp', w: 385, h: 862, ms: 79, rest: [0, 1, 2, 3, 4, 5, 6, 9, 14, 24, 30, 31] },
@@ -283,11 +266,10 @@
     const text = typeof x === 'string' ? x : x.text, who = o.who || (L && L.who) || 'meera', id = L && L.id;
     if (!L) SD_MISSING.push(text);
     lastLine = { x, o }; const my = ++sayN;
-    if (o.pose && who === 'meera') pose(o.pose);
     let box;
     if (o.bubble) { box = o.bubble; box.querySelector('.txt').innerHTML = text; }
     else {
-      portrait(who, o.mood);
+      nameTag(who);
       box = $('#caption'); box.innerHTML = text;
       gsap.killTweensOf('#comms'); gsap.to('#comms', { opacity: 1, duration: .25 });
       gsap.fromTo(box, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: .3 });
@@ -295,7 +277,7 @@
     duck(true);
     const t0 = performance.now();
     const skipP = new Promise(r => { skipFn = r; });
-    const talk = o.talk || (SD.crew && SD.crew[who]);   // story bubbles pass their actor; in the cockpit the crew member on screen talks
+    const talk = o.talk || (SD.crew && SD.crew[who]);   // story bubbles pass their actor; otherwise the crew member at their station talks
     if (talk) talk(true);
     const spokeP = playVO(id).then(ok => ok || speak(text, who));
     const spoke = await Promise.race([spokeP, skipP.then(() => 'skip')]);
@@ -313,7 +295,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, pose, talking, talker, portrait, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

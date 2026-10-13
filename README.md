@@ -2,14 +2,14 @@
 
 Open `index.html` in Chrome: double-click it, or press **Go Live** in VS Code (Live Server serves this folder, so the game opens straight away).
 
-**Two versions, one game.** `index.html` plays on the coast-guard ship at the surface. `sub.html` plays from inside the submarine cockpit (see *Submarine version* below). Both share the story, levels, pedagogy, script, voices and sound; only the scene differs.
+The game is played from inside the submarine cockpit (see *The cockpit* below).
 
 Flow: Hook (Commander Meera & Cadet Riya: harbour → the sonar-room doors slide open → sonar room → dive through the porthole) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
 
 ```
-index.html          the game (ship version)          sub.html   the submarine cockpit version
-css/                game.css (layout, stage px) · sub.css (cockpit differences) · editor.css (layout editor only)
-js/                 script.js (every spoken line) · core · world · levels · cockpit (sub.html only) · editor · layout.js / layout_sub.js · gsap.min.js
+index.html          the game
+css/                game.css (layout, stage px) · cockpit.css (window frame, cannon, crew, console screen) · editor.css (layout editor only)
+js/                 script.js (every spoken line) · core · world · cockpit · levels · qa · editor · layout.js · gsap.min.js
 assets/img/         all art, .webp (cover.webp = the title screen)      assets/vo/   all voice lines, .ogg + vo_manifest.js      assets/fonts/
 tools/              make_voices.py (records the voices) · dev_server.py (lets the editor save)
 ```
@@ -33,16 +33,16 @@ python3 tools/make_voices.py       # makes every line that has no wav yet
 - Rate limits are retried automatically; if the daily quota runs out, just run it again later — finished lines are skipped.
 - Without recorded files the game falls back to the browser's voice (en-IN when the computer has one), then to reading time.
 
-## Submarine version (`sub.html`)
+## The cockpit
 The camera is inside the submarine, looking out through the big bow window (`assets/img/cockpit.webp`, the window glass is transparent; glass y 112–914).
 - The enemy submarines are out in the water; the navigation scale sits low on the glass, flat and evenly spaced (the same −8 … +8). Dotted sonar lines join each submarine to its number.
 - The bow cannon (`assets/img/cannon.webp`, made with Nano Banana 2) is seen from behind, aiming out to sea, and rides the console rail under the scale. Tap a submarine and it slides along to that submarine's column (it lines up with the number), then fires straight ahead: recoil, muzzle flash, and the torpedo runs away from us (it shrinks) behind the scale to the target. Home is under 0; it glides back there between missions. The cockpit jolts on launch and hit; a hit submarine sinks behind the scale.
 - A miss: the cannon lines up under the wrong submarine and judders (no shot), the two ceiling lamps flash red and the window edge glows red.
 - Meera (left) and Riya (right) stand at their stations; whoever speaks plays their talking sheet and lights up. Dialogue appears on the console screen, which shows a slow sonar trace when nobody is talking.
 - Level 3 pair buttons sit high in the window, above the submarines.
-- Art: the cockpit frame (`assets/img/cockpit.webp`, glass cut out) and the cannon are Gemini images in the game's style; the cannon's muzzle position is `MUZZLE_Y` in `js/cockpit.js` (keep it in step with `#cannon` in `css/sub.css`).
-- Code: `world.js` is shared (it skips the ship when there is no `#ship`); `js/cockpit.js` swaps the launcher for the sliding bow cannon and adds the crew and cockpit effects; `css/sub.css` holds the layout; the layout constants for this version are in the inline `WORLD_DEFAULTS` in `sub.html` (`SUB_Y`, `SUB_ROW`, `SIG_Y1/2`, `SCALE_DY`).
-- Layout editor: `sub.html?edit=1` saves to `js/layout_sub.js`. QA jumper: `sub.html?qa=1`.
+- Art: the cockpit frame (`assets/img/cockpit.webp`, glass cut out) and the cannon are Gemini images in the game's style; the cannon's muzzle position is `MUZZLE_Y` in `js/cockpit.js` (read from `#cannon` in `css/cockpit.css`).
+- Code: `js/world.js` draws the sea, scale, submarines and effects; `js/cockpit.js` adds the sliding bow cannon (`W.aimHook`, `W.fire`), the crew and the cockpit effects; `css/cockpit.css` holds its layout. Layout constants (`SUB_Y`, `SUB_ROW`, `SIG_Y1/2`, `SCALE_DY`) are `DEFAULTS` in `js/world.js`.
+- The earlier ship-at-the-surface version was removed; it is still in the git history (before commit "Keep only the submarine cockpit version").
 
 ## QA jumper (for testers)
 Add `?qa=1` to the URL (e.g. `https://<your-vercel-link>/?qa=1`). A small **QA ▾** panel (top-left) jumps straight into any part and starts playing:
@@ -52,9 +52,7 @@ story (Harbour · Control room · Dive), Teaching, every round of Level 1–3 an
 Recorded music + ambience + effects live in `assets/sfx/` (all `.ogg`): two loops composed for the game with Google Lyria (calm for the story, playful for the missions, crossfading at the dive), harbour gulls + waves, sea waves, and CC0 Freesound effects (sonar, torpedo, underwater explosion, splash, water rush, sci-fi door, bubbles) — see `assets/sfx/CREDITS.md`. Taps, chimes and the reward arpeggio are synthesized. Music dips under every voice line. Over http(s) everything plays through Web Audio; from `file://` through `<audio>` elements.
 
 ## Characters
-In the story conversations (harbour + control room) Meera and Riya are the Ludo talking sheets `meera_talk_sheet.webp` / `riya_talk_sheet.webp`: 6×6 whole full-body frames, played exactly as drawn while that character's line is spoken (Meera 79 ms/frame, Riya 90 ms/frame). When the line ends the character runs on to the next closed-mouth frame and holds it; the listener stays still. Frame sizes and the closed-mouth frame lists are in `SHEET` in `js/core.js`; the source PNG + JSON are in the archive folder.
-
-Everywhere else (comms portrait during play, the officer on deck) they are still `.webp` images, no bounce or wobble.
+In the story conversations (harbour + control room) and at their cockpit stations, Meera and Riya are the Ludo talking sheets `meera_talk_sheet.webp` / `riya_talk_sheet.webp`: 6×6 whole full-body frames, played exactly as drawn while that character's line is spoken (Meera 79 ms/frame, Riya 90 ms/frame). When the line ends the character runs on to the next closed-mouth frame and holds it; the listener stays still. Frame sizes and the closed-mouth frame lists are in `SHEET` in `js/core.js`; the source PNG + JSON are in the archive folder.
 
 ## Pause + layout editor ("Figma inside the game")
 Players never see it. Open `index.html?edit=1`, or press **E** in the game.
@@ -68,10 +66,10 @@ open http://localhost:8000/?edit=1
 - Select: click = topmost element · **Alt**-click = its parent · **Tab** = the next one under the cursor · **Esc** deselects
 - Move: drag (⇧ = one axis), arrows 1 px / ⇧ 10 px. Resize: the 8 handles (⇧ keeps the ratio). Rotate: the knob (⇧ = 15° steps). Magenta smart guides snap to the stage centre/edges and other elements; hold **Ctrl/⌘** to turn snapping off
 - Layers (left): eye = hide while editing, lock = can't be picked on the stage. Inspector (right): X/Y/W/H/rotation/opacity/z/font size (drag a label to scrub), "Show while editing" for things that are faded out, Reset element
-- **Game constants** (Inspector): numbers that come from code (`CONFIG` in `js/world.js`): scale origin/step, submarine depth, L3 signal rows, launcher pivot. Moving the ship or turret re-aims the launcher pivot automatically
+- **Game constants** (Inspector): numbers that come from code (`CONFIG` in `js/world.js`): scale origin/step, submarine rows, L3 signal rows, scale offset
 - **Save** writes `js/layout.js` through `tools/dev_server.py`. From `file://` the browser can't write files: use Copy JSON / Download layout.js and put it in `js/`. ⌘/Ctrl+Z, ⇧⌘/Ctrl+Z undo/redo; unsaved edits survive Jump/Restart
 - `js/layout.js` = `window.LAYOUT = { overrides: { "<selector>": { left, top, width, height, rotate, scale, opacity, zIndex, fontSize … } }, config: { SUB_Y: … } }`, applied at boot by `core.js` as one `<style id="layoutOverrides">` (so submarines and story bubbles created later pick it up too). Story actors/bubbles are keyed by their `data-edit` name
-- Rotation/scale on things the game itself rotates or scales (Meera's sway, the portrait pop-in) are overwritten by those animations
+- Rotation/scale on things the game itself rotates or scales (the cannon's lean, pop-ins) are overwritten by those animations
 
 ## Test shortcuts (URL)
 - `?at=teach | l1 | l2 | l3 | final` start at a section, `&round=2` start at a round
@@ -80,8 +78,9 @@ open http://localhost:8000/?edit=1
 
 ## Files
 - `js/script.js` EVERY spoken line ({id, who, text}) + level data. The game and `tools/make_voices.py` both read it — edit lines here (and re-record: `--only <id> --force`).
-- `js/core.js` stage fit, sound (Web-Audio sfx + tanpura/underwater music bed, ducked under voice), voice playback (recorded VO → browser voice), comms portrait + captions, Meera's poses on the ship
-- `js/world.js` parallax sea (sky, far reef, fish schools, manta, rays, caustics, marine snow, kelp sway, bubbles, waves), ship + launcher, navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/torpedo/blast (flash, shockwave, debris), hints, hand demos, badges, L3 signals + defence marker
+- `js/core.js` stage fit, sound (Web-Audio sfx + tanpura/underwater music bed, ducked under voice), voice playback (recorded VO → browser voice), captions + name tag, the talking sheets
+- `js/world.js` parallax sea (far reef, seabed, fish schools, manta, rays, caustics, marine snow, bubbles), navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/blast (flash, shockwave, debris), hints, hand demos, badges, L3 signals + defence marker
+- `js/cockpit.js` the bow cannon + torpedo, the crew at their stations, console screen, warning lamps, hull kick
 - `js/qa.js` the QA jumper (`?qa=1`)
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
 - `js/levels.js` flow + pedagogy: hook scenes, teaching, tutorial, 3-strike (Oops + direction arrow → Hint + rule card → Nudge + hand), idle help (6 s visual → 12 s spoken → 22 s reminder), stars
@@ -89,8 +88,6 @@ open http://localhost:8000/?edit=1
 - `assets/img` web versions of the art pack (all `.webp`; the sonar-room doors are `door_left/right.webp`)
 
 ## Placeholders still in code (replace when the art arrives)
-- launcher turret → inline SVG in index.html (`#turret`)
-- talking animation → only the story conversations use talking sheets; the comms portrait and the deck officer are still images
 - rule card → CSS (`#rule`)
 - left signal → `sig.webp` mirrored + recoloured in CSS (`.sig.neg`)
 - fish & manta → inline SVG in `world.js`
