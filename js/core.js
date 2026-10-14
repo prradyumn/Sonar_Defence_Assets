@@ -242,13 +242,31 @@
     meera: { src: 'assets/img/meera_talk_sheet.webp', w: 385, h: 862, ms: 79, rest: [0, 1, 2, 3, 4, 5, 6, 9, 14, 24, 30, 31] },
     riya: { src: 'assets/img/riya_talk_sheet.webp', w: 386, h: 828, ms: 90, rest: [4, 5, 6, 7, 8, 22, 23] },
   };
-  for (const k in SHEET) { const s = SHEET[k]; s.img = new Image(); s.img.src = s.src; }
+  /* Each sheet is ~48 MB once decoded. Drawing a not-yet-decoded image on a canvas makes the browser decode it right there on the
+     main thread (a 1–3 s freeze, e.g. just after a QA jump), so the sheets are decoded in the background (createImageBitmap)
+     and a character only draws once its bitmap is ready. */
+  for (const k in SHEET) {
+    const s = SHEET[k]; s.img = new Image(); s.img.src = s.src; s.wait = [];
+    s.ready = s.img.decode().then(() => window.createImageBitmap ? createImageBitmap(s.img) : s.img).catch(() => s.img)
+      .then(bm => { s.bm = bm; s.wait.splice(0).forEach(f => f()); });
+  }
+  // ready: the sheets are decoded, the fonts are in and the page has finished loading (capped at 5 s) — the game starts after this
+  const READY = Promise.race([
+    Promise.all([...Object.values(SHEET).map(s => s.ready), document.fonts ? document.fonts.ready : 0, new Promise(r => document.readyState === 'complete' ? r() : addEventListener('load', r, { once: true }))])
+      .then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))),
+    new Promise(r => setTimeout(r, 5000)),
+  ]);
+  // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action
+  ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'turtle', 'octopus', 'jelly', 'pop', 'pip_on', 'pip_off',
+    'star_gold', 'star_silver', 'badge', 'marker', 'sig', 'pod', 'card', 'hint_arrow', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water',
+    'harbour', 'sonar_room', 'door_left', 'door_right']
+    .forEach(n => { const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
   function talker(who) {
     const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');
     c.width = s.w; c.height = s.h;
     let f = s.rest[0], on = false, acc = 0, ticking = false;
-    const draw = () => { g.clearRect(0, 0, s.w, s.h); g.drawImage(s.img, (f % 6) * s.w, (f / 6 | 0) * s.h, s.w, s.h, 0, 0, s.w, s.h); };
-    if (s.img.complete) draw(); else s.img.addEventListener('load', draw, { once: true });
+    const draw = () => { if (!s.bm) return; g.clearRect(0, 0, s.w, s.h); g.drawImage(s.bm, (f % 6) * s.w, (f / 6 | 0) * s.h, s.w, s.h, 0, 0, s.w, s.h); };
+    if (s.bm) draw(); else s.wait.push(() => { draw(); gsap.fromTo(c, { opacity: 0 }, { opacity: 1, duration: .3 }); });
     const halt = () => { gsap.ticker.remove(tick); ticking = false; acc = 0; };
     function tick(t, dt) {
       if (!c.isConnected) return halt();
@@ -303,7 +321,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, ready: READY, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

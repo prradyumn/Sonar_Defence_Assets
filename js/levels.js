@@ -479,7 +479,12 @@
   }
   $('#btnSpeak').onclick = () => { const l = SD.lastLine; if (l) say(l.x, l.o.bubble ? {} : l.o); };
   $('#start').onclick = async () => {
-    SD.audioOn(); SFX.ping(); await gsap.to('#title', { opacity: 0, duration: .5 }); $('#title').classList.add('hidden');
+    if ($('#start')._go) return; $('#start')._go = true;
+    SD.audioOn(); SFX.ping();
+    const boot = $('#boot');
+    await Promise.all([gsap.to('#title', { opacity: 0, duration: .5 }), SD.ready]);   // never start mid-load: that is where jumps used to hitch
+    $('#title').classList.add('hidden');
+    if (boot) await gsap.to(boot, { opacity: 0, duration: .45, onComplete: () => boot.remove() });
     window.SD_RUN = run();
   };
   // title screen breathes
@@ -492,5 +497,8 @@
   gsap.to('#title .art', { scale: 1.025, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.6 });
   gsap.from('#start', { scale: 0, rotation: -120, opacity: 0, duration: .9, delay: 1.1, ease: 'back.out(2.2)' });
   $('#start').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#start').onclick(); } };
-  if (Q.get('autostart') === '1') $('#start').onclick();
+  if (Q.get('autostart') === '1') {   // a QA / editor jump: a quiet sonar screen covers the page while it loads, then the level fades in
+    const boot = document.createElement('div'); boot.id = 'boot'; boot.innerHTML = '<i></i><i></i><span>SONAR CONTACT…</span>'; $('#stage').appendChild(boot);
+    gsap.set('#title', { opacity: 0 }); $('#start').onclick();
+  }
 })();
