@@ -47,11 +47,9 @@
       light.style.transform = `translate(${parseFloat(t.style.left)}px,${parseFloat(t.style.top)}px) scale(${(.6 + sc * .6).toFixed(3)})`;
     } else if (lit) { lit = false; gsap.to(light, { opacity: 0, duration: .25 }); }
   });
-  const frame = $('#cockpit');
-  function frameFlash() {   // the blast's light lands on the metal frame for a moment
-    const f = { k: 1 };
-    gsap.fromTo(f, { k: 1 }, { keyframes: [{ k: 0, duration: .07 }, { k: 1, duration: .7, ease: 'power2.out' }], onUpdate: () => { const a = 1 - f.k; frame.style.filter = a > .01 ? `brightness(${(1 + .55 * a).toFixed(3)}) sepia(${(.55 * a).toFixed(3)}) saturate(${(1 + 1.2 * a).toFixed(3)})` : ''; } });
-  }
+  // the blast's light lands on the metal frame: a pre-tinted copy of the frame fades in and out (opacity only — no per-frame filter)
+  const glow = new Image(); glow.src = 'assets/img/cockpit.webp'; glow.id = 'frameGlow'; $('#cockpit').after(glow);
+  function frameFlash() { gsap.fromTo(glow, { opacity: 0 }, { keyframes: [{ opacity: 1, duration: .07 }, { opacity: 0, duration: .7, ease: 'power2.out' }] }); }
 
   /* ---------- 4 · break in two  +  6 · the distance beam ---------- */
   const sunk = $('#sunk'), scale = $('#scale');
