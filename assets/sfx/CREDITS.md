@@ -1,6 +1,8 @@
 # Sound credits
 
-Background music (`music_calm.ogg`, `music_play.ogg`) was composed for this game with Google Lyria 3.5 and cut into seamless loops.
+Background music was composed for this game with Google Lyria and cut into seamless loops (crossfaded loop points, checked by ear with Gemini):
+- `music_calm.ogg` (story): a mysterious, calm deep-sea atmosphere with low pads, soft resonances and sonar-like pings (Lyria 3.5).
+- `music_play.ogg` (missions): a focused, tense naval-mission underscore with a pulsing synth bass, staccato strings and soft brass (Lyria 3 Pro).
 
 All sound effects below are **CC0 (public domain)** recordings from [Freesound](https://freesound.org), trimmed, faded and loudness-matched for the game. CC0 needs no attribution; the recordists are credited with thanks.
 
