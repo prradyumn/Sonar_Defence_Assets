@@ -58,11 +58,11 @@
   });
   gsap.to('#rays', { rotation: 3.5, x: 60, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#rays', { opacity: .3, duration: 3.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  gsap.to('#caustics', { opacity: .34, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to('#caustics', { opacity: .22, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#far', { y: 8, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
 
   /* ---- marine snow (tiny drifting specks: the strongest "we are underwater" cue) ---- */
-  const snow = $('#snow'), sctx = snow.getContext('2d'), SN = [];
+  const snow = $('#snow'), sctx = snow.getContext('2d'), SN = []; sctx.scale(.5, .5);   // half-resolution canvas, CSS shows it full size
   for (let i = 0; i < 110; i++) SN.push({ x: Math.random() * 1920, y: Math.random() * 1080, z: .3 + Math.random() * .7, ph: Math.random() * 6 });
   gsap.ticker.add((t, dt) => {
     if (SD.paused) return;
@@ -197,7 +197,7 @@
       const b = el('pbub', fx, { left: x + 'px', top: y + 'px', width: 2 * r + 'px', height: 2 * r + 'px' });
       gsap.to(b, { x: 40 + Math.random() * 50, y: -20 - Math.random() * 40, opacity: 0, duration: 1.4 + Math.random(), ease: 'power1.out', onComplete: () => b.remove() });
     }
-  }, 220);
+  }, 360);   // (fewer, still a steady stream: each one is a DOM element + tween)
   W.subs = () => SUBS.filter(s => s.alive);
   W.subAt = v => SUBS.find(s => s.alive && s.v === v);
   W.clearSubs = async () => {

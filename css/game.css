@@ -18,9 +18,9 @@ img{-webkit-user-drag:none;user-select:none}
 #water .grad{position:absolute;inset:0;background:url(../assets/img/water.webp) center/100% 100% no-repeat}
 #water .deep{position:absolute;inset:0;background:linear-gradient(rgba(0,40,90,.12),rgba(0,40,90,0) 30%,rgba(0,30,70,.18) 62%,rgba(40,150,205,.22))}
 #far{position:absolute;left:0;top:330px;height:440px;opacity:.7}
-#rays{position:absolute;left:-200px;top:-40px;width:2320px;height:900px;background:url(../assets/img/rays.webp) center/100% 100%;mix-blend-mode:screen;opacity:.55;transform-origin:30% 0}
+#rays{position:absolute;left:-200px;top:-40px;width:2320px;height:900px;background:url(../assets/img/rays.webp) center/100% 100%;opacity:.42;will-change:transform,opacity;transform-origin:30% 0}
 #seabed{position:absolute;left:0;top:560px;height:260px;opacity:.82;filter:saturate(.7) brightness(.9);-webkit-mask-image:linear-gradient(#000 45%,transparent 92%);mask-image:linear-gradient(#000 45%,transparent 92%)}   /* the reef fades into open water below */
-#caustics{position:absolute;left:0;top:0;width:3840px;height:1080px;background:url(../assets/img/caustics.webp) 0 0/512px 512px repeat;mix-blend-mode:overlay;opacity:.22}
+#caustics{position:absolute;left:0;top:0;width:3840px;height:1080px;background:url(../assets/img/caustics.webp) 0 0/512px 512px repeat;opacity:.14;will-change:transform,opacity}
 #bubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .bub{position:absolute;border-radius:50%;background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.95) 0 12%,rgba(200,245,255,.35) 22%,rgba(160,230,255,.12) 60%,rgba(255,255,255,.45) 72%,rgba(255,255,255,0) 76%)}
 
@@ -51,7 +51,7 @@ img{-webkit-user-drag:none;user-select:none}
 .lbl.on::before{content:"";position:absolute;left:10px;right:10px;top:-12px;bottom:-12px;border-radius:16px;background:rgba(4,18,42,.96);border:3px solid #5fe6ff;box-shadow:0 0 18px rgba(60,220,255,.65);z-index:-1}
 .lbl.neg.on::before{border-color:#ff9a6b;box-shadow:0 0 18px rgba(255,130,80,.7)}
 .lbl.zero.on::before{border-color:#ffd66b;box-shadow:0 0 18px rgba(255,200,60,.7)}
-#scan{position:absolute;top:500px;width:180px;height:120px;margin-left:-90px;background:radial-gradient(ellipse at center,rgba(170,255,255,.75),rgba(80,220,255,.25) 45%,rgba(0,0,0,0) 70%);mix-blend-mode:screen;opacity:0}
+#scan{position:absolute;top:500px;width:180px;height:120px;margin-left:-90px;background:radial-gradient(ellipse at center,rgba(170,255,255,.75),rgba(80,220,255,.25) 45%,rgba(0,0,0,0) 70%);opacity:0;will-change:opacity}
 .sonarline{position:absolute;top:584px;width:4px;height:66px;margin-left:-2px;background:repeating-linear-gradient(#7ff2ff 0 8px,transparent 8px 16px);opacity:.6}
 .word{position:absolute;font:800 40px/1 Baloo,sans-serif;color:#fff;text-shadow:0 0 16px #20c9ff,0 3px 0 #06325a;white-space:nowrap}
 
@@ -178,10 +178,10 @@ img{-webkit-user-drag:none;user-select:none}
 .school svg{position:absolute;overflow:visible}
 .fish .tail{transform-box:fill-box;transform-origin:0% 50%;animation:tail .32s ease-in-out infinite alternate}
 @keyframes tail{from{transform:scaleY(.6) skewY(-10deg)}to{transform:scaleY(1.05) skewY(10deg)}}
-#snow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;opacity:.9}
+#snow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;opacity:.9;will-change:contents}
 #vignette{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;
   background:radial-gradient(ellipse 75% 70% at 50% 38%,rgba(0,0,0,0) 55%,rgba(0,18,48,.5) 100%),linear-gradient(rgba(0,0,0,0) 70%,rgba(0,14,40,.35))}
-#flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at var(--fx,50%) var(--fy,60%),rgba(255,245,200,.85),rgba(255,200,120,.25) 30%,rgba(0,0,0,0) 60%);opacity:0;mix-blend-mode:screen}
+#flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at var(--fx,50%) var(--fy,60%),rgba(255,245,200,.6),rgba(255,200,120,.16) 30%,rgba(0,0,0,0) 60%);opacity:0;will-change:opacity}
 
 /* submarine affordances: a tap ring pulses while we wait for the child */
 .sub .ring{position:absolute;left:50%;top:50%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;border:4px solid rgba(160,250,255,.9);opacity:0;pointer-events:none}
@@ -244,7 +244,7 @@ img{-webkit-user-drag:none;user-select:none}
 #skipStory{position:absolute;right:40px;top:36px;padding:12px 26px 10px;border-radius:30px;background:rgba(4,24,48,.65);border:2px solid rgba(255,255,255,.6);font:700 28px/1 Baloo;color:#fff;cursor:pointer;pointer-events:auto}
 #tapNext{position:absolute;right:48px;bottom:36px;font:600 28px/1 Baloo;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.6);opacity:0}
 .radar{position:absolute;left:300px;top:118px;width:840px;height:470px;overflow:hidden;border-radius:30px}
-.radar .sweep2{position:absolute;left:150px;top:-35px;width:540px;height:540px;border-radius:50%;background:conic-gradient(from 0deg,rgba(120,255,255,.0) 0deg,rgba(120,255,255,0) 300deg,rgba(140,255,255,.45) 360deg);mix-blend-mode:screen}
+.radar .sweep2{position:absolute;left:150px;top:-35px;width:540px;height:540px;border-radius:50%;background:conic-gradient(from 0deg,rgba(120,255,255,.0) 0deg,rgba(120,255,255,0) 300deg,rgba(140,255,255,.45) 360deg);will-change:opacity}
 .blip{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:radial-gradient(circle,#fff 0 18%,#ff5a4a 30%,rgba(255,60,40,.0) 70%);box-shadow:0 0 18px #ff3b2a}
 .blip::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:3px solid rgba(255,90,70,.8);animation:blipr 1.4s ease-out infinite}
 @keyframes blipr{from{transform:scale(.3);opacity:1}to{transform:scale(1.6);opacity:0}}
@@ -290,7 +290,7 @@ img{-webkit-user-drag:none;user-select:none}
 #title .logo span{display:inline-block;transform-origin:50% 100%}
 
 /* ---- story (story sheet): harbour shadows, alert text, the navigation screen, missiles, MISSION 1 ---- */
-.shadowsub{position:absolute;width:230px;opacity:.42;filter:brightness(.08) blur(1.5px);mix-blend-mode:multiply;pointer-events:none}
+.shadowsub{position:absolute;width:230px;opacity:.3;filter:brightness(.08) blur(1.5px);pointer-events:none;will-change:transform}
 .ost{position:absolute;left:0;right:0;top:200px;text-align:center;font:800 76px/1 Fredoka,sans-serif;letter-spacing:4px;color:#fff;-webkit-text-stroke:5px #06264a;paint-order:stroke;pointer-events:none}
 .ost.red{color:#ff5a4a;text-shadow:0 0 30px rgba(255,60,40,.9)}
 .ost.stamp{top:420px;font-size:150px;color:#ffd66b;text-shadow:0 0 40px rgba(255,200,60,.9),0 8px 0 #031a33}

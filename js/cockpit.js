@@ -184,11 +184,11 @@
 
   // 6 · deeper each level: the sea darkens a step, glowing plankton appear, the depth on the console counts down
   const DEPTH = { 'LEVEL 1': [1, 60], 'LEVEL 2': [2, 110], 'LEVEL 3': [3, 160], 'FINAL MISSION': [4, 220] };
-  const tint = $('#depthTint'), pk = $('#plankton'), pc = pk.getContext('2d'), PK = [];
+  const tint = $('#depthTint'), pk = $('#plankton'), pc = pk.getContext('2d'), PK = []; pc.scale(.5, .5);   // half-resolution canvas
   const dl = document.createElement('span'); dl.className = 'depth'; scope.appendChild(dl);
   const D = { m: 20, lvl: 0 }; const showDepth = () => { dl.textContent = 'DEPTH ' + Math.round(D.m) + ' m'; }; showDepth();
   gsap.ticker.add((t, dt) => {
-    if (SD.paused) return; pc.clearRect(0, 0, 1920, 1080); if (!PK.length) return;
+    if (SD.paused || !PK.length) return; pc.clearRect(0, 0, 1920, 1080);   // nothing to draw until the first dive
     const s = dt / 1000 * SD.rate;
     for (const q of PK) {
       q.y -= q.v * s; q.x -= 12 * s * W.mult; if (q.y < 100) q.y = 920; if (q.x < 0) q.x = 1920;
