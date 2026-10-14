@@ -117,6 +117,23 @@
     if (choosing && t - beat > .82) { beat = t; snd.tone('sine', 62, 44, .16, .07, 0, snd.music); snd.tone('sine', 60, 42, .14, .045, .2, snd.music); }
   });
 
+  /* ---------- 9 · water movement: soft current streaks drift past, light shimmers down from the surface ----------
+     pre-softened gradients (no blur filter, no blend modes), animated with transform + opacity only */
+  const cur = $('#current');
+  cur.innerHTML = '<div class="shimmer"><i></i><i></i></div><div class="haze"></div>';
+  gsap.to(cur.querySelector('.shimmer'), { x: -480, duration: 22, repeat: -1, ease: 'none' });
+  gsap.to(cur.querySelectorAll('.shimmer i'), { opacity: .35, scaleY: 1.25, duration: 3.2, yoyo: true, repeat: -1, ease: 'sine.inOut', stagger: 1.6 });
+  for (let i = 0; i < 6; i++) {
+    const s = el('streak', cur, { top: (190 + i * 115 + Math.random() * 40) + 'px', width: (520 + Math.random() * 520) + 'px' });
+    const go = first => {
+      const dur = 16 + Math.random() * 12;
+      gsap.fromTo(s, { x: first ? Math.random() * 2000 - 600 : 2000, y: 0, opacity: 0 },
+        { x: -1200, y: (Math.random() - .5) * 60, duration: dur, ease: 'none', onComplete: () => go(false) });
+      gsap.to(s, { keyframes: [{ opacity: .1 + Math.random() * .12, duration: dur * .3 }, { opacity: .1, duration: dur * .4 }, { opacity: 0, duration: dur * .3 }], ease: 'sine.inOut' });
+    };
+    go(true);
+  }
+
   /* ---------- 8 · level complete: we surface into sunlight, the stars slam down ---------- */
   const done = $('#done'), wash = el('sunwash', $('#water'));
   new MutationObserver(() => {

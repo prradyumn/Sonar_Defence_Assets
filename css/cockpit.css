@@ -98,3 +98,11 @@
 .sunwash{position:absolute;inset:0;pointer-events:none;opacity:0;will-change:opacity;
   background:linear-gradient(rgba(255,244,200,.8),rgba(255,236,170,.35) 30%,rgba(255,230,160,0) 66%)}
 #frameGlow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;opacity:0;will-change:opacity;filter:brightness(1.55) sepia(.55) saturate(2.2)}   /* static filter, only opacity animates */
+#current{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#current .streak{position:absolute;left:0;height:46px;border-radius:50%;opacity:0;will-change:transform,opacity;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(220,250,255,.9),rgba(200,245,255,.35) 45%,rgba(200,245,255,0) 72%)}
+#current .shimmer{position:absolute;left:0;top:96px;width:2400px;height:230px;will-change:transform}
+#current .shimmer i{position:absolute;inset:0;opacity:.18;will-change:transform,opacity;transform-origin:50% 0;
+  background:repeating-radial-gradient(ellipse 120px 26px at 60px 30px,rgba(235,252,255,.55) 0,rgba(235,252,255,0) 60%),linear-gradient(rgba(220,250,255,.35),rgba(220,250,255,0))}
+#current .shimmer i+i{top:40px;left:-160px;opacity:.12}
+#current .haze{position:absolute;inset:0;background:radial-gradient(120% 95% at 50% 46%,rgba(10,70,110,0) 58%,rgba(10,70,110,.28) 82%,rgba(6,44,80,.5))}
