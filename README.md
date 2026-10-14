@@ -105,5 +105,5 @@ One bar on the ceiling holds the hear-again button, the mission text and the pro
 - **Sonar sweep:** before submarines rise, a pulse runs out from 0 along the scale; each number pings at its own pitch as the pulse reaches it.
 - **Distance beam:** after a hit, a beam runs from the number back to 0 and 0 blinks.
 - **Tension:** a low drone and a soft heartbeat while the child is choosing; gone the moment they fire.
-- **Water movement:** faint current streaks drift through the sea, light ripples shimmer down from the surface, and a soft depth haze sits at the window edges (pre-softened gradients, transform/opacity only).
+- **Water movement:** faint current streaks drift through the sea, large slow caustic light ripples drift near the surface and fade out with depth (`surface_light.webp`, the fade is baked into the image), and a soft depth haze sits at the window edges (pre-softened gradients, transform/opacity only).
 - **Level complete:** sunlight washes down, light rays brighten, bubbles rush up, and each star lands with a thud.
