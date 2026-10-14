@@ -83,3 +83,17 @@
 /* torpedo leaving the bow tube */
 .tubeflash{position:absolute;width:220px;height:120px;margin:-60px 0 0 -110px;border-radius:50%;pointer-events:none;
   background:radial-gradient(ellipse,rgba(230,252,255,.95),rgba(160,235,255,.4) 40%,rgba(160,235,255,0) 70%)}
+
+/* ---- fx.js: torpedo light, window-frame flash, broken halves, distance beam, sonar sweep, surfacing ---- */
+.tlight{position:absolute;left:0;top:0;width:440px;height:440px;margin:-220px 0 0 -220px;border-radius:50%;pointer-events:none;opacity:0;mix-blend-mode:screen;
+  background:radial-gradient(circle,rgba(255,240,190,.85),rgba(255,200,110,.38) 34%,rgba(255,180,80,0) 70%)}
+.subhalf{position:absolute;width:210px;height:90px;transform-origin:105px 45px;pointer-events:none}
+.subhalf img{position:absolute;left:0;top:0;width:210px}
+.dbeam{position:absolute;top:548px;height:24px;border-radius:12px;pointer-events:none;mix-blend-mode:screen}
+.dbeam.pos{background:linear-gradient(90deg,rgba(255,214,107,.9),#7ff2ff);box-shadow:0 0 22px rgba(127,242,255,.9)}
+.dbeam.neg{background:linear-gradient(90deg,#ffb070,rgba(255,214,107,.9));box-shadow:0 0 22px rgba(255,150,90,.9)}
+.shead{position:absolute;top:510px;width:16px;height:110px;margin-left:-8px;border-radius:8px;pointer-events:none;mix-blend-mode:screen;
+  background:linear-gradient(rgba(127,242,255,0),#bff8ff 50%,rgba(127,242,255,0));box-shadow:0 0 26px 8px rgba(127,242,255,.7)}
+.sring{position:absolute;top:560px;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:4px solid #7ff2ff;box-shadow:0 0 16px rgba(127,242,255,.8);pointer-events:none}
+.sunwash{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;
+  background:linear-gradient(rgba(255,244,200,.8),rgba(255,236,170,.35) 30%,rgba(255,230,160,0) 66%)}

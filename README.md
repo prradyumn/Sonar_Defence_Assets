@@ -96,3 +96,13 @@ open http://localhost:8000/?edit=1
 ## HUD
 During play, what Meera or Riya says appears in a speech bubble beside her (Meera bottom-left, Riya bottom-right) with its tail pointing at the speaker.
 One bar on the ceiling holds the hear-again button, the mission text and the progress pips (`#hudbar`). The ceiling lamps are toned down (`#lampDim`), the crew are 15 % smaller and dim until they speak, the console shows the sonar trace + depth only between missions, fish swim below the scale (never behind the submarine row), and number labels not in play are faded to 50 %.
+
+## Sound design + VFX (`js/fx.js`)
+- **Pitch = position:** every tap, lock-on and hit plays a note on a pentatonic ladder, low at −8 and high at +8, so "right is greater" can be heard. A wrong tap sounds dull and flat; firing in order plays a rising tune.
+- **Through the glass:** outside sounds (explosions, sinking, the cannon's kick in the water) go through a muffled "outside" channel and are panned left/right by position. A hit = a beat of silence in the music → deep thump → the glass rattles.
+- **Light:** the torpedo carries a warm light through the water; the blast lights the cockpit frame for a moment.
+- **Break apart:** a hit submarine cracks in two (the sub art split in code), the halves tumble and bubbles stream out.
+- **Sonar sweep:** before submarines rise, a pulse runs out from 0 along the scale; each number pings at its own pitch as the pulse reaches it.
+- **Distance beam:** after a hit, a beam runs from the number back to 0 and 0 blinks.
+- **Tension:** a low drone and a soft heartbeat while the child is choosing; gone the moment they fire.
+- **Level complete:** sunlight washes down, light rays brighten, bubbles rush up, and each star lands with a thud.

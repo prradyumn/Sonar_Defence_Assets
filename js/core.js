@@ -43,7 +43,7 @@
   const MUTE = Q.get('mute') === '1';
 
   /* ================= sound: recorded music + ambience + effects (assets/sfx), synthesized UI sounds ================= */
-  let AC = null, master = null, sfxBus = null, musicBus = null, ambBus = null;
+  let AC = null, master = null, sfxBus = null, musicBus = null, ambBus = null, outBus = null;   // outBus: outside the hull, heard through the glass (muffled)
   function audioOn() {
     if (AC) return;
     try {
@@ -52,19 +52,27 @@
       sfxBus = AC.createGain(); sfxBus.gain.value = .75; sfxBus.connect(master);
       musicBus = AC.createGain(); musicBus.gain.value = .55; musicBus.connect(master);
       ambBus = AC.createGain(); ambBus.gain.value = .55; ambBus.connect(master);
+      const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 820; lp.Q.value = .8; lp.connect(sfxBus);
+      outBus = AC.createGain(); outBus.gain.value = 1.15; outBus.connect(lp);
       bed('music', want.music, 1.2); bed('amb', want.amb, 1.2);   // already loaded while the cover was showing
     } catch (e) { AC = null; }
+  }
+  // where a sound goes: o = { out: true } through the glass (muffled) · { pan: −1 … 1 } left / right
+  function route(node, o) {
+    let n = node;
+    if (o && o.pan && AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, o.pan)); n.connect(p); n = p; }
+    n.connect(o && o.out ? outBus : (o && o.connect ? o : sfxBus));
   }
   function env(g, t, a, d, peak) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); }
   function tone(type, f0, f1, dur, peak = .3, delay = 0, bus) {
     if (!AC) return; const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
-    o.type = type; o.frequency.setValueAtTime(f0, t); if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur); env(g, t, .01, dur, peak); o.connect(g); g.connect(bus || sfxBus); o.start(t); o.stop(t + dur + .05);
+    o.type = type; o.frequency.setValueAtTime(f0, t); if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur); env(g, t, .01, dur, peak); o.connect(g); route(g, bus); o.start(t); o.stop(t + dur + .05);
   }
-  function noise(dur, peak = .25, lp = 1200, delay = 0, hp) {
+  function noise(dur, peak = .25, lp = 1200, delay = 0, hp, to) {
     if (!AC) return; const t = AC.currentTime + delay, n = AC.sampleRate * dur, b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = b; f.type = 'lowpass'; f.frequency.value = lp;
-    env(g, t, .02, dur, peak); s.connect(f); if (hp) { const h = AC.createBiquadFilter(); h.type = 'highpass'; h.frequency.value = hp; f.connect(h); h.connect(g); } else f.connect(g); g.connect(sfxBus); s.start(t);
+    env(g, t, .02, dur, peak); s.connect(f); if (hp) { const h = AC.createBiquadFilter(); h.type = 'highpass'; h.frequency.value = hp; f.connect(h); h.connect(g); } else f.connect(g); route(g, to); s.start(t);
   }
   /* Recorded sound: assets/sfx/*.ogg (CC0 effects + music made for the game, see assets/sfx/CREDITS.md).
      Over http(s) the files become Web Audio buffers (they overlap, duck under the voice and pause with the AudioContext);
@@ -101,9 +109,9 @@
   }
   const elVol = kind => (kind === 'music' ? (ducked ? .18 : .55) : (ducked ? .4 : .55)) * .8;
   // a one-shot; false when the file isn't there, so the caller can fall back to the synth
-  function sample(n, vol = 1, rate = 1) {
+  function sample(n, vol = 1, rate = 1, to) {
     if (!AC || MUTE) return true;
-    if (!EL[n]) { const b = BUF[n]; if (!b) return false; const s = AC.createBufferSource(), g = AC.createGain(); s.buffer = b; s.playbackRate.value = rate; g.gain.value = ONE[n] * vol; s.connect(g); g.connect(sfxBus); s.start(); return true; }
+    if (!EL[n]) { const b = BUF[n]; if (!b) return false; const s = AC.createBufferSource(), g = AC.createGain(); s.buffer = b; s.playbackRate.value = rate; g.gain.value = ONE[n] * vol; s.connect(g); route(g, to); s.start(); return true; }
     const el = EL[n]; if (!el || el.error) return false;
     el.volume = Math.min(1, ONE[n] * vol * .75); el.playbackRate = rate; el.currentTime = 0; el.play().catch(() => {}); return true;
   }
@@ -295,7 +303,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();
