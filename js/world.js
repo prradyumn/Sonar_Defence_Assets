@@ -380,7 +380,7 @@
   };
   W.clearSignals = () => { L3.sigs.forEach(s => s.d.remove()); L3.sigs = []; (W._pairBoxes || []).forEach(b => b.remove()); };
 
-  /* ================= reward: a burst of confetti, the praise word, a star that flies into the next progress pip ================= */
+  /* ================= reward: a burst of confetti, the praise word, a sonar contact (glowing blip with pulsing rings) that flies up and lights the next progress lamp ================= */
   const top = $('#fxTop'), COL = ['#ffd66b', '#ffb070', '#7ff2ff', '#ffffff', '#ff8fb1', '#9dff9a'];
   const centreOf = e => { const r = e.getBoundingClientRect(), st = $('#stage').getBoundingClientRect(), k = st.width / 1920; return { x: (r.left - st.left + r.width / 2) / k, y: (r.top - st.top + r.height / 2) / k }; };
   function confetti(x, y, n, spread) {
@@ -407,14 +407,19 @@
     }
     const pip = o.pip != null && $('#pips').children[o.pip];
     if (!pip) return;
-    const to = centreOf(pip), st = el('flystar', top, { left: x + 'px', top: y + 'px' }), mx = (x + to.x) / 2 + 120, my = Math.min(y, to.y) - 220, pr = { p: 0 };
+    // a sonar contact rises from the wreck: a glowing blip with rings pulsing out, it flies up and lights its contact lamp
+    const to = centreOf(pip), st = el('flyping', top, { left: x + 'px', top: y + 'px' }), mx = (x + to.x) / 2 + 120, my = Math.min(y, to.y) - 220, pr = { p: 0 };
+    st.innerHTML = '<i></i><i></i>';
+    const pingRing = () => { const r = el('pingring', top, { left: st.style.left, top: st.style.top }); gsap.fromTo(r, { scale: .3, opacity: .9 }, { scale: 2.2, opacity: 0, duration: .7, ease: 'power1.out', onComplete: () => r.remove() }); };
+    SFX.blip(); pingRing();
     gsap.timeline({ onComplete: () => st.remove() })
-      .fromTo(st, { scale: 0, rotation: -90 }, { scale: 1.3, rotation: 0, duration: .35, ease: 'back.out(3)' })
+      .fromTo(st, { scale: 0 }, { scale: 1.25, duration: .35, ease: 'back.out(3)' })
       .to(pr, { p: 1, duration: .85, ease: 'power2.in', onUpdate() {
         const p = pr.p, q = 1 - p; st.style.left = (q * q * x + 2 * q * p * mx + p * p * to.x) + 'px'; st.style.top = (q * q * y + 2 * q * p * my + p * p * to.y) + 'px';
-        gsap.set(st, { scale: 1.3 - .85 * p, rotation: 360 * p });
+        gsap.set(st, { scale: 1.25 - .7 * p });
+        if (p > .3 && !st._r1) { st._r1 = 1; pingRing(); } if (p > .65 && !st._r2) { st._r2 = 1; pingRing(); }   // it keeps pinging on the way up
       }, onComplete() {
-        SFX.ding(); pip.src = 'assets/img/pip_on.webp';
+        SFX.ping(); SFX.ding(); pip.src = 'assets/img/pip_on.webp';
         gsap.fromTo(pip, { scale: 2.2 }, { scale: 1, duration: .5, ease: 'back.out(3)' });
         const b = el('pipburst', top, { left: to.x + 'px', top: to.y + 'px' }); gsap.fromTo(b, { scale: .3, opacity: 1 }, { scale: 2, opacity: 0, duration: .5, onComplete: () => b.remove() });
       } }, '-=.05');
