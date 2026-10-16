@@ -138,7 +138,7 @@
   const rail = el('', sc); rail.id = 'rail'; el('arrowL', rail); el('arrowR', rail);
   const LBL = {}, TICK = {}, side = v => v === 0 ? ' zero' : v < 0 ? ' neg' : ' pos';
   for (let v = -8; v <= 8; v++) {
-    TICK[v] = el('tick' + side(v), sc, { left: X(v) + 'px' }); el('bob', TICK[v], { animationDelay: (-(v + 8) * .37 % 3.2).toFixed(2) + 's' });   // each buoy bobs out of step
+    TICK[v] = el('tick' + side(v), sc, { left: X(v) + 'px' }); el('bob', TICK[v], { animationDelay: (-(v + 8) * .37 % 3.2).toFixed(2) + 's' }); el('clamp', TICK[v]);   // each buoy bobs out of step
     const l = el('lbl' + side(v), sc, { left: X(v) + 'px' }); l.textContent = fmt(v); LBL[v] = l;
   }
   const scan = el('', sc); scan.id = 'scan';

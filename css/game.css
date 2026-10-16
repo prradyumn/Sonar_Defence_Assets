@@ -35,13 +35,14 @@ img{-webkit-user-drag:none;user-select:none}
 #scaleBack::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 2px,transparent 2px 50px)}
 #scaleBack .sheen{position:absolute;top:0;bottom:0;left:-30%;width:30%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(200,250,255,.22),rgba(255,255,255,0));transform:skewX(-18deg)}
 /* the buoy trail: a rope across the water with a buoy at every whole number (gold at 0), the number under each buoy */
-#rail{position:absolute;left:110px;top:551px;width:1700px;height:18px;border-radius:9px;
-  background:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 45%,rgba(0,0,0,.25)),repeating-linear-gradient(115deg,#ffe1a8 0 6px,#cf9650 6px 11px,#f0c27e 11px 16px);
-  box-shadow:0 0 0 3px #3a2006,0 6px 10px rgba(0,10,30,.55),0 0 18px rgba(255,214,140,.35)}
+#rail{position:absolute;left:110px;top:546px;width:1700px;height:28px;background:url(../assets/img/rope.webp) 0 0/50px 28px repeat-x;
+  filter:drop-shadow(0 5px 5px rgba(0,10,30,.5))}   /* a rendered three-strand rope (static: only the buoys move) */
 #rail .arrowL,#rail .arrowR{display:none;position:absolute;top:-13px;width:0;height:0;border-top:22px solid transparent;border-bottom:22px solid transparent}
 #rail .arrowL{left:-26px;border-right:30px solid #ff8a5c;filter:drop-shadow(0 0 6px #ff6a3c)}
 #rail .arrowR{right:-26px;border-left:30px solid #5fe6ff;filter:drop-shadow(0 0 6px #22c6ff)}
 .tick{position:absolute;top:551px;width:56px;height:106px;margin-left:-28px;transform-origin:50% 9px}   /* the ring (9 px down the sprite) sits on the rope at y 560 */
+.tick .clamp{position:absolute;left:50%;top:-8px;width:16px;height:36px;margin-left:-8px;border-radius:8px;z-index:2;
+  background:linear-gradient(90deg,#2a3b58,#8ea6c8 35%,#3c5274 60%,#1a2840);box-shadow:0 0 0 2px #0b1628,0 2px 3px rgba(0,0,0,.45)}   /* the ring wrapped round the rope: the buoy hangs from it */
 .tick .bob{position:absolute;inset:0;transform-origin:50% 9px;filter:drop-shadow(0 0 1.5px #06264a) drop-shadow(0 5px 6px rgba(0,10,30,.55));background:url(../assets/img/buoy.webp) center top/contain no-repeat;animation:buoyBob 3.2s ease-in-out infinite;will-change:transform}
 .tick.zero{width:62px;height:117px;margin-left:-31px;top:549px}   /* 0 is the reference: a bigger gold buoy */
 .tick.zero .bob{background-image:url(../assets/img/buoy_zero.webp);transform-origin:50% 11px;filter:drop-shadow(0 0 1.5px #06264a) drop-shadow(0 0 14px rgba(255,214,107,.75)) drop-shadow(0 5px 6px rgba(0,10,30,.55))}
