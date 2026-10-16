@@ -2,6 +2,7 @@
 @font-face{font-family:Baloo;font-weight:800;src:url(../assets/fonts/baloo-2-latin-800-normal.woff2)}
 @font-face{font-family:Fredoka;font-weight:500;src:url(../assets/fonts/fredoka-latin-500-normal.woff2)}
 @font-face{font-family:Fredoka;font-weight:700;src:url(../assets/fonts/fredoka-latin-700-normal.woff2)}
+@font-face{font-family:Poppins;font-weight:600;src:url(../assets/fonts/poppins-latin-600-normal.woff2)}   /* dialogue text */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:#04121f;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 #shake{position:absolute;left:0;top:0;width:1920px;height:1080px;transform:translate3d(0,0,0);will-change:transform}
@@ -28,31 +29,37 @@ img{-webkit-user-drag:none;user-select:none}
 /* navigation scale: a dark glass instrument bar so the scale reads over bright water.
    negatives warm (coral) · positives cool (cyan) · zero gold — the same colours as the rule card */
 #scale{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;opacity:0}
-#scaleBack{position:absolute;left:66px;top:446px;width:1788px;height:160px;border-radius:36px;overflow:hidden;
+#scaleBack{display:none;position:absolute;left:66px;top:446px;width:1788px;height:160px;border-radius:36px;overflow:hidden;
   background:linear-gradient(90deg,rgba(255,122,84,.20),rgba(255,122,84,0) 32%,rgba(80,230,255,0) 68%,rgba(80,230,255,.20)),linear-gradient(rgba(6,20,46,.82),rgba(2,10,28,.90));
   border:2px solid rgba(170,236,255,.28);box-shadow:0 16px 44px rgba(0,10,30,.5),inset 0 1px 0 rgba(255,255,255,.16),inset 0 -14px 30px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(6px) saturate(1.3);backdrop-filter:blur(6px) saturate(1.3)}
 #scaleBack::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 2px,transparent 2px 50px)}
 #scaleBack .sheen{position:absolute;top:0;bottom:0;left:-30%;width:30%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(200,250,255,.22),rgba(255,255,255,0));transform:skewX(-18deg)}
-#rail{position:absolute;left:110px;top:546px;width:1700px;height:28px;border-radius:14px;background:#030f24;box-shadow:0 0 0 2px rgba(255,255,255,.2),0 8px 20px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.1)}
-#rail::after{content:"";position:absolute;left:12px;right:12px;top:10px;height:8px;border-radius:4px;
-  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.85) 50%,rgba(255,255,255,0)) 0 0/260px 100% repeat-x,linear-gradient(90deg,#ff7a54,#ffab6b 32%,#ffd66b 50%,#7ff2ff 68%,#3cc9ff);
-  box-shadow:0 0 12px rgba(255,214,107,.55),0 0 26px rgba(120,230,255,.35);animation:flow 2.6s linear infinite}
-@keyframes flow{to{background-position:260px 0,0 0}}
-#rail .arrowL,#rail .arrowR{position:absolute;top:-8px;width:0;height:0;border-top:22px solid transparent;border-bottom:22px solid transparent}
-#rail .arrowL{left:-26px;border-right:28px solid #ff8a5c;filter:drop-shadow(0 0 8px #ff6a3c)}
-#rail .arrowR{right:-26px;border-left:28px solid #5fe6ff;filter:drop-shadow(0 0 8px #22c6ff)}
-.tick{position:absolute;top:536px;width:6px;height:48px;margin-left:-3px;border-radius:3px;background:#fff}
-.tick.neg{box-shadow:0 0 10px #ff7a54}.tick.pos{box-shadow:0 0 10px #3ee0ff}
-.tick.zero{top:522px;height:76px;width:10px;margin-left:-5px;background:#ffd66b;box-shadow:0 0 14px #ffb21f,0 0 30px #ffb21f}
-.lbl{position:absolute;top:468px;width:110px;margin-left:-55px;text-align:center;font:700 38px/1 Fredoka,sans-serif;color:#fff;opacity:.5;
-  text-shadow:0 3px 0 rgba(0,10,28,.95),0 0 14px rgba(0,0,0,.45);transition:opacity .25s,transform .25s}
-.lbl.neg{color:#ffc6aa}.lbl.pos{color:#c6faff}.lbl.zero{color:#ffe28a;opacity:1}
+/* the buoy trail: a rope across the water with a buoy at every whole number (gold at 0), the number under each buoy */
+#rail{position:absolute;left:110px;top:551px;width:1700px;height:18px;border-radius:9px;
+  background:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 45%,rgba(0,0,0,.25)),repeating-linear-gradient(115deg,#ffe1a8 0 6px,#cf9650 6px 11px,#f0c27e 11px 16px);
+  box-shadow:0 0 0 3px #3a2006,0 6px 10px rgba(0,10,30,.55),0 0 18px rgba(255,214,140,.35)}
+#rail .arrowL,#rail .arrowR{display:none;position:absolute;top:-13px;width:0;height:0;border-top:22px solid transparent;border-bottom:22px solid transparent}
+#rail .arrowL{left:-26px;border-right:30px solid #ff8a5c;filter:drop-shadow(0 0 6px #ff6a3c)}
+#rail .arrowR{right:-26px;border-left:30px solid #5fe6ff;filter:drop-shadow(0 0 6px #22c6ff)}
+.tick{position:absolute;top:551px;width:56px;height:106px;margin-left:-28px;transform-origin:50% 9px}   /* the ring (9 px down the sprite) sits on the rope at y 560 */
+.tick .bob{position:absolute;inset:0;transform-origin:50% 9px;filter:drop-shadow(0 0 1.5px #06264a) drop-shadow(0 5px 6px rgba(0,10,30,.55));background:url(../assets/img/buoy.webp) center top/contain no-repeat;animation:buoyBob 3.2s ease-in-out infinite;will-change:transform}
+.tick.zero{width:62px;height:117px;margin-left:-31px;top:549px}   /* 0 is the reference: a bigger gold buoy */
+.tick.zero .bob{background-image:url(../assets/img/buoy_zero.webp);transform-origin:50% 11px;filter:drop-shadow(0 0 1.5px #06264a) drop-shadow(0 0 14px rgba(255,214,107,.75)) drop-shadow(0 5px 6px rgba(0,10,30,.55))}
+.tick.on .bob{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 14px rgba(255,236,170,1)) drop-shadow(0 0 30px rgba(255,214,107,.85))}
+.tick.on .bob{animation-name:buoyBobOn}   /* a highlighted buoy grows a little (GSAP owns .tick's own transform) */
+@keyframes buoyBobOn{0%,100%{transform:scale(1.18) rotate(-3deg)}50%{transform:scale(1.18) rotate(3deg)}}
+@keyframes buoyBob{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}   /* swings gently on its ring; the ring stays on its number */   /* vertical only: the spacing never moves */
+.lbl{position:absolute;top:664px;width:120px;margin-left:-60px;text-align:center;font:800 46px/1 Fredoka,sans-serif;color:#fff;opacity:1;
+  -webkit-text-stroke:7px #041c3a;paint-order:stroke;text-shadow:0 4px 0 #021226,0 0 16px rgba(0,16,40,.85);transition:transform .25s}
+.lbl.neg{color:#fff1e6}.lbl.pos{color:#eefcff}
+.lbl.zero{color:#ffd66b;opacity:1;font-size:48px;top:663px;text-shadow:0 4px 0 #021226,0 0 18px rgba(255,190,60,.75)}
 .lbl.on{opacity:1;color:#fff}
-.lbl.on::before{content:"";position:absolute;left:10px;right:10px;top:-12px;bottom:-12px;border-radius:16px;background:rgba(4,18,42,.96);border:3px solid #5fe6ff;box-shadow:0 0 18px rgba(60,220,255,.65);z-index:-1}
-.lbl.neg.on::before{border-color:#ff9a6b;box-shadow:0 0 18px rgba(255,130,80,.7)}
-.lbl.zero.on::before{border-color:#ffd66b;box-shadow:0 0 18px rgba(255,200,60,.7)}
+.lbl.on{transform:scale(1.15)}
+.lbl.on::before{content:"";position:absolute;left:10px;right:10px;top:-10px;bottom:-12px;border-radius:16px;background:rgba(4,18,42,.85);border:3px solid #5fe6ff;box-shadow:0 0 16px rgba(60,220,255,.6);z-index:-1}
+.lbl.neg.on::before{border-color:#ff9a6b;box-shadow:0 0 16px rgba(255,130,80,.65)}
+.lbl.zero.on::before{border-color:#ffd66b;box-shadow:0 0 16px rgba(255,200,60,.65)}
 #scan{position:absolute;top:500px;width:180px;height:120px;margin-left:-90px;background:radial-gradient(ellipse at center,rgba(170,255,255,.75),rgba(80,220,255,.25) 45%,rgba(0,0,0,0) 70%);opacity:0;will-change:opacity}
-.sonarline{position:absolute;top:584px;width:4px;height:66px;margin-left:-2px;background:repeating-linear-gradient(#7ff2ff 0 8px,transparent 8px 16px);opacity:.6}
+.sonarline{position:absolute;top:610px;width:4px;height:66px;margin-left:-2px;background:repeating-linear-gradient(#7ff2ff 0 8px,transparent 8px 16px);opacity:.6}
 .word{position:absolute;font:800 40px/1 Baloo,sans-serif;color:#fff;text-shadow:0 0 16px #20c9ff,0 3px 0 #06325a;white-space:nowrap}
 
 /* submarines */
@@ -67,11 +74,11 @@ img{-webkit-user-drag:none;user-select:none}
 .blast{position:absolute;width:340px;height:340px;margin:-170px 0 0 -170px;background:url(../assets/img/blast_sheet.webp) 0 0/1360px 340px no-repeat}
 .torp{position:absolute;width:120px;height:37px;margin:-18px 0 0 -60px}
 .tbub{position:absolute;border-radius:50%;border:2px solid rgba(220,250,255,.85);background:rgba(255,255,255,.18)}
-.badge{position:absolute;top:396px;width:74px;height:78px;margin-left:-37px;background:url(../assets/img/badge.webp) center/contain no-repeat}
+.badge{position:absolute;top:470px;width:74px;height:78px;margin-left:-37px;background:url(../assets/img/badge.webp) center/contain no-repeat}
 .badge span{position:absolute;left:0;right:0;top:27px;text-align:center;font:700 32px/1 Fredoka,sans-serif;color:#5a3a00}
-.hintarrow{position:absolute;top:410px;height:64px;background:url(../assets/img/hint_arrow.webp) center/100% 100% no-repeat;filter:drop-shadow(0 0 12px rgba(255,200,40,.8))}
+.hintarrow{position:absolute;top:466px;height:64px;background:url(../assets/img/hint_arrow.webp) center/100% 100% no-repeat;filter:drop-shadow(0 0 12px rgba(255,200,40,.8))}
 .hintarrow.left{transform:scaleX(-1)}
-.sweep{position:absolute;top:612px;height:46px;background:url(../assets/img/sweep.webp) center/100% 100% no-repeat}
+.sweep{position:absolute;top:478px;height:46px;background:url(../assets/img/sweep.webp) center/100% 100% no-repeat}
 .sweep.left{transform:scaleX(-1)}
 
 /* L3 signals + marker */
@@ -82,7 +89,7 @@ img{-webkit-user-drag:none;user-select:none}
 .sig.neg.pair{filter:hue-rotate(178deg) saturate(1.7) brightness(1.05) drop-shadow(0 0 14px #fff)}
 .pop{position:absolute;width:190px;height:132px;margin:-66px 0 0 -95px;background:url(../assets/img/pop.webp) center/contain no-repeat}
 .zero0{position:absolute;font:700 46px/1 Fredoka;color:#fff;text-shadow:0 0 14px #9ff,0 2px 0 #024}
-#marker{position:absolute;width:44px;height:82px;margin-left:-22px;top:380px;background:url(../assets/img/marker.webp) center/contain no-repeat;filter:drop-shadow(0 0 12px rgba(255,170,40,.7))}
+#marker{position:absolute;width:44px;height:82px;margin-left:-22px;top:440px;background:url(../assets/img/marker.webp) center/contain no-repeat;filter:drop-shadow(0 0 12px rgba(255,170,40,.7))}
 .pod{position:absolute;width:110px;height:83px;margin:-41px 0 0 -55px;background:url(../assets/img/pod.webp) center/contain no-repeat}
 .eqn{position:absolute;left:960px;top:304px;transform:translateX(-50%);font:700 46px/1 Fredoka;color:#fff;text-shadow:0 0 16px #1fd2ff,0 3px 0 #052a4c;white-space:nowrap}
 .eqn b.p{color:#8ff3ff}.eqn b.n{color:#ffb070}
@@ -232,16 +239,13 @@ img{-webkit-user-drag:none;user-select:none}
 .actor{position:absolute;bottom:0;transform-origin:50% 100%;filter:drop-shadow(0 14px 18px rgba(0,20,50,.35))}
 .actor img,.actor canvas{display:block;height:100%}
 .actor.dim img,.actor.dim canvas{filter:brightness(.82) saturate(.9)}
-.bubble{position:absolute;max-width:640px;padding:26px 34px 24px;border-radius:34px;background:#fff;color:#0d2c4f;font:600 38px/1.25 Baloo,sans-serif;
-  box-shadow:0 10px 0 rgba(0,30,70,.18),0 18px 40px rgba(0,20,50,.35);border:5px solid #0d3a66;opacity:0}
-.bubble .nm{position:absolute;left:24px;top:-24px;padding:6px 18px 4px;border-radius:14px;font:800 26px/1 Baloo;background:#5fe6ff;color:#06264a;border:3px solid #0d3a66}
-.bubble.riya{border-color:#a2520c}.bubble.riya .nm{background:#ffc04d;color:#4a2600;border-color:#a2520c}
-.bubble::after{content:"";position:absolute;width:44px;height:44px;background:#fff;border:5px solid #0d3a66;border-top:none;border-left:none;transform:rotate(45deg)}
-.bubble.riya::after{border-color:#a2520c}
-.bubble.tl::after{left:70px;bottom:-26px}
-.bubble.tr::after{right:70px;bottom:-26px}
-.bubble.lft::after{left:-26px;top:46%;transform:rotate(135deg)}
-.bubble.rgt::after{right:-26px;top:46%;transform:rotate(-45deg)}
+/* story bubbles: the glossy oval (asset_speech_bubble_blank) as a stretchable frame; the tail sits at the bottom on the speaker's side */
+.bubble{position:absolute;max-width:680px;padding:0 14px;color:#0d2c4f;font:600 32px/1.3 Poppins,Baloo,sans-serif;opacity:0;
+  border:46px solid transparent;border-image:url(../assets/img/bubble_oval.webp) 150 fill / 46px stretch;filter:drop-shadow(0 12px 18px rgba(0,20,50,.35))}
+.bubble .nm{position:absolute;left:-6px;top:-66px;padding:6px 18px 4px;border-radius:14px;font:800 24px/1 Baloo;background:#5fe6ff;color:#06264a;border:3px solid #0d3a66;white-space:nowrap}
+.bubble.riya .nm{left:auto;right:-6px;background:#ffc04d;color:#4a2600;border-color:#a2520c}
+.bubble::after{content:"";position:absolute;left:-22px;bottom:-66px;width:57px;height:38px;background:url(../assets/img/bubble_oval_tail.webp) center/100% 100% no-repeat}
+.bubble.riya::after{left:auto;right:-22px;background-image:url(../assets/img/bubble_oval_tail_r.webp)}
 #skipStory{position:absolute;right:40px;top:36px;padding:12px 26px 10px;border-radius:30px;background:rgba(4,24,48,.65);border:2px solid rgba(255,255,255,.6);font:700 28px/1 Baloo;color:#fff;cursor:pointer;pointer-events:auto}
 #tapNext{position:absolute;right:48px;bottom:36px;font:600 28px/1 Baloo;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.6);opacity:0}
 .radar{position:absolute;left:300px;top:118px;width:840px;height:470px;overflow:hidden;border-radius:30px}

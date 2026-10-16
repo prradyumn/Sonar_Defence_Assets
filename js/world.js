@@ -19,17 +19,17 @@
   /* positions that come from code, not CSS — tunable live in the layout editor, saved in js/layout.js (LAYOUT.config) */
   const DEFAULTS = {
     X0: 960,        // stage x of 0 on the navigation scale
-    STEP: 100,      // px between whole numbers (scale shows −8 … +8)
+    STEP: 106,      // px between whole numbers (scale shows −8 … +8)
     SUB_Y: 440,     // submarine centre y (row 1), out in the water above the scale
     SUB_ROW: -105,  // row 2 (a neighbour less than 2 apart) sits this much lower (negative = higher)
     SIG_Y1: 200,    // L3 signal rows: top
     SIG_Y2: 268,    //                 bottom
     SIG_GAP: 160,   // px between signal columns
-    SCALE_DY: 100,  // moves the whole scale group (bar, numbers, marker, hints) down, low on the glass
+    SCALE_DY: 20,   // moves the whole scale group (rope, buoys, numbers, marker, hints) down
   };
   const CONFIG = Object.assign({}, DEFAULTS, window.LAYOUT && LAYOUT.config);
   const X = v => CONFIG.X0 + v * CONFIG.STEP;   // scale position → stage x
-  const SUB_H = 90, LINE_TOP = 584, BAR_TOP = 446;   // .sub height · .sonarline top · #scaleBack top (game.css)
+  const SUB_H = 90, LINE_TOP = 640, BAR_TOP = 554;   // .sub height · .sonarline top (below) · top of the buoys (game.css)
   // the dotted sonar line joins a submarine to the scale: down from the rail (subs below) or down from the sub (subs above)
   const lineAt = (ln, cy) => {   // (the line lives in #scale, which is shifted by SCALE_DY)
     const t = cy - SUB_H / 2, dy = CONFIG.SCALE_DY;
@@ -138,12 +138,13 @@
   const rail = el('', sc); rail.id = 'rail'; el('arrowL', rail); el('arrowR', rail);
   const LBL = {}, TICK = {}, side = v => v === 0 ? ' zero' : v < 0 ? ' neg' : ' pos';
   for (let v = -8; v <= 8; v++) {
-    TICK[v] = el('tick' + side(v), sc, { left: X(v) + 'px' });
+    TICK[v] = el('tick' + side(v), sc, { left: X(v) + 'px' }); el('bob', TICK[v], { animationDelay: (-(v + 8) * .37 % 3.2).toFixed(2) + 's' });   // each buoy bobs out of step
     const l = el('lbl' + side(v), sc, { left: X(v) + 'px' }); l.textContent = fmt(v); LBL[v] = l;
   }
   const scan = el('', sc); scan.id = 'scan';
   W.X = X; W.CONFIG = CONFIG; W.CONFIG_DEFAULTS = DEFAULTS; W.el = el; W.shake = shake; W.spawnBubble = big => spawnBubble(big);
-  W.labelsOn = vals => { for (let v = -8; v <= 8; v++) LBL[v].classList.toggle('on', vals.includes(v)); };
+  W.labelsOn = vals => { for (let v = -8; v <= 8; v++) { LBL[v].classList.toggle('on', vals.includes(v)); TICK[v].classList.toggle('on', vals.includes(v)); } };
+  W.LBL_Y = 687;   // centre of a number label (scale coords; add CONFIG.SCALE_DY on stage)
   // power-on: the glass bar unfolds from 0, the rail draws out, ticks and numbers ripple outwards, a light sweeps left → right
   W.scaleIntro = async () => {
     gsap.set('#scale', { opacity: 1 });
@@ -163,7 +164,7 @@
     await new Promise(r => gsap.to(scan, { left: X(to), duration: 2.2, ease: 'none', onUpdate() { const cur = Math.round((parseFloat(scan.style.left) - CONFIG.X0) / CONFIG.STEP); for (let v = 0; Math.abs(v) <= Math.abs(cur); v += dir || 1) { if (!lit.includes(v)) { lit.push(v); gsap.fromTo(LBL[v], { scale: 1.6 }, { scale: 1, duration: .5 }); LBL[v].classList.add('on'); } if (!dir) break; } }, onComplete: r }));
     const w = el('word', sc, { left: (dir > 0 ? X(to) - 340 : X(to) + 20) + 'px', top: '400px' }); w.innerHTML = word;
     gsap.fromTo(w, { opacity: 0, x: -30 * dir }, { opacity: 1, x: 0, duration: .5 });
-    const arrow = el(dir > 0 ? 'sweep' : 'sweep left', sc, { left: Math.min(X(0), X(to)) + 'px', width: Math.abs(X(to) - X(0)) + 'px', top: '612px' });
+    const arrow = el(dir > 0 ? 'sweep' : 'sweep left', sc, { left: Math.min(X(0), X(to)) + 'px', width: Math.abs(X(to) - X(0)) + 'px', top: '478px' });
     gsap.fromTo(arrow, { opacity: 0 }, { opacity: .9, duration: .4 });
     gsap.to(scan, { opacity: 0, duration: .4 });
     return () => { gsap.to([w, arrow], { opacity: 0, duration: .3, onComplete: () => { w.remove(); arrow.remove(); } }); lit.forEach(v => LBL[v].classList.remove('on')); };
@@ -279,7 +280,7 @@
     hintEls.push(a); return a;
   };
   W.sweepArrow = dir => {
-    const a = el('sweep' + (dir < 0 ? ' left' : ''), sc, { left: '260px', width: '1400px', top: '412px' });
+    const a = el('sweep' + (dir < 0 ? ' left' : ''), sc, { left: '260px', width: '1400px', top: '478px' });   // between the subs and the rope
     gsap.fromTo(a, { opacity: 0 }, { opacity: .85, duration: .4 }); hintEls.push(a); return a;
   };
   const RULES = { compare: $('#rule').innerHTML,
@@ -433,7 +434,7 @@
   W.applyConfig = () => {
     sc.style.transform = CONFIG.SCALE_DY ? `translateY(${CONFIG.SCALE_DY}px)` : '';
     for (let v = -8; v <= 8; v++) TICK[v].style.left = LBL[v].style.left = X(v) + 'px';
-    rail.style.left = X(-8.5) + 'px'; rail.style.width = 17 * CONFIG.STEP + 'px';
+    rail.style.left = '-40px'; rail.style.width = '2000px';   // the rope runs right across the sea, under the window frame
     back.style.left = (X(-8.5) - 44) + 'px'; back.style.width = (17 * CONFIG.STEP + 88) + 'px';
     for (const s of SUBS) {
       const dy = s.depth * CONFIG.SUB_ROW; s.cy = CONFIG.SUB_Y + dy;

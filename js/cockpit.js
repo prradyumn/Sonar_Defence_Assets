@@ -135,7 +135,7 @@
 
   // 1 · direct hit: the number under the sub pops up big (the screen shake comes from world.js)
   function hitMoment(s) {
-    const x = X(s.v), y = s.cy, ly = 488 + DY() - 70;   // just above the scale's own label
+    const x = X(s.v), y = s.cy, ly = W.LBL_Y - 150 + DY();   // just above its buoy
     const lbl = document.querySelectorAll('#scale .lbl')[s.v + 8];
     if (lbl) gsap.fromTo(lbl, { scale: 1 }, { scale: 1.6, duration: .2, yoyo: true, repeat: 1, ease: 'back.out(3)' });
     const n = el('hitnum ' + (s.v < 0 ? 'neg' : s.v > 0 ? 'pos' : 'zero'), top, { left: x + 'px', top: ly + 'px' }); n.textContent = fmt(s.v);

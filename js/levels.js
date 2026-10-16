@@ -258,11 +258,11 @@
     W.strip(`Fire at the submarine at <b>${f(T)}</b>.`);
     const p1 = say(S.hp1);
     await intro; await W.handTo(960, 72, .3); await W.handTap(960, 72);   // the glow pulses on the mission text…
-    await W.handTo(W.X(0), 488 + W.CONFIG.SCALE_DY, .7);                 // …then on 0 in the middle of the scale
+    await W.handTo(W.X(0), W.LBL_Y + W.CONFIG.SCALE_DY, .7);                 // …then on 0 in the middle of the scale
     await p1;
     // 2 · find the submarine at the correct position: the glow runs along the scale to +3, then up its sonar line
     step(2, 'FIND THE TARGET');
-    const sub = W.subAt(T), lx = W.X(T), ly = 488 + W.CONFIG.SCALE_DY;   // the +3 label
+    const sub = W.subAt(T), lx = W.X(T), ly = W.LBL_Y + W.CONFIG.SCALE_DY;   // the +3 label
     const p2 = say(S.hp2);
     await W.handTo(lx, ly, 1); W.labelsOn([T]); await W.handTap(lx, ly);
     await W.handTo(lx, sub.cy, .8); W.glow(sub, true, 'rgba(255,214,107,.6)');
@@ -309,7 +309,7 @@
 
   /* ---------- first-mission tutorial: show HOW to read a submarine's position (without giving the answer) ---------- */
   async function tutorial() {
-    const demo = W.subAt(-3), lx = W.X(-3), ly = 488 + W.CONFIG.SCALE_DY;   // the −3 label
+    const demo = W.subAt(-3), lx = W.X(-3), ly = W.LBL_Y + W.CONFIG.SCALE_DY;   // the −3 label
     const p = say(S.tut1);
     await W.handTo(lx, ly, .9); await W.handTap(lx, ly);   // a glow pulses on the −3 label
     gsap.fromTo(document.querySelectorAll('.lbl')[5], { scale: 1 }, { scale: 1.45, duration: .3, yoyo: true, repeat: 3 });
