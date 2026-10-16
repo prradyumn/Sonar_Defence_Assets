@@ -242,8 +242,8 @@
   /* the Ludo talking sheets, in the story and at the cockpit stations (6×6 whole full-body frames, played exactly as drawn).
      A character plays the sheet while their line is spoken, then runs on to the next closed-mouth frame and holds it. */
   const SHEET = {
-    meera: { src: 'assets/img/meera_talk_sheet.webp', w: 385, h: 862, ms: 79, rest: [0, 1, 2, 3, 4, 5, 6, 9, 14, 24, 30, 31] },
-    riya: { src: 'assets/img/riya_talk_sheet.webp', w: 386, h: 828, ms: 90, rest: [4, 5, 6, 7, 8, 22, 23] },
+    meera: { src: 'assets/img/meera_talk_sheet.webp', w: 289, h: 646, ms: 79, rest: [0, 1, 2, 3, 4, 5, 6, 9, 14, 24, 30, 31] },
+    riya: { src: 'assets/img/riya_talk_sheet.webp', w: 290, h: 621, ms: 90, rest: [4, 5, 6, 7, 8, 22, 23] },
   };
   /* Each sheet is ~48 MB once decoded. Drawing a not-yet-decoded image on a canvas makes the browser decode it right there on the
      main thread (a 1–3 s freeze, e.g. just after a QA jump), so the sheets are decoded in the background (createImageBitmap)
@@ -251,7 +251,7 @@
   for (const k in SHEET) {
     const s = SHEET[k]; s.img = new Image(); s.img.src = s.src; s.wait = [];
     s.ready = s.img.decode().then(() => window.createImageBitmap ? createImageBitmap(s.img) : s.img).catch(() => s.img)
-      .then(bm => { s.bm = bm; s.wait.splice(0).forEach(f => f()); });
+      .then(bm => { s.bm = bm; if (bm !== s.img) s.img = null; s.wait.splice(0).forEach(f => f()); });   // keep one decoded copy, not two
   }
   // ready: the sheets are decoded, the fonts are in and the page has finished loading (capped at 5 s) — the game starts after this
   const READY = Promise.race([
@@ -259,14 +259,15 @@
       .then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))),
     new Promise(r => setTimeout(r, 5000)),
   ]);
+  const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
   // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action
   ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'jelly', 'pop', 'pip_on', 'pip_off',
     'star_gold', 'star_silver', 'badge', 'marker', 'sig', 'pod', 'card', 'hint_arrow', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']
-    .forEach(n => { const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
+    .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
   // the story art too (characters, sprites, the water) — decoded in the background so no scene hitches when they first appear
   ['../door_left', '../door_right', 'bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'launcher_base', 'launcher_barrel', 'fire_off', 'fire_lit',
     'meera_shocked', 'meera_determined', 'meera_pointing', 'meera_proud', 'riya_alert', 'riya_focused', 'riya_cheering']
-    .forEach(n => { const i = new Image(); i.src = 'assets/img/story/' + n + '.webp'; i.decode().catch(() => {}); });
+    .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/story/' + n + '.webp'; i.decode().catch(() => {}); });
   function talker(who) {
     const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');
     c.width = s.w; c.height = s.h;
@@ -327,7 +328,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, ready: READY, CALM, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

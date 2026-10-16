@@ -77,7 +77,7 @@
     K.open = async () => {
       bg.style.backgroundImage = `url(${IMG('bg_under')})`;
       let cv = $('#waterCv');
-      if (!cv) { cv = document.createElement('canvas'); cv.id = 'waterCv'; cv.width = 1920; cv.height = 1080; st.insertBefore(cv, sfx); }
+      if (!cv) { cv = document.createElement('canvas'); cv.id = 'waterCv'; cv.width = SD.LOW ? 960 : 1920; cv.height = SD.LOW ? 540 : 1080; st.insertBefore(cv, sfx); }   // half resolution on phones
       if (WATER === null) { WATER = Water(cv) || false; if (WATER && !(await WATER.load(IMG('bg_under')))) WATER = false; }
       cv.style.display = WATER ? 'block' : 'none'; if (WATER) { Object.assign(WATER.state, { glow: 0, r: 1, g: 1, b: 1 }); WATER.start(); }
       K.cam = gsap.fromTo([cv, bg], { scale: 1.08 }, { scale: 1.02, duration: 30, ease: 'none' });
