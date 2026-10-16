@@ -19,16 +19,16 @@
 #screen::after{content:"";position:absolute;left:426px;top:962px;width:1068px;height:102px;border-radius:22px;
   background:repeating-linear-gradient(rgba(127,242,255,.035) 0 2px,transparent 2px 5px),radial-gradient(120% 140% at 50% 0%,#123b66,#071d38 70%);
   border:3px solid #49dcff;box-shadow:0 0 18px rgba(73,220,255,.55),inset 0 0 26px rgba(73,220,255,.22)}
-.cockpit #comms{left:300px;right:auto;top:auto;bottom:40px;width:auto;height:auto;max-width:1060px}   /* Meera's bubble, beside her (bottom-left) */
+.cockpit #comms{left:300px;right:auto;top:auto;bottom:40px;width:auto;height:auto;max-width:954px}   /* Meera's bubble, beside her (bottom-left) */
 .cockpit #comms.riya{left:auto;right:300px}                                                              /* Riya's, beside her (bottom-right) */
 .cockpit #pName{left:22px;top:-20px;z-index:3;white-space:nowrap;border-radius:12px;padding:6px 18px 4px;border:3px solid #0d3a66;box-shadow:0 3px 0 rgba(0,0,0,.25)}
 .cockpit #comms.riya #pName{left:auto;right:22px;background:#ffc04d;border-color:#a2520c}
 /* gameplay bubbles: the wide glossy box (asset_p09_overlay) as a stretchable frame, text inside; the tail points down at the speaker */
-.cockpit #caption{position:relative;left:0;top:0;max-width:none;min-width:300px;min-height:0;box-sizing:border-box;padding:4px 10px 0;border-radius:0;
-  border:34px solid transparent;border-image:url(../assets/img/bubble_wide.webp) 110 fill / 34px stretch;background:none;box-shadow:none;
+.cockpit #caption{position:relative;left:0;top:0;max-width:none;min-width:270px;min-height:0;box-sizing:border-box;padding:0 8px;border-radius:0;
+  border:28px solid transparent;border-image:url(../assets/img/bubble_wide.webp) 110 fill / 28px stretch;background:none;box-shadow:none;
   color:#0d2c4f;font:600 32px/1.3 Poppins,Baloo,sans-serif;text-align:left;filter:drop-shadow(0 10px 16px rgba(0,10,30,.4))}
 .cockpit #caption::after{display:none}
-.cockpit #comms::after{content:"";position:absolute;left:12px;bottom:-20px;width:43px;height:33px;background:url(../assets/img/bubble_wide_tail_l.webp) center/100% 100% no-repeat}   /* Meera: tail bottom-left */
+.cockpit #comms::after{content:"";position:absolute;left:12px;bottom:-17px;width:39px;height:30px;background:url(../assets/img/bubble_wide_tail_l.webp) center/100% 100% no-repeat}   /* Meera: tail bottom-left */
 .cockpit #comms.riya::after{left:auto;right:12px;background-image:url(../assets/img/bubble_wide_tail.webp)}                                  /* Riya: tail bottom-right */
 
 /* Meera (left) and Riya (right) at their stations, in front of the console; the speaker lights up */
