@@ -53,13 +53,15 @@
         <button data-a="answer" title="Tap the right submarine / pair for you">Answer ✓</button>
         <button data-a="restart" title="Reload this part">Restart part ↻</button></div>
       <h5>Next jump</h5><div class="row">${['1', '2', '3'].map(s => `<button data-speed="${s}"${keep.speed === s ? ' class="on"' : ''}>${s}×</button>`).join('')}
-        <button data-a="mute"${keep.mute ? ' class="on"' : ''}>Sound off</button></div></div>`;
+        <button data-a="mute"${keep.mute ? ' class="on"' : ''}>Sound off</button></div>
+      <h5>Effects</h5><div class="row"><button data-fx="calm"${SD.CALM ? ' class="on"' : ''} title="Fewer always-on effects, lighter hits (default)">Calm</button><button data-fx="full"${SD.CALM ? '' : ' class="on"'} title="Every effect">Full</button></div></div>`;
   document.body.appendChild(root);
   const panel = root.querySelector('.panel'), where = root.querySelector('#qaWhere');
   if (open) panel.hidden = false;
   root.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.g != null) return jump(PARTS[b.dataset.g][1][b.dataset.i][1]);
+    if (b.dataset.fx) { try { localStorage.setItem('sdFx', b.dataset.fx); } catch (e) {} location.reload(); return; }
     if (b.dataset.speed) { keep.speed = b.dataset.speed; root.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', x === b)); return; }
     const a = b.dataset.a;
     if (a === 'open') panel.hidden = !panel.hidden;

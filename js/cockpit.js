@@ -17,14 +17,14 @@
   SD.crew = { meera: mate('meera'), riya: mate('riya', true) };   // core.js say() animates whoever is speaking
 
   /* ---- console screen: a slow sonar trace while nobody is talking (dialogue appears on the same screen) ---- */
-  const scope = $('#scope'), comms = $('#comms');
+  const scope = $('#scope'), comms = $('#comms'), screenEl = $('#screen');
   const SW = scope.clientWidth || 1068, SH = scope.clientHeight || 102, MID = SH / 2;
   scope.innerHTML = `<svg viewBox="0 0 ${SW} ${SH}" preserveAspectRatio="none"><path d="M0 ${MID} H${SW}" stroke="rgba(73,220,255,.18)" stroke-width="2"/>` +
     '<path id="trace" fill="none" stroke="#49dcff" stroke-width="3" stroke-linejoin="round" opacity=".7"/></svg><span class="lbl2">SONAR</span>';
   const trace = $('#trace');
   gsap.ticker.add(t => {
-    const talk = +gsap.getProperty(comms, 'opacity'), mission = +gsap.getProperty('#strip', 'opacity');
-    scope.style.opacity = (1 - talk) * (1 - mission) * .9;   // quiet during a mission: the trace + depth show only between missions
+    const talk = +gsap.getProperty(comms, 'opacity'), mission = +gsap.getProperty('#strip', 'opacity'), q = (1 - talk) * (1 - mission);
+    scope.style.opacity = q * .9; if (SD.CALM) screenEl.style.opacity = q;   // calm: the console screen box shows only between missions too   // quiet during a mission: the trace + depth show only between missions
     if (talk > .95 || SD.paused) return;
     const ph = (t * .35) % 1.3 - .15; let d = '';
     for (let x = 0; x <= SW; x += 8) { const u = x / SW, k = Math.exp(-Math.pow((u - ph) / .035, 2)); d += (x ? ' L' : 'M') + x + ' ' + (MID - Math.sin(u * 90) * MID * .55 * k - Math.sin(u * 13 + t * 2) * 3).toFixed(1); }
@@ -39,8 +39,8 @@
   const C = { x: X(0) }, place = () => gsap.set(cn, { x: C.x });
   place();
   gsap.to(cring, { opacity: .9, duration: 1.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  // it sits out in the water: a few bubbles drift up off the muzzle now and then
-  setInterval(() => {
+  // it sits out in the water: a few bubbles drift up off the muzzle now and then (full mode only)
+  if (!SD.CALM) setInterval(() => {
     if (document.hidden || SD.paused) return;
     for (let i = 0; i < 2; i++) {
       const r = 3 + Math.random() * 4, b = el('pbub', sea, { left: (C.x + (Math.random() - .5) * 24) + 'px', top: (MUZZLE_Y + 4) + 'px', width: 2 * r + 'px', height: 2 * r + 'px' });
@@ -123,7 +123,7 @@
       .to(n, { y: -110, scale: .7, opacity: 0, duration: .55, ease: 'power2.in' }, '+=.45');
     W.scare(x, y);
     gsap.delayedCall(.35, () => escapePod(x, y));
-    glassBubbles(x, y);
+    if (!SD.CALM) glassBubbles(x, y);
   }
 
   // 2 · escape pod: the enemy crew bail out with a white flag and bob away up out of sight (nobody gets hurt)
@@ -169,9 +169,11 @@
     { src: 'octopus.webp', w: 200, from: [2180, 340], at: [1580, 290], away: [2200, 160], tap: [1490, 300] },
     { src: 'jelly.webp', w: 150, from: [2120, 420], at: [1560, 280], away: [1500, -340], tap: [1560, 330] },
   ];
-  let sails = 0, nextC = 0;
+  let sails = 0, nextC = 0, visited = false;
   function visitor() {
-    if (sails++ % 2 || SD.paused) return;
+    if (SD.paused) return;
+    if (SD.CALM) { if (visited) return; visited = true; }   // calm: one visitor per level (reset by the level banner)
+    else if (sails++ % 2) return;
     const c = CREATURES[nextC++ % CREATURES.length], im = new Image(); im.src = 'assets/img/' + c.src; im.style.width = c.w + 'px'; vis.appendChild(im);
     gsap.set(im, { xPercent: -50, yPercent: -50, x: c.from[0], y: c.from[1], scale: .85 });
     gsap.timeline({ onComplete: () => im.remove() })
@@ -199,13 +201,13 @@
   });
   const banner0 = W.banner;
   W.banner = (k, ...rest) => {
-    const d = DEPTH[k];
+    const d = DEPTH[k]; visited = false;
     if (d && d[0] !== D.lvl) {
       D.lvl = d[0];
       gsap.to(tint, { opacity: [0, .12, .2, .27, .34][D.lvl], duration: 1.8, ease: 'sine.inOut' });
       gsap.to(D, { m: d[1], duration: 1.8, ease: 'power1.inOut', onUpdate: showDepth });
       for (let i = 0; i < 12; i++) setTimeout(() => W.spawnBubble(true), i * 90);   // we dive: bubbles rush up past the window
-      while (PK.length < D.lvl * 14) PK.push({ x: Math.random() * 1920, y: 140 + Math.random() * 760, r: 2.4 + Math.random() * 3.2, v: 6 + Math.random() * 14,
+      while (!SD.CALM && PK.length < D.lvl * 14) PK.push({ x: Math.random() * 1920, y: 140 + Math.random() * 760, r: 2.4 + Math.random() * 3.2, v: 6 + Math.random() * 14,
         f: .8 + Math.random() * 1.6, ph: Math.random() * 6, a: .5 + Math.random() * .5, c: ['#9ff6ff', '#c7b3ff', '#7dffc8'][PK.length % 3] });
     }
     return banner0(k, ...rest);

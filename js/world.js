@@ -101,7 +101,7 @@
     gsap.ticker.add(tick); SCHOOLS.push(me);
   }
   school(true); setTimeout(() => school(true), 300);
-  setInterval(() => { if (!document.hidden && !SD.paused && $('#fishL').children.length < 4) school(false); }, 6500);
+  setInterval(() => { if (!document.hidden && !SD.paused && $('#fishL').children.length < (SD.CALM ? 1 : 4)) school(false); }, 6500);
   // a giant manta glides far behind, now and then
   $('#manta').innerHTML = `<svg width="420" height="200" viewBox="0 0 420 200" style="position:absolute;left:0;top:0;opacity:.22"><g id="mantaWing" fill="#0b3a63">
     <path d="M210 70 C150 40 70 30 10 80 C80 90 150 110 190 140 L230 140 C270 110 340 90 410 80 C350 30 270 40 210 70 Z"/><path d="M200 130 L210 196 L220 130 Z"/></g></svg>`;
@@ -110,7 +110,7 @@
     gsap.to(m, { x: -500, duration: 38, ease: 'none', onComplete: () => setTimeout(manta, 14000) });
   }
   gsap.to('#mantaWing', { scaleY: .55, transformOrigin: '50% 45%', duration: 1.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  setTimeout(manta, 4000);
+  if (!SD.CALM) setTimeout(manta, 4000);
   // bubbles drifting past (rise + go backwards = we are moving forward)
   const bub = $('#bubbles');
   function spawnBubble(big) {
@@ -119,7 +119,7 @@
     const tick = (t, dt) => { if (SD.paused) return; const s = dt / 1000 * SD.rate; o.y -= vy * s; o.x -= vx * s * W.mult * (big ? 1.4 : 1); b.style.transform = `translate3d(${o.x + Math.sin(t * 2 + r) * 6}px,${o.y}px,0)`; if (o.y < -830 || o.x < -2200) { gsap.ticker.remove(tick); b.remove(); } };
     gsap.ticker.add(tick);
   }
-  setInterval(() => { if (!document.hidden && !SD.paused) spawnBubble(Math.random() < .15); }, 260);
+  setInterval(() => { if (!document.hidden && !SD.paused) spawnBubble(Math.random() < .15); }, SD.CALM ? 560 : 260);
   for (let i = 0; i < 14; i++) setTimeout(() => spawnBubble(false), i * 60);
 
   W.sail = async (dur = 1.6) => {     // short "full speed ahead" burst between missions
@@ -189,7 +189,7 @@
     return list;
   };
   // propellers keep churning: little bubbles stream from every live submarine's tail
-  setInterval(() => {
+  if (!SD.CALM) setInterval(() => {
     if (document.hidden || SD.paused) return;
     for (const s of SUBS) {
       if (!s.alive) continue;
@@ -244,9 +244,9 @@
     shake(5, .45);
     const fl = $('#flash'); fl.style.setProperty('--fx', X(s.v) + 'px'); fl.style.setProperty('--fy', s.cy + 'px');
     gsap.fromTo(fl, { opacity: 1 }, { opacity: 0, duration: .6, ease: 'power2.out' });
-    const sh = el('shock', fx, { left: X(s.v) + 'px', top: s.cy + 'px' });
-    gsap.fromTo(sh, { scale: .2, opacity: 1 }, { scale: 3.4, opacity: 0, duration: .7, ease: 'power2.out', onComplete: () => sh.remove() });
-    for (let i = 0; i < 14; i++) {
+    if (!SD.CALM) { const sh = el('shock', fx, { left: X(s.v) + 'px', top: s.cy + 'px' });
+    gsap.fromTo(sh, { scale: .2, opacity: 1 }, { scale: 3.4, opacity: 0, duration: .7, ease: 'power2.out', onComplete: () => sh.remove() }); }
+    for (let i = 0; i < (SD.CALM ? 0 : 14); i++) {   // calm: the sub breaking in two (fx.js) carries the hit
       const a = Math.random() * 6.283, d = 80 + Math.random() * 150, r = 4 + Math.random() * 12;
       const bb = el(i < 5 ? 'debris' : 'pbub', fx, { left: X(s.v) + 'px', top: s.cy + 'px', width: (i < 5 ? 14 : 2 * r) + 'px', height: (i < 5 ? 14 : 2 * r) + 'px' });
       gsap.to(bb, { x: Math.cos(a) * d, y: Math.sin(a) * d * .7 + (i < 5 ? 160 : -60), rotation: i < 5 ? 360 * Math.random() : 0, opacity: 0, duration: i < 5 ? 1.4 : 1 + Math.random(), ease: 'power2.out', onComplete: () => bb.remove() });
@@ -396,10 +396,12 @@
   W.reward = (o = {}) => {
     const { x, y } = o.at || W.lastHit || { x: 960, y: 600 };
     SFX.reward(o.big);
-    const ring = el('ringfx', top, { left: x + 'px', top: y + 'px' });
-    gsap.fromTo(ring, { scale: .2, opacity: 1 }, { scale: 2.4, opacity: 0, duration: .75, ease: 'power2.out', onComplete: () => ring.remove() });
-    confetti(x, y, o.big ? 26 : 14, o.big ? 300 : 200);
-    if (o.word) {   // the same words Riya says, so text and voice agree
+    if (!SD.CALM) {   // calm: no ring, confetti or praise word — Riya says the praise, the sonar ping flies to progress
+      const ring = el('ringfx', top, { left: x + 'px', top: y + 'px' });
+      gsap.fromTo(ring, { scale: .2, opacity: 1 }, { scale: 2.4, opacity: 0, duration: .75, ease: 'power2.out', onComplete: () => ring.remove() });
+      confetti(x, y, o.big ? 26 : 14, o.big ? 300 : 200);
+    }
+    if (o.word && !SD.CALM) {   // the same words Riya says, so text and voice agree
       const p = el('praise' + (o.big ? '' : ' soft'), top, { left: x + 'px', top: (y - 40) + 'px' }); p.textContent = o.word;
       gsap.timeline({ delay: o.pip != null ? .5 : 0, onComplete: () => p.remove() })
         .fromTo(p, { scale: 0, rotation: -14 }, { scale: 1, rotation: 0, duration: .6, ease: 'elastic.out(1,.45)', immediateRender: true })

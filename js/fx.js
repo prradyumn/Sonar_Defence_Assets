@@ -80,7 +80,7 @@
   const blast0 = W.blast;
   W.blast = s => {
     const x = X(s.v); hitPan = pan(x);
-    breakApart(s); frameFlash(); beam(s.v);
+    breakApart(s); if (!SD.CALM) { frameFlash(); beam(s.v); }
     gsap.delayedCall(.3, () => note(s.v, { oct: 2, long: true }));   // the hit rings out at its own pitch
     return blast0(s);
   };
@@ -125,7 +125,7 @@
   const surf = cur.querySelector('.surf i');
   gsap.fromTo(surf, { x: -900 }, { x: 0, duration: 38, repeat: -1, ease: 'none' });
   gsap.to(cur.querySelector('.surf'), { opacity: .7, duration: 4.5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < (SD.CALM ? 0 : 6); i++) {
     const s = el('streak', cur, { top: (190 + i * 115 + Math.random() * 40) + 'px', width: (520 + Math.random() * 520) + 'px' });
     const go = first => {
       const dur = 16 + Math.random() * 12;

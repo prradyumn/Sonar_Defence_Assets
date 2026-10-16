@@ -107,3 +107,7 @@ One bar on the ceiling holds the hear-again button, the mission text and the pro
 - **Tension:** a low drone and a soft heartbeat while the child is choosing; gone the moment they fire.
 - **Water movement:** faint current streaks drift through the sea, large slow caustic light ripples drift near the surface and fade out with depth (`surface_light.webp`, the fade is baked into the image), and a soft depth haze sits at the window edges (pre-softened gradients, transform/opacity only).
 - **Level complete:** sunlight washes down, light rays brighten, bubbles rush up, and each star lands with a thud.
+
+## Calm mode (default) vs Full
+The game starts in **Calm** mode to keep the screen simple. The QA panel (**Q**) has a **Calm / Full** switch (saved per browser; `?fx=full` / `?fx=calm` also work).
+Calm keeps the hit's hero beats (blast + the sub breaking in two, escape pod, the number popping up, the sonar ping flying to progress) and drops: confetti, the floating praise word (Riya still says it), glass bubbles, frame glow, shock ring, debris, distance beam, current streaks, plankton, the manta, propeller and muzzle bubbles, the waiting rings on every sub (the 6 s help still pulses them) and the cannon's ring. Fish and rising bubbles are halved, one sea visitor per level, the console screen box shows only between missions, and only the crew member who is speaking is on screen.

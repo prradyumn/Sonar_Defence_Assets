@@ -41,6 +41,9 @@
   const fmt = v => v > 0 ? '+' + v : v < 0 ? '−' + Math.abs(v) : '0';   // true minus sign
   const readTime = t => Math.max(1.6, t.split(/\s+/).length * 0.36);
   const MUTE = Q.get('mute') === '1';
+  // calm mode (default): fewer always-on effects and a lighter hit; "Full" (QA panel) brings everything back. Saved per browser.
+  const CALM = (() => { if (Q.get('fx') === 'full') return false; if (Q.get('fx') === 'calm') return true; try { return localStorage.getItem('sdFx') !== 'full'; } catch (e) { return true; } })();
+  document.body.classList.toggle('calm', CALM);
 
   /* ================= sound: recorded music + ambience + effects (assets/sfx), synthesized UI sounds ================= */
   let AC = null, master = null, sfxBus = null, musicBus = null, ambBus = null, outBus = null;   // outBus: outside the hull, heard through the glass (muffled)
@@ -321,7 +324,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, ready: READY, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, ready: READY, CALM, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

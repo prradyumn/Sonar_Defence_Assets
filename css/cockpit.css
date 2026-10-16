@@ -104,3 +104,11 @@
 #current .surf{position:absolute;left:0;top:96px;width:1920px;height:520px;overflow:hidden;will-change:opacity}
 #current .surf i{position:absolute;left:0;top:0;width:2820px;height:520px;opacity:.2;will-change:transform;background:url(../assets/img/surface_light.webp) 0 0/900px 520px repeat-x}   /* the fade is baked into the image: no mask */
 #current .haze{position:absolute;inset:0;background:radial-gradient(120% 95% at 50% 46%,rgba(10,70,110,0) 58%,rgba(10,70,110,.28) 82%,rgba(6,44,80,.5))}
+
+/* ---- calm mode (default; QA panel → Full brings everything back) ---- */
+/* only the speaker shows: the other crew member sinks out of view and comes up when they talk */
+.calm .mate{transform:translateY(330px);transition:transform .45s cubic-bezier(.3,.8,.3,1) .9s,filter .25s}
+.calm .mate.speaking,.calm .mate.party{transform:translateY(0);transition:transform .4s cubic-bezier(.3,1.25,.4,1) 0s,filter .25s}
+.calm #cannon .ring{display:none}
+.calm #play.waiting .sub:not(.dim) .ring{animation:none;opacity:0}
+.calm #play.nudge .sub:not(.dim) .ring{animation:ring 1s ease-out infinite}   /* the 6 s help still pulses them */
