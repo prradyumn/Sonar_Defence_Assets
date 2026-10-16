@@ -184,10 +184,8 @@
     gsap.delayedCall(.15, () => { W.sparkle(x - 80, y); W.sparkle(x + 80, y - 30); });
   }
 
-  // 5 · sea life: every other time we sail on, a turtle, an octopus or a jellyfish comes up to the window and knocks
+  // 5 · sea life: every other time we sail on, a jellyfish drifts up to the window and knocks
   const CREATURES = [
-    { src: 'turtle.webp', w: 250, from: [-320, 300], at: [330, 270], away: [-340, 110], tap: [450, 285] },
-    { src: 'octopus.webp', w: 200, from: [2180, 340], at: [1580, 290], away: [2200, 160], tap: [1490, 300] },
     { src: 'jelly.webp', w: 150, from: [2120, 420], at: [1560, 280], away: [1500, -340], tap: [1560, 330] },
   ];
   let sails = 0, nextC = 0, visited = false;

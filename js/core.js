@@ -260,7 +260,7 @@
     new Promise(r => setTimeout(r, 5000)),
   ]);
   // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action
-  ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'turtle', 'octopus', 'jelly', 'pop', 'pip_on', 'pip_off',
+  ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'jelly', 'pop', 'pip_on', 'pip_off',
     'star_gold', 'star_silver', 'badge', 'marker', 'sig', 'pod', 'card', 'hint_arrow', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water',
     'harbour', 'sonar_room', 'door_left', 'door_right']
     .forEach(n => { const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
