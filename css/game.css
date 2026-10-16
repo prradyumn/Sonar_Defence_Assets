@@ -400,3 +400,14 @@ img{-webkit-user-drag:none;user-select:none}
 .sx-fish i{position:absolute;width:44px;height:20px;border-radius:50%;background:#0b3a63}
 .sx-fish i::after{content:"";position:absolute;right:-12px;top:3px;border-left:14px solid #0b3a63;border-top:7px solid transparent;border-bottom:7px solid transparent}
 .sx-fish i:nth-child(1){left:0;top:10px}.sx-fish i:nth-child(2){left:60px;top:30px}.sx-fish i:nth-child(3){left:120px;top:4px}.sx-fish i:nth-child(4){left:180px;top:26px}
+/* ---------- the opening: sonar-room doors (art: door_left / door_right, 960×1080 each) ---------- */
+#doors{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6}
+#doors .door{position:absolute;top:0;width:960px;height:1080px;will-change:transform}
+#doors .door.l{left:0}#doors .door.r{left:960px}
+#doors .door img{display:block;width:960px;height:1080px}
+#doors .door.l img{filter:drop-shadow(14px 0 24px rgba(0,8,24,.65))}#doors .door.r img{filter:drop-shadow(-14px 0 24px rgba(0,8,24,.65))}
+#doors .lamp{position:absolute;top:118px;width:30px;height:570px;border-radius:15px;background:rgba(200,253,255,.95);box-shadow:0 0 30px #5ff2ff,0 0 70px #22c6ff;opacity:0}
+#doors .door.l .lamp{left:892px}#doors .door.r .lamp{left:38px}
+#doors .seam{position:absolute;left:954px;top:0;width:12px;height:1080px;background:linear-gradient(90deg,rgba(210,253,255,0),rgba(225,254,255,.95) 50%,rgba(210,253,255,0));opacity:0}
+#doors .spill{position:absolute;left:0;top:0;width:1920px;height:1080px;background:radial-gradient(ellipse 22% 70% at 50% 50%,rgba(200,250,255,.55),rgba(120,220,255,.18) 45%,rgba(0,0,0,0) 75%);opacity:0;will-change:transform,opacity}
+.steam{position:absolute;width:160px;height:160px;margin:-80px 0 0 -80px;border-radius:50%;background:radial-gradient(circle,rgba(235,250,255,.7),rgba(235,250,255,.2) 45%,rgba(235,250,255,0) 70%)}

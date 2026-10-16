@@ -121,7 +121,11 @@ Calm keeps the hit's hero beats (blast + the sub breaking in two, escape pod, th
 The whole story is **one continuous underwater scene**: the camera never cuts.
 - **Water** (`js/water.js`): one WebGL canvas draws the backdrop with slow refraction ripples, moving caustic light, god rays and a soft Gaussian depth blur toward the bottom and edges. When the game is opened straight from a file (`file://`), browsers don't let WebGL read the image, so the plain background is used instead; Live Server and Vercel get the full effect.
 - The Coast Guard ship is a dark silhouette at the surface above; Meera and Riya speak from glass comms panels (LIVE) in the bottom corners; the narrator and the Defence System use a glass caption.
+- It opens through the sonar-room doors (`door_left/right.webp`): two lamp blinks, the latch kicks, air hisses, then both halves slide apart (0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1)) onto the water.
 - Part 1 (rows 1–6): subs slip in → they fire missiles up at the ship, the water flushes red, ALERT → Meera's radar → contact the defence station → the launcher rises from the seabed → sonar locks on, TARGETS CONFIRMED, the blue missiles meet the red ones.
 - Part 2 (rows 7–11): the navigation scale floats in; the subs swim onto −6, −2, +2 and +5 → distances to 0 → the FIRE button; after "Ready? Launch the missiles." the child presses FIRE → MISSION 1 → the game (also underwater). The ending (row 12) returns to the same water, brighter, with ROUTE CLEARED! and confetti.
 - Motion: on-screen words spring in letter by letter with a light sweep; missiles leave bubble trails; sonar rings, target locks, shake on hits.
 - Voices: 8 new lines (n1 a2 m3 m4 d5 m6 m8 r9) use the browser voice until recorded (`python3 tools/make_voices.py` with a working key; the Narrator and Defence System voices are set up).
+
+## Formats
+Every file the game loads is WebP (images) or OGG (sound); fonts are woff2. The supplied story source art in `assets/submarine_story_assets/` is kept as full-resolution WebP (19 MB of PNG → 2.5 MB); the original PNGs are in `~/Downloads/Sonar_Defence_Archive_2026-10-09/story_source_png/`. Source art is excluded from the Vercel upload (`.vercelignore`).
