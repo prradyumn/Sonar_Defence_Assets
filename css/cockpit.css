@@ -1,8 +1,8 @@
 /* cockpit: the bow window frame, the cannon, the crew at their stations, the console screen. Loaded after game.css. */
 
 /* glass: a faint sheen and darker edges, under the frame */
-#glass{position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(112deg,rgba(255,255,255,0) 26%,rgba(255,255,255,.08) 33%,rgba(255,255,255,0) 41%,rgba(255,255,255,0) 58%,rgba(255,255,255,.05) 62%,rgba(255,255,255,0) 66%),
+#glass{position:absolute;inset:0;pointer-events:none;   /* one layer: glass sheen + edge darkening + the old #vignette */
+  background:radial-gradient(ellipse 75% 70% at 50% 38%,rgba(0,0,0,0) 55%,rgba(0,18,48,.5) 100%),linear-gradient(rgba(0,0,0,0) 70%,rgba(0,14,40,.35)),linear-gradient(112deg,rgba(255,255,255,0) 26%,rgba(255,255,255,.08) 33%,rgba(255,255,255,0) 41%,rgba(255,255,255,0) 58%,rgba(255,255,255,.05) 62%,rgba(255,255,255,0) 66%),
     radial-gradient(115% 95% at 50% 42%,rgba(0,0,0,0) 62%,rgba(0,18,46,.5))}
 #cockpit{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;user-select:none;-webkit-user-drag:none}
 #crew,#lamps,#screen,#sunk{position:absolute;inset:0;pointer-events:none}
@@ -48,7 +48,8 @@
 #hudbar #strip{position:relative;left:auto;top:auto;flex:1;width:auto;min-height:0;padding:6px 0;background:none;border:none;box-shadow:none;font-size:36px}
 #hudbar #strip::before{display:none}
 #hudbar #pips{position:relative;right:auto;top:auto;flex:none}
-#lampDim{position:absolute;inset:0;pointer-events:none;
+#lampDim{display:none;position:absolute;inset:0;pointer-events:none;   /* baked into cockpit.webp */
+
   background:radial-gradient(circle 150px at 81px 99px,rgba(28,38,72,.42),rgba(28,38,72,0)),radial-gradient(circle 150px at 1839px 98px,rgba(28,38,72,.42),rgba(28,38,72,0))}
 
 /* idle console screen: a slow sonar trace until someone speaks */
@@ -66,8 +67,8 @@
 /* ---- fun layer ---- */
 #visitors,#glassFx{position:absolute;inset:0;pointer-events:none}
 #visitors img{position:absolute;left:0;top:0;transform-origin:50% 50%;filter:drop-shadow(0 8px 14px rgba(0,20,50,.35))}
-#depthTint{position:absolute;inset:0;background:radial-gradient(130% 100% at 50% 0%,rgba(0,18,60,.55),rgba(0,6,30,.9));opacity:0;pointer-events:none}
-#plankton{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
+#depthTint{position:absolute;inset:0;background:radial-gradient(130% 100% at 50% 0%,rgba(0,18,60,.55),rgba(0,6,30,.9));opacity:0;visibility:hidden;pointer-events:none}
+#plankton{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;display:none}   /* shown once there is plankton (cockpit.js) */
 .gbub{position:absolute;border-radius:50%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.95) 0 14%,rgba(220,250,255,.35) 26%,rgba(170,235,255,.12) 62%,rgba(255,255,255,.55) 76%,rgba(255,255,255,0) 80%)}
 .knock{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:3px solid rgba(230,252,255,.85);box-shadow:0 0 14px rgba(160,240,255,.6)}
 .hitnum{position:absolute;margin:-60px 0 0 -110px;width:220px;text-align:center;font:800 92px/1 Fredoka,sans-serif;color:#fff;-webkit-text-stroke:5px #06264a;paint-order:stroke;
@@ -95,15 +96,16 @@
 .shead{position:absolute;top:510px;width:16px;height:110px;margin-left:-8px;border-radius:8px;pointer-events:none;will-change:left,opacity;
   background:linear-gradient(rgba(127,242,255,0),#bff8ff 50%,rgba(127,242,255,0));box-shadow:0 0 26px 8px rgba(127,242,255,.7)}
 .sring{position:absolute;top:560px;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:4px solid #7ff2ff;box-shadow:0 0 16px rgba(127,242,255,.8);pointer-events:none}
-.sunwash{position:absolute;inset:0;pointer-events:none;opacity:0;will-change:opacity;
+.sunwash{position:absolute;inset:0;pointer-events:none;opacity:0;visibility:hidden;
   background:linear-gradient(rgba(255,244,200,.8),rgba(255,236,170,.35) 30%,rgba(255,230,160,0) 66%)}
-#frameGlow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;opacity:0;will-change:opacity;filter:brightness(1.55) sepia(.55) saturate(2.2)}   /* static filter, only opacity animates */
+#frameGlow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;opacity:0;visibility:hidden;filter:brightness(1.55) sepia(.55) saturate(2.2)}   /* static filter, only opacity animates */
 #current{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 #current .streak{position:absolute;left:0;height:34px;border-radius:50%;opacity:0;will-change:transform,opacity;
   background:radial-gradient(50% 50% at 50% 50%,rgba(220,250,255,.9),rgba(200,245,255,.35) 45%,rgba(200,245,255,0) 72%)}
 #current .surf{position:absolute;left:0;top:96px;width:1920px;height:520px;overflow:hidden;will-change:opacity}
 #current .surf i{position:absolute;left:0;top:0;width:2820px;height:520px;opacity:.2;will-change:transform;background:url(../assets/img/surface_light.webp) 0 0/900px 520px repeat-x}   /* the fade is baked into the image: no mask */
-#current .haze{position:absolute;inset:0;background:radial-gradient(120% 95% at 50% 46%,rgba(10,70,110,0) 58%,rgba(10,70,110,.28) 82%,rgba(6,44,80,.5))}
+#current .haze{display:none;position:absolute;inset:0;   /* merged into #water .deep */
+background:radial-gradient(120% 95% at 50% 46%,rgba(10,70,110,0) 58%,rgba(10,70,110,.28) 82%,rgba(6,44,80,.5))}
 
 /* ---- calm mode (default; QA panel → Full brings everything back) ---- */
 /* only the speaker shows: the other crew member sinks out of view and comes up when they talk */

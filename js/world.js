@@ -56,7 +56,7 @@
     for (const L of LAYERS) { L.x = (L.x + L.speed * s) % (2 * L.w); L.t.style.transform = `translate3d(${-L.x}px,0,0)`; }
     caus.x = (caus.x + 26 * s) % 512; cEl.style.transform = `translate3d(${-caus.x}px,${Math.sin(time * .6) * 6}px,0)`;
   });
-  gsap.to('#rays', { rotation: 3.5, x: 60, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to('#rays', { x: 60, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });   // drift only: rotating this big layer redrew it every frame
   gsap.to('#rays', { opacity: .3, duration: 3.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#caustics', { opacity: .22, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#far', { y: 8, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
@@ -64,9 +64,11 @@
   /* ---- marine snow (tiny drifting specks: the strongest "we are underwater" cue) ---- */
   const snow = $('#snow'), sctx = snow.getContext('2d'), SN = []; sctx.scale(.5, .5);   // half-resolution canvas, CSS shows it full size
   for (let i = 0; i < 110; i++) SN.push({ x: Math.random() * 1920, y: Math.random() * 1080, z: .3 + Math.random() * .7, ph: Math.random() * 6 });
+  let snowDt = 0, snowOdd = false;
   gsap.ticker.add((t, dt) => {
     if (SD.paused) return;
-    const s = dt / 1000 * SD.rate; sctx.clearRect(0, 0, 1920, 1080);
+    snowDt += dt; snowOdd = !snowOdd; if (snowOdd) return;   // 30 fps is plenty for slow specks and halves the canvas uploads
+    const s = snowDt / 1000 * SD.rate; snowDt = 0; sctx.clearRect(0, 0, 1920, 1080);
     for (const p of SN) {
       p.y += (6 + 14 * p.z) * s; p.x -= (8 + 34 * p.z) * s * W.mult; p.x += Math.sin(t * .8 + p.ph) * .25;
       if (p.y > 1088) p.y = -6; if (p.x < -10) p.x = 1930;

@@ -204,9 +204,10 @@
     const d = DEPTH[k]; visited = false;
     if (d && d[0] !== D.lvl) {
       D.lvl = d[0];
-      gsap.to(tint, { opacity: [0, .12, .2, .27, .34][D.lvl], duration: 1.8, ease: 'sine.inOut' });
+      gsap.to(tint, { autoAlpha: [0, .12, .2, .27, .34][D.lvl], duration: 1.8, ease: 'sine.inOut' });
       gsap.to(D, { m: d[1], duration: 1.8, ease: 'power1.inOut', onUpdate: showDepth });
       for (let i = 0; i < 12; i++) setTimeout(() => W.spawnBubble(true), i * 90);   // we dive: bubbles rush up past the window
+      if (!SD.CALM) pk.style.display = 'block';
       while (!SD.CALM && PK.length < D.lvl * 14) PK.push({ x: Math.random() * 1920, y: 140 + Math.random() * 760, r: 2.4 + Math.random() * 3.2, v: 6 + Math.random() * 14,
         f: .8 + Math.random() * 1.6, ph: Math.random() * 6, a: .5 + Math.random() * .5, c: ['#9ff6ff', '#c7b3ff', '#7dffc8'][PK.length % 3] });
     }

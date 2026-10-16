@@ -49,7 +49,7 @@
   });
   // the blast's light lands on the metal frame: a pre-tinted copy of the frame fades in and out (opacity only — no per-frame filter)
   const glow = new Image(); glow.src = 'assets/img/cockpit.webp'; glow.id = 'frameGlow'; $('#cockpit').after(glow);
-  function frameFlash() { gsap.fromTo(glow, { opacity: 0 }, { keyframes: [{ opacity: 1, duration: .07 }, { opacity: 0, duration: .7, ease: 'power2.out' }] }); }
+  function frameFlash() { gsap.fromTo(glow, { autoAlpha: 0 }, { keyframes: [{ autoAlpha: 1, duration: .07 }, { autoAlpha: 0, duration: .7, ease: 'power2.out' }] }); }
 
   /* ---------- 4 · break in two  +  6 · the distance beam ---------- */
   const sunk = $('#sunk'), scale = $('#scale');
@@ -140,8 +140,8 @@
   /* ---------- 8 · level complete: we surface into sunlight, the stars slam down ---------- */
   const done = $('#done'), wash = el('sunwash', $('#water'));
   new MutationObserver(() => {
-    if (done.classList.contains('hidden')) { gsap.to(wash, { opacity: 0, duration: 1.2 }); gsap.to('#rays', { filter: 'brightness(1)', duration: 1.2 }); return; }
-    gsap.to(wash, { opacity: 1, duration: 1.4, ease: 'sine.out' }); gsap.to('#rays', { filter: 'brightness(1.9)', duration: 1.4 });
+    if (done.classList.contains('hidden')) { gsap.to(wash, { autoAlpha: 0, duration: 1.2 }); gsap.to('#rays', { filter: 'brightness(1)', duration: 1.2 }); return; }
+    gsap.to(wash, { autoAlpha: 1, duration: 1.4, ease: 'sine.out' }); gsap.to('#rays', { filter: 'brightness(1.9)', duration: 1.4 });
     for (let i = 0; i < 14; i++) setTimeout(() => W.spawnBubble(true), i * 70);
     snd.noise(1.4, .12, 1800, 0, 300);
     [392, 494, 587, 784].forEach((f, i) => snd.tone('sine', f, 0, 1.6, .05, .1 + i * .08));
