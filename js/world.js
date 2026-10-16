@@ -20,12 +20,12 @@
   const DEFAULTS = {
     X0: 960,        // stage x of 0 on the navigation scale
     STEP: 106,      // px between whole numbers (scale shows −8 … +8)
-    SUB_Y: 440,     // submarine centre y (row 1), out in the water above the scale
+    SUB_Y: 350,     // submarine centre y (row 1), out in the water above the scale
     SUB_ROW: -105,  // row 2 (a neighbour less than 2 apart) sits this much lower (negative = higher)
-    SIG_Y1: 200,    // L3 signal rows: top
-    SIG_Y2: 268,    //                 bottom
+    SIG_Y1: 210,    // L3 signal rows: top
+    SIG_Y2: 278,    //                 bottom
     SIG_GAP: 160,   // px between signal columns
-    SCALE_DY: 20,   // moves the whole scale group (rope, buoys, numbers, marker, hints) down
+    SCALE_DY: -80,  // moves the whole scale group (rope, buoys, numbers, marker, hints) down
   };
   const CONFIG = Object.assign({}, DEFAULTS, window.LAYOUT && LAYOUT.config);
   const X = v => CONFIG.X0 + v * CONFIG.STEP;   // scale position → stage x
