@@ -6,9 +6,15 @@
   if (SPEED !== 1) gsap.globalTimeline.timeScale(SPEED);
   const stage = $('#stage');
   const inset = { l: 0, t: 0, r: 0, b: 0 };   // room kept free around the stage (the layout editor's panels)
+  /* CSS zoom, not transform: scale(). Under a scale() the browser keeps every animated layer at the full 1920×1080 × the
+     screen's pixel ratio: on an iPhone (3×) that was 2.6 GB of GPU memory and the tab was killed ("Can't open this page").
+     With zoom the layers are drawn at their real on-screen size (~330 MB). Older browsers without zoom keep scale(). */
+  const ZOOM = window.CSS && CSS.supports && CSS.supports('zoom', '0.5');
   function fit() {
     const w = innerWidth - inset.l - inset.r, h = innerHeight - inset.t - inset.b, s = Math.min(w / 1920, h / 1080);
-    stage.style.transform = `translate(${inset.l + (w - 1920 * s) / 2}px,${inset.t + (h - 1080 * s) / 2}px) scale(${s})`;
+    const x = inset.l + (w - 1920 * s) / 2, y = inset.t + (h - 1080 * s) / 2;
+    if (ZOOM && !inset.edit) { stage.style.zoom = s; stage.style.left = x / s + 'px'; stage.style.top = y / s + 'px'; stage.style.transform = 'none'; }
+    else { stage.style.zoom = stage.style.left = stage.style.top = ''; stage.style.transform = `translate(${x}px,${y}px) scale(${s})`; }   // the layout editor maps pointer coordinates against a plain scale()
   }
   addEventListener('resize', fit); fit();
 

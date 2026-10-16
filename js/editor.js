@@ -227,7 +227,7 @@
 
     let visible = true, tool = 'select';
     function layout() {
-      Object.assign(SD.inset, visible ? { l: 232, t: 40, r: 288, b: 0 } : { l: 0, t: 0, r: 0, b: 0 }); SD.fit();
+      Object.assign(SD.inset, visible ? { l: 232, t: 40, r: 288, b: 0 } : { l: 0, t: 0, r: 0, b: 0 }, { edit: true }); SD.fit();
       root.classList.toggle('off', !visible);
       document.body.classList.toggle('sde-select', visible && tool === 'select');
     }
