@@ -1,0 +1,194 @@
+{
+  "generation": "Built-in imagegen, using supplied references",
+  "assets": [
+    {
+      "file": "backgrounds/BG1_sea_surface.png",
+      "width": 1920,
+      "height": 1080,
+      "mode": "RGB",
+      "prompt": "Calm minimal ocean at waterline, 16:9 landscape. Top 40% clear light-blue to pale turquoise sky, 2 soft clouds and a thin distant coastline. Lower 60% split sea: gentle simple surface then clear turquoise water fading to deep blue below. Large empty centre, low detail. No ship, subs, people, text or UI."
+    },
+    {
+      "file": "backgrounds/BG2_underwater.png",
+      "width": 1920,
+      "height": 1080,
+      "mode": "RGB",
+      "prompt": "Minimal mid-depth underwater background, 16:9 landscape. Smooth bright turquoise to deep navy vertical gradient, soft diagonal sunbeams from upper left, a few tiny bubbles. Faint soft-focus rock/coral silhouettes only bottom edge and far corners. Completely open calm centre. No vehicles, people, text or UI."
+    },
+    {
+      "file": "backgrounds/BG3_control_room.png",
+      "width": 1920,
+      "height": 1080,
+      "mode": "RGB",
+      "prompt": "Minimal navy submarine control room 16:9 front view, softly out of focus. Single large rounded rectangle wall screen centred, 60% width, completely flat dark navy blank glass. Simple panel lines, a few small brass lamps, slim console bottom edge. Dim cyan accents, uncluttered. No people, text, UI or screen content."
+    },
+    {
+      "file": "sprites/S1_enemy_sub_bay_open.png",
+      "width": 1915,
+      "height": 821,
+      "mode": "RGBA",
+      "prompt": "Same enemy submarine as reference, left-facing side view, dark grey-black riveted hull, orange fins/nose and three round orange portholes, angry eye and wave emblem. Small missile-bay hatch OPEN on its top deck with tiny puff of bubbles. Preserve original submarine identity. Isolated full sprite, transparent background, no sea or shadow, no magenta.",
+      "transparent_pixels": 640111,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "sprites/S2_red_missile.png",
+      "width": 1915,
+      "height": 821,
+      "mode": "RGBA",
+      "prompt": "One small cartoon torpedo missile, side view pointing RIGHT. Glossy red body, white stripe, rounded nose, small fins, short bubbly orange-white trail behind to LEFT. Whole isolated sprite with generous margin, transparent background, no shadow, no magenta, no text.",
+      "transparent_pixels": 916912,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "sprites/S3_blue_missile.png",
+      "width": 1915,
+      "height": 821,
+      "mode": "RGBA",
+      "prompt": "One small cartoon defence torpedo missile, side view pointing RIGHT. Glossy bright blue body, white stripe, rounded nose, small fins, short cyan bubbly trail behind to LEFT. Whole isolated sprite with generous margin, transparent background, no shadow, no magenta, no text.",
+      "transparent_pixels": 993641,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "sprites/S4_launcher_base.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "prompt": "Compact navy-and-brass ship-deck missile launcher BASE ONLY, side view. Rounded riveted turret housing on short round pedestal, small cyan indicator lights, NO BARREL. Empty round barrel mount visible on RIGHT/front, for separate horizontal right-facing barrel. Isolated complete object transparent background, no deck or shadow, no magenta.",
+      "transparent_pixels": 609441,
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "sprites/S5_launcher_barrel.png",
+      "width": 1916,
+      "height": 821,
+      "mode": "RGBA",
+      "prompt": "Single launcher BARREL ONLY to attach to matching navy-and-brass turret, side view pointing RIGHT perfectly horizontal. Navy steel tube, TWO brass bands, glowing cyan muzzle ring at RIGHT, round pivot joint at LEFT. Entire object isolated transparent background with margins, no base, no shadow, no magenta.",
+      "transparent_pixels": 791859,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "ui/S6_fire_off.png",
+      "width": 1422,
+      "height": 1106,
+      "mode": "RGBA",
+      "prompt": "Single big round glossy arcade FIRE button, front orthographic view, brass rim, dark red UNLIT dome, exact bold white text FIRE centred. Isolated whole object transparent background with margin. No hand, no shadow, no magenta. Clean round silhouette. Off state, no outer glow.",
+      "transparent_pixels": 802335,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "ui/S6_fire_lit.png",
+      "width": 1422,
+      "height": 1106,
+      "mode": "RGBA",
+      "prompt": "Single big round glossy arcade FIRE button, front orthographic view, brass rim, bright red LIT dome, exact bold white text FIRE centred. Isolated whole object transparent background with margin. Soft red light halo with real translucent alpha. No hand, no shadow, no magenta.",
+      "transparent_pixels": 571308,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "characters/C1_meera_shocked.png",
+      "width": 1145,
+      "height": 1374,
+      "mode": "RGBA",
+      "prompt": "One Meera waist-up cutout, three-quarter view facing RIGHT. EXACT same woman as character reference, same face, short dark hair, white naval cap, white officer shirt/epaulettes, navy uniform, binoculars at chest. Shocked: wide eyes, open mouth, one hand raised. Single figure only, complete cap and hands, generous margins. Transparent background, no text, no scene, no magenta.",
+      "transparent_pixels": 813326,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "characters/C1_meera_pointing.png",
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGBA",
+      "prompt": "One Meera waist-up cutout, three-quarter view facing RIGHT. EXACT same woman as character reference, same face, short dark hair, white naval cap, white officer shirt/epaulettes, navy uniform, binoculars at chest. Pointing firmly toward screen to RIGHT with extended arm/index finger, confident commanding face. Single figure, cap and hand complete with margins, transparent background, no text or scene or magenta.",
+      "transparent_pixels": 929615,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "characters/C1_meera_determined.png",
+      "width": 1265,
+      "height": 1244,
+      "mode": "RGBA",
+      "prompt": "One Meera waist-up cutout, three-quarter view facing RIGHT. EXACT same woman as reference, same face, short dark hair, white naval cap, officer shirt/epaulettes, navy uniform, binoculars. Commanding/determined: slight frown, confident, arms ready. One complete waist-up character, cap and hands visible with margin. Transparent background, no text, no scene, no magenta.",
+      "transparent_pixels": 902775,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "characters/C1_meera_proud.png",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "prompt": "One Meera waist-up cutout, three-quarter view facing RIGHT. EXACT same woman as reference, same face, short dark hair, white naval cap, officer shirt/epaulettes, navy uniform, binoculars. Proud warm smile and one THUMBS UP. One complete waist-up character, cap and hand visible with margin. Transparent background, no text, no scene, no magenta.",
+      "transparent_pixels": 710165,
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "characters/C2_riya_alert.png",
+      "width": 1212,
+      "height": 1297,
+      "mode": "RGBA",
+      "prompt": "One Riya waist-up cutout, three-quarter view facing LEFT. EXACT same young cadet as reference, same face, long brown braid, white naval cap, white-and-navy cadet uniform with gold piping and fingerless navy gloves. Alert/worried expression, eyebrows raised, hands near chest. One complete waist-up figure, cap/hands visible with margins. Transparent background, no text, scene or magenta.",
+      "transparent_pixels": 884931,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "characters/C2_riya_focused.png",
+      "width": 1145,
+      "height": 1373,
+      "mode": "RGBA",
+      "prompt": "One Riya waist-up cutout, three-quarter view facing LEFT. EXACT same young cadet as reference, same face, brown braid, white naval cap, white-and-navy cadet uniform with gold piping and navy fingerless gloves. Focused expression, looking ahead LEFT, attentive confident posture. One complete waist-up figure, cap and hands visible with margins. Transparent background, no text, scene or magenta.",
+      "transparent_pixels": 778807,
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "characters/C2_riya_cheering.png",
+      "width": 1145,
+      "height": 1374,
+      "mode": "RGBA",
+      "prompt": "One Riya waist-up cutout, three-quarter view facing LEFT. EXACT same young cadet as reference, same face, long brown braid, white naval cap, white-and-navy cadet uniform with gold piping, navy fingerless gloves. Cheering with BOTH FISTS UP near shoulders, delighted open smile. One complete waist-up figure, cap and both fists visible with margins. Transparent background, no text, scene or magenta.",
+      "transparent_pixels": 674719,
+      "alpha_range": [
+        0,
+        255
+      ]
+    }
+  ]
+}
