@@ -94,6 +94,7 @@ open http://localhost:8000/?edit=1
 - fish & manta → inline SVG in `world.js`
 
 ## HUD
+The mission panel (`#hudbar`) is part of the ship: a slim navy steel plate with a brass rim and rivets, hanging from two brass ceiling mounts on thin struts. It comes down when a mission starts (servo whirr, latch clunk, the screen flickers on), refreshes its screen when the text changes, and goes back up into the ceiling between missions (`W.strip` / `W.stripOff`, cockpit.js). The hear-again button is a brass knob on the left; progress lamps sit on the right.
 During play, what Meera or Riya says appears in a speech bubble beside her (Meera bottom-left, Riya bottom-right) with its tail pointing at the speaker.
 One bar on the ceiling holds the hear-again button, the mission text and the progress pips (`#hudbar`). The ceiling lamps are toned down (`#lampDim`), the crew are 15 % smaller and dim until they speak, the console shows the sonar trace + depth only between missions, fish swim below the scale (never behind the submarine row), and number labels not in play are faded to 50 %.
 

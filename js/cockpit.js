@@ -63,6 +63,27 @@
   const clear0 = W.clearSubs;
   W.clearSubs = () => { slideTo(X(0), .9); return clear0(); };
 
+  /* ---- the mission panel: hangs from the ceiling on two struts; it comes down for each mission and goes up after.
+     A new line during a mission refreshes the screen (scanline flicker) without moving the panel. ---- */
+  const bar = $('#hudbar'), strip = $('#strip'), strip0 = W.strip, stripOff0 = W.stripOff;
+  let down = false;
+  const servo = (up) => { const s = SD.snd; s.tone('sawtooth', up ? 150 : 110, up ? 210 : 70, .42, .025); s.noise(.4, .05, 900, 0, 200); };
+  W.strip = (html, o = {}) => {
+    strip0(html, o); gsap.killTweensOf(strip); gsap.set(strip, { opacity: 1, y: 0, scale: 1 });
+    if (!down) {
+      down = true; gsap.killTweensOf(bar); servo(false);
+      gsap.timeline()
+        .fromTo(bar, { y: -160 }, { y: 0, duration: .55, ease: 'back.out(1.5)' })
+        .call(() => SFX.clunk(), null, .42)
+        .fromTo(strip, { opacity: 0 }, { keyframes: [{ opacity: .9, duration: .05 }, { opacity: .2, duration: .05 }, { opacity: 1, duration: .08 }] }, .5);   // the screen switches on
+    } else gsap.fromTo(strip, { opacity: 0, y: 6 }, { keyframes: [{ opacity: .7, y: 0, duration: .06 }, { opacity: .25, duration: .05 }, { opacity: 1, duration: .1 }] });   // just a screen refresh
+  };
+  W.stripOff = () => {
+    stripOff0();
+    if (!down) return; down = false; gsap.killTweensOf(bar); servo(true);
+    gsap.to(bar, { y: -160, duration: .45, delay: .15, ease: 'power2.in' });
+  };
+
   /* ---- hull kick: the whole cockpit jolts ---- */
   const kick = (k = 10, d = .35) => W.shake(k / 2, d);   // the whole view shakes as one piece (world.js)
 
