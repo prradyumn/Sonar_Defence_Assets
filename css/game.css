@@ -163,7 +163,7 @@ img{-webkit-user-drag:none;user-select:none}
 #title .sub2{position:absolute;left:960px;top:400px;transform:translateX(-50%);font:600 40px/1 Baloo;color:#eaffff;text-shadow:0 3px 10px rgba(0,30,60,.8);white-space:nowrap}
 .cta{position:absolute;left:960px;top:780px;transform:translateX(-50%);padding:22px 70px;border-radius:60px;background:linear-gradient(#ffb43a,#f07c10);
   border:5px solid #fff3d0;box-shadow:0 10px 0 #9a4a05,0 16px 30px rgba(0,0,0,.35);font:800 54px/1 Baloo;color:#fff;text-shadow:0 3px 0 #9a4a05;cursor:pointer;white-space:nowrap}
-#story{background:#000}
+#story{background:#05213f}
 #story .bg{position:absolute;inset:0;background:center/cover no-repeat}
 #banner{display:flex;align-items:center;justify-content:center;background:rgba(2,18,38,.35)}
 #banner .card{padding:46px 90px;border-radius:40px;background:linear-gradient(rgba(10,50,96,.95),rgba(4,28,60,.95));border:4px solid #5fe6ff;box-shadow:0 0 40px rgba(60,210,255,.5);text-align:center}
