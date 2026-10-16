@@ -3,24 +3,26 @@
    who: 'meera' (Commander Meera) | 'riya' (Cadet Riya). */
 (function () {
   const f = v => v > 0 ? '+' + v : v < 0 ? '−' + Math.abs(v) : '0';     // true minus sign
-  const WHO = { meera: { name: 'Commander Meera', short: 'Meera' }, riya: { name: 'Cadet Riya', short: 'Riya' } };
+  const WHO = { meera: { name: 'Commander Meera', short: 'Meera' }, riya: { name: 'Cadet Riya', short: 'Riya' },
+    narrator: { name: 'Narrator', short: 'Narrator' }, system: { name: 'Defence System', short: 'System' } };
   const LINES = [], BY = {};
   function add(id, who, text) { if (BY[text]) return BY[text]; const l = { id, who, text }; LINES.push(l); BY[text] = l; return l; }
-  const M = (id, t) => add(id, 'meera', t), R = (id, t) => add(id, 'riya', t);
+  const M = (id, t) => add(id, 'meera', t), R = (id, t) => add(id, 'riya', t), N = (id, t) => add(id, 'narrator', t), Y = (id, t) => add(id, 'system', t);
   const strip = h => h.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
 
   /* ---------- static lines ---------- */
   const S = {
-    // hook — the story sheet (Integers- Submarine - Story): harbour → control room → navigation screen → missiles → mission 1
-    s1: M('s1', 'Enemy submarines have entered the guarded sea route. Officers must stop them. They hide at different positions.'),
-    s2: R('s2', 'Alert! Alert! Alert!'),
-    s3: M('s3', 'Oh no! Enemy submarines are entering our sea.'),
+    // story — the storyboard (Integers- Submarine - Story): part 1 = rows 1–6, part 2 = rows 7–11, ending = row 12.
+    // "Officer", "Officer Veer" and "Officer 1st" are Commander Meera; row 9's line says "closer" (0 is the defence line).
+    n1: N('n1', 'Enemy submarines have entered the guarded sea route! They are hiding at different positions and preparing to fire!'),
+    a2: Y('a2', 'Alert! Alert! Alert! Enemy submarines are firing missiles!'),
+    m3: M('m3', 'Oh no! Missiles are heading towards us!'),
+    m4: M('m4', 'Contact the defence station immediately! We must launch our missiles to stop the attack!'),
+    d5: Y('d5', 'Defence system ready! Enemy missiles detected!'),
+    m6: M('m6', 'Targets confirmed! Launch the counterattack!'),
     s4: M('s4', 'We must find their positions before they cross our defence line!'),
-    s5: M('s5', 'The submarine at +5 is closer to our defence line!'),
-    s6: M('s6', 'Some of them started firing.'),
-    s7: M('s7', 'Contact defence station! Enemy submarines are releasing missiles. Prepare for counterattack!'),
-    s8: M('s8', 'Targets confirmed. Execute the counterattack!'),
-    s9: M('s9', 'Let’s find the right target and fire!'),
+    m8: M('m8', 'Submarine at −6 is inside our territory and close to our defence line!'),
+    r9: R('r9', 'Another submarine at +5 is closer to our defence line!'),
     s10: M('s10', 'Don’t let those sneaky submarines escape!'),
     s11: M('s11', 'Ready? Launch the missiles.'),
     // how to play (four quick cards in the cockpit)

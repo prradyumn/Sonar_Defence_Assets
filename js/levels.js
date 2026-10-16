@@ -8,12 +8,6 @@
   let LV = 'l1';
   const mark = ok => (SCORE[LV] = SCORE[LV] || []).push(ok);
   const rnd = a => a[Math.floor(Math.random() * a.length)];
-  const bezier = (x1, y1, x2, y2) => t => {          // CSS cubic-bezier as a GSAP ease (Newton on x, then y)
-    let u = t;
-    for (let i = 0; i < 8; i++) { const x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u - t, dx = 3 * (1 - u) * (1 - u) * x1 + 6 * (1 - u) * u * (x2 - x1) + 3 * u * u * (1 - x2); if (Math.abs(x) < 1e-6 || !dx) break; u = Math.min(1, Math.max(0, u - x / dx)); }
-    return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
-  };
-  const DOOR_EASE = bezier(.45, 0, .2, 1);
 
   /* ---------- one "fire at the right submarine" tap, with the 3-strike rule ---------- */
   // m: { target, lines: { oopsL, hintL, nudgeL, idleL } }
@@ -54,195 +48,256 @@
   }
 
   /* =====================================================================
-     HOOK — the story sheet with Commander Meera & Cadet Riya: harbour → control room (alert) → navigation screen
-     → two submarines → missiles → targets confirmed, MISSION 1 → dive → how to play
+     STORY — the storyboard as clean motion graphics: one idea per scene on a calm background, glass UI in code,
+     waist-up characters that slide in to speak. Part 1 = rows 1–6, part 2 = rows 7–11 (both play here, before the
+     levels), the ending (row 12) plays after the final mission. ?at=hook&scene=2 starts at part 2, scene=3 at the dive.
      ===================================================================== */
-  async function hook() {
+  const IMG = n => 'assets/img/story/' + n + '.webp';
+  function storyKit() {
     const st = $('#story'), bg = $('#storyBg'), cast = $('#cast'), sfx = $('#storyFx');
-    SD.music('calm'); SD.ambience('harbour');                 // sunrise at the harbour: calm theme, waves and gulls
     st.classList.remove('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([st, bg, cast, sfx], { clearProps: 'all' });
-    let skipping = false;
-    $('#skipStory').onclick = e => { e.stopPropagation(); skipping = true; SD.skip(); };
+    const K = { st, bg, cast, sfx, skipping: false, SKIP: {} };
+    K.chk = () => { if (K.skipping) throw K.SKIP; };
+    $('#skipStory').onclick = e => { e.stopPropagation(); K.skipping = true; SD.skip(); };
     st.onpointerdown = e => { if (e.target.id !== 'skipStory') SD.skip(); };   // tap = next line
-    const SKIP = {};
-    const chk = () => { if (skipping) throw SKIP; };
-
-    // data-edit gives each story element a stable name, so the layout editor can move it (js/layout.js)
-    const actor = (who, css, name, flip) => {   // the talking sheet (core.js) · flip: mirror the art so the two characters face each other
-      const d = document.createElement('div'); d.className = 'actor'; d.dataset.edit = name; Object.assign(d.style, css);
-      const t = SD.talker(who);
-      if (flip) { const f = document.createElement('div'); f.className = 'flip'; f.appendChild(t.el); d.appendChild(f); } else d.appendChild(t.el);
-      cast.appendChild(d); return { el: d, talk: t.talk };
-    };
-    // the sonar-room doors: latch, hiss, then both halves slide apart (timing + ease from door_opening.svg: 0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1))
-    async function doors() {
-      const d = document.createElement('div'); d.id = 'doors';
-      d.innerHTML = '<div class="spill"></div><div class="door l"><img src="assets/img/door_left.webp" alt=""><i class="lamp"></i></div><div class="door r"><img src="assets/img/door_right.webp" alt=""><i class="lamp"></i></div><div class="seam"></div>';
-      sfx.appendChild(d);
-      const L = d.querySelector('.door.l'), R = d.querySelector('.door.r'), lamps = d.querySelectorAll('.lamp'), seam = d.querySelector('.seam'), spill = d.querySelector('.spill');
-      gsap.fromTo(d, { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'power2.out' });
-      await wait(.4); chk();
-      for (let i = 0; i < 2; i++) { SFX.doorBeep(); gsap.fromTo(lamps, { opacity: .15 }, { opacity: 1, duration: .08, yoyo: true, repeat: 1 }); await wait(.22); }
-      chk(); SFX.clunk(); gsap.to(lamps, { opacity: .85, duration: .2 });
-      gsap.fromTo([L, R], { x: 0 }, { x: i => i ? 7 : -7, duration: .07, yoyo: true, repeat: 1, ease: 'power1.out' });   // the latch kicks
-      SFX.hiss(); gsap.fromTo(seam, { opacity: 0 }, { opacity: 1, duration: .25 });
-      for (let i = 0; i < 7; i++) {   // air escaping at the seam
-        const p = document.createElement('div'); p.className = 'steam'; Object.assign(p.style, { left: '960px', top: (240 + i * 110) + 'px' }); d.appendChild(p);
-        gsap.fromTo(p, { scale: .2, opacity: .9, x: 0 }, { scale: 1.6 + Math.random(), opacity: 0, x: (i % 2 ? 1 : -1) * (40 + Math.random() * 60), y: -30 - Math.random() * 40, duration: 1.1, ease: 'power2.out', onComplete: () => p.remove() });
+    const mk = (tag, cls, css, parent = sfx) => { const d = document.createElement(tag); if (cls) d.className = cls; Object.assign(d.style, css || {}); parent.appendChild(d); return d; };
+    K.mk = mk;
+    K.img = (n, cls, css, parent) => { const i = mk('img', cls, css, parent); i.src = IMG(n); i.alt = ''; return i; };
+    // background: a quick cross-fade, then a very slow push-in
+    const iris = mk('div', 'sx-iris', {}, st);
+    K.scene = async (name, push = 1.06, from = [960, 540], to = from) => {
+      const first = !bg.style.backgroundImage;
+      if (!first) {   // the sonar disc floods out of the focal point…
+        SFX.swoosh(); gsap.set(iris, { left: from[0], top: from[1], scale: 0, opacity: 1 });
+        await gsap.to(iris, { scale: 11.5, duration: .45, ease: 'power3.in' });   // a small disc scaled up: one cheap layer
       }
-      await wait(.35); chk();
-      SFX.doorSlide(1.8);
-      gsap.to(L, { x: -960, duration: 1.8, ease: DOOR_EASE }); gsap.to(R, { x: 960, duration: 1.8, ease: DOOR_EASE });
-      gsap.fromTo(spill, { opacity: 1, scaleX: .05 }, { opacity: 0, scaleX: 1.6, duration: 1.8, ease: DOOR_EASE });
-      gsap.to(seam, { opacity: 0, duration: .3 });
-      gsap.fromTo(bg, { scale: 1.12 }, { scale: 1.03, duration: 2.1, ease: 'power2.out' });
-      await wait(1.5); gsap.delayedCall(.25, () => { SFX.clunk(); d.remove(); });   // characters start in as the doors finish
-    }
-    // two characters walk in through the doorway: small and far at the centre → their places, with a step bounce
-    async function walkIn(list) {
-      list.forEach(([a, dx, dl]) => {
-        gsap.from(a.el, { x: dx, y: -170, scale: .42, opacity: 0, duration: 1.15, delay: dl, ease: 'power2.out' });   // a smooth glide in, no bounce
-      });
-      for (let i = 0; i < 6; i++) gsap.delayedCall(i * .19, SFX.foot);
-      await wait(.7);                                   // the first line starts while they are still walking in
-    }
-    const bubble = (who, cls, css, name) => {
-      const b = document.createElement('div'); b.className = `bubble ${who} ${cls}`; b.dataset.edit = name; Object.assign(b.style, css);
-      b.innerHTML = `<span class="nm">${SCRIPT.WHO[who].name}</span><span class="txt"></span>`; cast.appendChild(b); return b;
+      sfx.innerHTML = ''; gsap.killTweensOf(bg); bg.style.backgroundImage = `url(${IMG(name)})`;
+      gsap.set([bg, sfx], { opacity: 1 }); gsap.fromTo(bg, { scale: 1.02 }, { scale: push, duration: 16, ease: 'none' });
+      if (first) gsap.fromTo(bg, { opacity: 0 }, { opacity: 1, duration: .5 });
+      else { gsap.set(iris, { left: to[0], top: to[1] }); gsap.to(iris, { scale: 0, duration: .5, ease: 'power3.out' }); }   // …and drains into the next one
+      if (/under/.test(name)) K.bubbles();
     };
-    let actors = [], frames = null;
-    async function line(L, b, a, extra) {
-      chk();
-      actors.forEach(x => x.el.classList.toggle('dim', x !== a));   // the listener dims; nobody moves
-      const origin = b.classList.contains('tr') ? '85% 110%' : b.classList.contains('lft') ? '-5% 50%' : b.classList.contains('rgt') ? '105% 50%' : '15% 110%';
-      gsap.fromTo(b, { scale: .5, opacity: 0, transformOrigin: origin }, { scale: 1, opacity: 1, duration: .4, ease: 'back.out(2.2)' });
-      const tn = gsap.fromTo('#tapNext', { opacity: 0 }, { opacity: .85, duration: .4, delay: 1.6 });
+    // a few slow bubbles in the underwater scenes (secondary motion, nothing busy)
+    K.bubbles = () => { for (let i = 0; i < 9; i++) { const r = 4 + Math.random() * 9, b = mk('div', 'sx-bub', { left: 120 + Math.random() * 1680 + 'px', top: '1100px', width: 2 * r + 'px', height: 2 * r + 'px' });
+      gsap.to(b, { y: -1250, x: (Math.random() - .5) * 120, duration: 7 + Math.random() * 6, delay: Math.random() * 5, repeat: -1, ease: 'none' }); } };
+    // a missile leaves a short trail of bubbles
+    K.trail = (m, every = .08, n = 14) => { for (let i = 0; i < n; i++) gsap.delayedCall(i * every, () => { if (!m.isConnected) return; const r = m.getBoundingClientRect(), stg = $('#stage').getBoundingClientRect(), k = stg.width / 1920;
+      const b = mk('div', 'sx-bub small', { left: (r.left + r.width * .2 - stg.left) / k + 'px', top: (r.top + r.height / 2 - stg.top) / k + 'px' }); gsap.to(b, { y: -30 - Math.random() * 30, scale: 1.8, opacity: 0, duration: .9, onComplete: () => b.remove() }); }); };
+    // characters: still waist-up expressions; whoever speaks is up front, the other dims
+    const people = {};
+    K.who = (who, look, side) => {
+      let p = people[who];
+      if (!p) {
+        p = people[who] = { el: mk('div', 'sx-char ' + who, {}, cast) }; p.im = mk('img', '', {}, p.el); p.im.alt = '';
+        gsap.set(p.el, { x: who === 'riya' ? 520 : -520, opacity: 0 });
+      }
+      const src = IMG(who + '_' + look);
+      if (!p.im.src.endsWith(src)) { if (p.on) gsap.fromTo(p.im, { scale: .96 }, { scale: 1, duration: .25, ease: 'back.out(3)' }); p.im.src = src; }
+      if (!p.on) { p.on = true; gsap.to(p.el, { x: 0, opacity: 1, duration: .6, ease: 'back.out(1.3)' }); }
+      for (const k in people) people[k].el.classList.toggle('dim', k !== who);
+      return p;
+    };
+    K.leave = (who) => { const p = people[who]; if (!p || !p.on) return; p.on = false; gsap.to(p.el, { x: who === 'riya' ? 520 : -520, opacity: 0, duration: .4, ease: 'power2.in' }); };
+    K.leaveAll = () => Object.keys(people).forEach(K.leave);
+    // a line: the speaker's bubble (or the glass caption for the narrator / the system voice)
+    K.say = async (L, extra) => {
+      K.chk();
+      const who = L.who, side = who === 'riya' ? 'r' : 'l';
+      const b = mk('div', `bubble ${who} sx-b ${side}`, {}, cast);
+      b.innerHTML = `<span class="nm">${SCRIPT.WHO[who].name}</span><span class="txt"></span>`;
+      if (who === 'narrator' || who === 'system') { for (const k in people) people[k].el.classList.add('dim'); }
+      gsap.fromTo(b, { opacity: 0, y: 18, scale: .94 }, { opacity: 1, y: 0, scale: 1, duration: .35, ease: 'back.out(2)' });
+      const tn = gsap.fromTo('#tapNext', { opacity: 0 }, { opacity: .85, duration: .4, delay: 1.8 });
       if (extra) extra();
-      await say(L, { bubble: b, talk: a.talk });
+      await say(L, { bubble: b });
       tn.kill(); gsap.set('#tapNext', { opacity: 0 });
-      await gsap.to(b, { opacity: 0, scale: .9, duration: .2 });
-    }
+      await gsap.to(b, { opacity: 0, y: -8, duration: .2 }); b.remove();
+    };
+    // big glass stamp for the on-screen text
+    K.stamp = (text, cls = '', hold = 1.5) => {
+      const o = mk('div', 'sx-stamp ' + cls); SFX.ping();
+      o.innerHTML = [...text].map(c => c === ' ' ? '<span>&nbsp;</span>' : `<span>${c}</span>`).join('') + '<i class="sheen"></i>';
+      const L = o.querySelectorAll('span');
+      const tl = gsap.timeline();
+      tl.fromTo(L, { y: 46, scale: .4, opacity: 0, rotation: () => (Math.random() - .5) * 24 }, { y: 0, scale: 1, opacity: 1, rotation: 0, duration: .42, stagger: .035, ease: 'back.out(2.6)' })
+        .fromTo(o.querySelector('.sheen'), { xPercent: -120, opacity: 1 }, { xPercent: 360, duration: .7, ease: 'power2.inOut' }, '-=.1').set(o.querySelector('.sheen'), { opacity: 0 });
+      if (hold) tl.to(L, { y: -24, opacity: 0, duration: .3, stagger: .015, ease: 'power2.in' }, '+=' + hold);
+      o.tl = tl; return o;
+    };
+    // the glass screen (on the control-room wall, or floating underwater): a −8 … +8 scale with 0 glowing
+    K.screen = (css) => {
+      const s = mk('div', 'sx-screen', css);
+      let h = '<div class="bar"></div>';
+      for (let v = -8; v <= 8; v++) h += `<i class="${v ? '' : 'z'}" style="left:${50 + (v + 8) * 46}px"></i><b class="${v < 0 ? 'n' : v > 0 ? 'p' : 'z'}" style="left:${50 + (v + 8) * 46}px">${f(v)}</b>`;
+      s.innerHTML = h + '<i class="sheen"></i>';
+      gsap.fromTo(s, { opacity: 0, scale: .9 }, { opacity: 1, scale: 1, duration: .45, ease: 'back.out(1.6)' });
+      gsap.fromTo(s.querySelector('.sheen'), { xPercent: -120, opacity: 1 }, { xPercent: 360, duration: .9, delay: .2, ease: 'power2.inOut', onComplete() { this.targets()[0].style.opacity = 0; } });
+      gsap.fromTo(s.querySelector('.bar'), { scaleX: 0 }, { scaleX: 1, duration: .55, delay: .15, ease: 'power2.out' });
+      gsap.fromTo(s.querySelectorAll('i,b'), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .25, stagger: { each: .02, from: 'center' }, delay: .3 });
+      s.x = v => 50 + (v + 8) * 46;
+      s.zero = () => gsap.fromTo(s.querySelectorAll('.z'), { scale: 1 }, { scale: 1.5, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' });
+      s.blip = (v, y = 90) => { const d = mk('div', 'blip', { left: s.x(v) + 'px', top: y + 'px' }, s); gsap.fromTo(d, { scale: 0 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); SFX.blip(); return d; };
+      s.toZero = (v, cls) => { const a = mk('div', 'sx-dist ' + cls, { left: Math.min(s.x(0), s.x(v)) + 'px', width: Math.abs(s.x(v) - s.x(0)) + 'px' }, s); a.innerHTML = `<span>${Math.abs(v)}</span>`;
+        gsap.fromTo(a, { scaleX: 0, transformOrigin: v < 0 ? '0% 50%' : '100% 50%' }, { scaleX: 1, duration: .6, ease: 'power2.out' }); return a; };
+      return s;
+    };
+    return K;
+  }
 
-    // the big screen in the control room: a navigation scale −8 … +8 with defence line 0 in the middle
-    const NAV = { x0: 420, step: 44, y: 330 }, nx = v => NAV.x0 + v * NAV.step;
-    const ost = (text, cls = '') => { const o = document.createElement('div'); o.className = 'ost ' + cls; o.textContent = text; sfx.appendChild(o); gsap.fromTo(o, { scale: .4, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'back.out(2.4)' }); return o; };
-
-    const SCENE = Q.get('at') === 'hook' ? +(Q.get('scene') || 1) : 1;   // QA: start at scene 2 (control room) or 3 (dive)
+  async function hook() {
+    SD.music('calm'); SD.ambience('waves');
+    const K = storyKit(), { bg, sfx, cast } = K, SCENE = Q.get('at') === 'hook' ? +(Q.get('scene') || 1) : 1;
     try {
       if (SCENE < 2) {
-      /* ---- Scene 1 · the harbour: the Coast Guard ship on patrol, enemy submarines slip in under the water ---- */
-      bg.style.backgroundImage = 'url(assets/img/harbour.webp)';
-      gsap.fromTo(bg, { scale: 1.16, x: 70 }, { scale: 1.04, x: 0, duration: 14, ease: 'none' });
-      gsap.fromTo(st, { opacity: 0 }, { opacity: 1, duration: .6 });
-      const meera = actor('meera', { left: '40px', height: '820px', bottom: '-70px' }, 'harbour-meera');
-      const riya = actor('riya', { left: '1390px', height: '640px', bottom: '-20px' }, 'harbour-riya', true);
-      actors = [meera, riya];
-      gsap.from(meera.el, { x: -600, duration: 1, ease: 'power3.out', delay: .2 });
-      gsap.from(riya.el, { x: 620, duration: .9, ease: 'power3.out', delay: .6 });
-      await wait(1.1); chk();
-      const bM = bubble('meera', 'tl', { left: '470px', top: '150px' }, 'harbour-meera-bubble');
-      await line(S.s1, bM, meera, () => {
-        [[2000, 760, 0], [2150, 870, 1.1], [2300, 975, 2.2]].forEach(([x, y, dl]) => {   // three dark shapes glide in under the surface
-          const u = new Image(); u.src = 'assets/img/sub.webp'; u.className = 'shadowsub'; Object.assign(u.style, { left: x + 'px', top: y + 'px' }); sfx.appendChild(u);
-          gsap.to(u, { x: -1240 - Math.random() * 200, duration: 6.5, delay: dl, ease: 'sine.out' });
-          gsap.to(u, { y: 10, duration: 1.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-          gsap.delayedCall(dl + .4, SFX.blip);
+        /* ---- 1 · a calm sea, the Coast Guard ship on patrol; three enemy submarines slip in underwater and take positions ---- */
+        await K.scene('bg_sea', 1.05);
+        const ship = K.img('ship', 'sx-ship', {});
+        gsap.fromTo(ship, { x: -700 }, { x: 0, duration: 2.4, ease: 'power2.out' });
+        gsap.to(ship, { y: 6, rotation: .8, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+        const subs = [[1060, 560], [1420, 640], [760, 700]].map(([x, y], i) => {
+          const u = K.img('sub_bay', 'sx-sub', { left: x + 'px', top: y + 'px' });
+          gsap.fromTo(u, { x: 900, opacity: 0 }, { x: 0, opacity: .92, duration: 2.6, delay: .6 + i * .45, ease: 'power3.out',
+            onComplete: () => { const r = K.mk('div', 'sx-ring', { left: x + 110 + 'px', top: y + 50 + 'px' }); gsap.fromTo(r, { scale: .2, opacity: .9 }, { scale: 2, opacity: 0, duration: 1, onComplete: () => r.remove() }); SFX.blip(); } });
+          gsap.to(u, { y: 8, duration: 1.6 + i * .2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+          return u;
         });
-      });
-      chk();
+        await K.say(S.n1);
+
+        /* ---- 2 · underwater: the subs launch missiles towards the ship · cut to the control room: alarm ---- */
+        await K.scene('bg_under', 1.04, [1200, 660], [900, 820]);
+        [[260, 760], [760, 860], [1260, 780]].forEach(([x, y], i) => {
+          const u = K.img('sub_bay', 'sx-sub big', { left: x + 'px', top: y + 'px' }); gsap.to(u, { y: 8, duration: 1.7, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+          gsap.delayedCall(.5 + i * .35, () => { const m = K.img('missile_red', 'sx-mis', { left: x + 190 + 'px', top: y - 30 + 'px' }); SFX.launch();
+            gsap.to(m, { x: 520, y: -720, rotation: -50, duration: 1.4, ease: 'power1.in' }); K.trail(m); });
+        });
+        await wait(2.2); K.chk();
+        await K.scene('bg_room', 1.03, [1500, 120], [750, 300]);
+        const alarm = K.mk('div', 'alarmglow'); gsap.to(alarm, { opacity: 1, duration: .4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+        SFX.alarm(); const al = K.stamp('ALERT! ALERT!', 'red', 0);
+        gsap.to(al, { opacity: .45, duration: .4, yoyo: true, repeat: -1, delay: .9 });
+        await K.say(S.a2, () => gsap.delayedCall(1.3, SFX.alarm));
+        gsap.killTweensOf(al); gsap.to(al, { opacity: 0, duration: .3 });
+
+        /* ---- 3 · Meera sees the incoming missiles on the navigation screen ---- */
+        const scr = K.screen({});
+        const dots = [-7, -4, 6, 3].map((v, i) => { const d = K.mk('div', 'rmis', { left: scr.x(v) + 'px', top: '40px' }, scr); gsap.to(d, { top: 110, left: scr.x(v * .6), duration: 4, delay: i * .2, ease: 'none' }); return d; });
+        K.who('meera', 'shocked');
+        await K.say(S.m3);
+
+        /* ---- 4 · contact the defence station ---- */
+        K.who('meera', 'determined');
+        scr.zero();
+        const com = K.mk('div', 'sx-comms'); com.innerHTML = '<i></i><i></i><i></i><span>DEFENCE STATION</span>';
+        gsap.fromTo(com, { x: 260, opacity: 0 }, { x: 0, opacity: 1, duration: .45, ease: 'power3.out' });
+        gsap.to(com.querySelectorAll('i'), { opacity: .2, duration: .3, stagger: .15, yoyo: true, repeat: -1 });
+        K.stamp('CONTACT DEFENCE STATION');
+        await K.say(S.m4, () => gsap.delayedCall(.6, () => { SFX.doorBeep(); }));
+        gsap.to(alarm, { opacity: 0, duration: .5 }); gsap.killTweensOf(alarm);
+        K.leaveAll();
+
+        /* ---- 5 · the defence system activates: the launcher rises and turns into position ---- */
+        await K.scene('bg_under', 1.03, [750, 300], [960, 860]);
+        const ln = K.mk('div', 'sx-launcher'); const base = K.img('launcher_base', 'base', {}, ln), barrel = K.img('launcher_barrel', 'barrel', {}, ln);
+        gsap.fromTo(ln, { y: 360 }, { y: 0, duration: .8, ease: 'back.out(1.4)' }); SFX.doorSlide(1);
+        gsap.fromTo(barrel, { rotation: 0 }, { rotation: -32, duration: 1.2, delay: .7, ease: 'power2.inOut', onStart: () => SFX.clunk() });
+        const reds = [[1160, 260], [1420, 180], [1660, 300]].map(([x, y], i) => { const m = K.img('missile_red', 'sx-mis', { left: x + 'px', top: y + 'px' }); gsap.set(m, { rotation: 155 });
+          gsap.to(m, { x: -120, y: 60, duration: 6, ease: 'none' }); return m; });
+        K.stamp('DEFENCE SYSTEM READY');
+        await K.say(S.d5);
+
+        /* ---- 6 · sonar scans the missiles, target rings lock on, 0 glows → counterattack ---- */
+        for (let i = 0; i < 3; i++) { const w = K.mk('div', 'sx-wave'); gsap.fromTo(w, { scale: .2, opacity: .9 }, { scale: 3.2, opacity: 0, duration: 1.6, delay: i * .4, onComplete: () => w.remove() }); }
+        SFX.ping();
+        reds.forEach((m, i) => gsap.delayedCall(.6 + i * .35, () => { const r = K.img('../reticle', 'sx-lock', {}); const b = m.getBoundingClientRect(), stg = $('#stage').getBoundingClientRect(), k = stg.width / 1920;
+          Object.assign(r.style, { left: ((b.left + b.width / 2 - stg.left) / k) + 'px', top: ((b.top + b.height / 2 - stg.top) / k) + 'px' }); gsap.fromTo(r, { scale: 2, rotation: -90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: .35, ease: 'back.out(2)' }); SFX.lock();
+          gsap.to(r, { x: -120 * (1 - i * .1), y: 60, duration: 5, ease: 'none' }); }));
+        const zero = K.mk('div', 'sx-zero'); zero.textContent = '0'; gsap.fromTo(zero, { scale: 0 }, { scale: 1, duration: .4, delay: 1.6, ease: 'back.out(3)' });
+        gsap.to(zero, { scale: 1.2, duration: .5, yoyo: true, repeat: -1, delay: 2, ease: 'sine.inOut' });
+        K.who('meera', 'determined');
+        K.stamp('TARGETS CONFIRMED!');
+        await K.say(S.m6);
+        // the counterattack: blue missiles meet the red ones
+        reds.forEach((m, i) => gsap.delayedCall(i * .25, () => {
+          const b = K.img('missile_blue', 'sx-mis', { left: '920px', top: '700px' }); SFX.launch(); gsap.set(b, { rotation: -40 }); K.trail(b, .05, 12);
+          const tb = m.getBoundingClientRect(), stg = $('#stage').getBoundingClientRect(), k = stg.width / 1920;
+          gsap.to(b, { left: (tb.left - stg.left) / k, top: (tb.top - stg.top) / k, duration: .7, ease: 'power1.in', onComplete: () => { b.remove(); m.remove(); SFX.boom(); const p = K.mk('div', 'sx-ring hit', { left: (tb.left - stg.left) / k + 60 + 'px', top: (tb.top - stg.top) / k + 20 + 'px' }); gsap.fromTo(p, { scale: .3, opacity: 1 }, { scale: 2.4, opacity: 0, duration: .6, onComplete: () => p.remove() }); } });
+        }));
+        await wait(1.6); K.chk();
+        K.leaveAll();
+        sfx.querySelectorAll('.sx-lock').forEach(r => r.remove());
       }
 
       if (SCENE < 3) {
-      /* ---- Scene 2 · the control-room doors open: red warning lights, the alarm ---- */
-      SFX.swoosh();
-      await gsap.to([bg, cast, sfx], { opacity: 0, duration: .4, ease: 'power2.in' });
-      gsap.killTweensOf(bg); cast.innerHTML = sfx.innerHTML = ''; SD.ambience(null);   // indoors: no sea
-      bg.style.backgroundImage = 'url(assets/img/sonar_room.webp)';
-      gsap.set([bg, cast, sfx], { x: 0, opacity: 1 });
-      await doors(); chk();
-      gsap.to(bg, { scale: 1, duration: 14, ease: 'none' });
-      const radar = document.createElement('div'); radar.className = 'radar'; sfx.appendChild(radar);
-      radar.innerHTML = '<div class="sweep2"></div>';
-      gsap.to(radar.firstChild, { rotation: 360, duration: 2.6, repeat: -1, ease: 'none' });
-      const alarm = document.createElement('div'); alarm.className = 'alarmglow'; sfx.appendChild(alarm);
-      const m2 = actor('meera', { left: '20px', height: '980px', bottom: '-380px' }, 'sonar-meera');
-      const r2 = actor('riya', { left: '1190px', height: '820px', bottom: '-330px' }, 'sonar-riya', true);
-      actors = [m2, r2];
-      await walkIn([[m2, 640, 0], [r2, -480, .12]]); chk();
-      const bM2 = bubble('meera', 'lft', { left: '600px', top: '700px' }, 'sonar-meera-bubble');
-      const bR2 = bubble('riya', 'rgt', { right: '790px', top: '650px' }, 'sonar-riya-bubble');
-      const alert = ost('ALERT! ALERT!', 'red');
-      const flash = gsap.to(alarm, { opacity: 1, duration: .4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-      gsap.to(alert, { opacity: .35, duration: .4, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: .45 });
-      SFX.alarm();
-      await line(S.s2, bR2, r2, () => gsap.delayedCall(1.2, SFX.alarm));
-      await line(S.s3, bM2, m2);
-      flash.kill(); gsap.to(alarm, { opacity: .25, duration: .5 }); gsap.killTweensOf(alert); gsap.to(alert, { opacity: 0, scale: .8, duration: .3, onComplete: () => alert.remove() });
+        /* ---- 7 · part 2: the navigation screen, submarines blink at their positions ---- */
+        await K.scene('bg_room', 1.03, [960, 540], [750, 300]);
+        const scr = K.screen({});
+        const pos = { '-6': scr.blip(-6), '-2': scr.blip(-2), '3': scr.blip(3), '5': scr.blip(5) };
+        Object.values(pos).forEach((d, i) => gsap.to(d, { opacity: .35, duration: .5, yoyo: true, repeat: -1, delay: i * .2 }));
+        K.who('meera', 'determined');
+        await K.say(S.s4);
 
-      /* ---- Scene 3 · the navigation screen: a horizontal scale, 0 in the centre is our defence line ---- */
-      const nav = document.createElement('div'); nav.className = 'nav'; radar.appendChild(nav);
-      let h = '<div class="bar"></div>';
-      for (let v = -8; v <= 8; v++) h += `<i class="${v ? '' : 'z'}" style="left:${nx(v)}px"></i><b class="${v < 0 ? 'n' : v > 0 ? 'p' : 'z'}" style="left:${nx(v)}px">${f(v)}</b>`;
-      nav.innerHTML = h + `<div class="navd" style="left:${nx(0)}px"><span>DEFENCE LINE 0</span></div>`;
-      const dline = nav.querySelector('.navd');
-      await line(S.s4, bM2, m2, () => {
-        gsap.fromTo(nav.querySelector('.bar'), { scaleX: 0 }, { scaleX: 1, duration: .6, ease: 'power2.out' });
-        gsap.fromTo(nav.querySelectorAll('i,b'), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .3, stagger: { each: .025, from: 'center' }, delay: .3 });
-        gsap.fromTo(dline, { scaleY: 0, transformOrigin: '50% 100%' }, { scaleY: 1, duration: .5, delay: .9, ease: 'back.out(2)' });
-        SFX.ping();
-      });
+        /* ---- 8 · −6 blinks, an arrow runs from it towards the defence line 0 ---- */
+        gsap.killTweensOf(pos['-6']); gsap.to(pos['-6'], { opacity: 1, scale: 1.5, duration: .3, yoyo: true, repeat: 5 });
+        scr.toZero(-6, 'n'); scr.zero();
+        K.who('meera', 'pointing');
+        await K.say(S.m8);
 
-      /* ---- Scene 4 · two submarines at −6 and +5: +5 blinks, it is closer to the defence line ---- */
-      const blip = v => { const b = document.createElement('div'); b.className = 'blip'; Object.assign(b.style, { left: nx(v) + 'px', top: (NAV.y - 70) + 'px' }); radar.appendChild(b); gsap.fromTo(b, { scale: 0 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); SFX.blip(); return b; };
-      const dist = (v, cls) => { const d = document.createElement('div'); d.className = 'dist ' + cls; const a = Math.min(nx(0), nx(v)); Object.assign(d.style, { left: a + 'px', width: Math.abs(nx(v) - nx(0)) + 'px', top: (NAV.y - 30) + 'px' }); d.innerHTML = `<span>${Math.abs(v)}</span>`; radar.appendChild(d); gsap.fromTo(d, { scaleX: 0, transformOrigin: v < 0 ? '100% 50%' : '0% 50%' }, { scaleX: 1, duration: .6, ease: 'power2.out' }); return d; };
-      let bN, bP;
-      await line(S.s5, bM2, m2, () => {
-        bN = blip(-6); gsap.delayedCall(.3, () => { bP = blip(5); });
-        gsap.delayedCall(.8, () => { dist(-6, 'n'); dist(5, 'p'); });
-        gsap.delayedCall(1.4, () => { gsap.to(bP, { scale: 1.5, duration: .3, yoyo: true, repeat: 7, ease: 'sine.inOut' }); gsap.fromTo(dline, { filter: 'brightness(1)' }, { filter: 'brightness(1.8)', duration: .3, yoyo: true, repeat: 5 }); });
-      });
+        /* ---- 9 · +5 blinks: it is closer to 0 (distance 5 vs 6) ---- */
+        gsap.killTweensOf(pos['5']); gsap.to(pos['5'], { opacity: 1, scale: 1.5, duration: .3, yoyo: true, repeat: 5 });
+        scr.toZero(5, 'p');
+        K.who('riya', 'alert');
+        await K.say(S.r9);
 
-      /* ---- Scene 5 · their missile bays open: red missiles launch, the sonar flashes red ---- */
-      const missiles = [];
-      const launch = (from, dl) => gsap.delayedCall(dl, () => {
-        const m = document.createElement('div'); m.className = 'rmis'; Object.assign(m.style, { left: nx(from) + 'px', top: (NAV.y - 70) + 'px' }); radar.appendChild(m); missiles.push(m);
-        gsap.to(m, { left: nx(from) + (from < 0 ? 1 : -1) * (60 + Math.random() * 60), top: NAV.y - 150 - Math.random() * 70, duration: 1.2, ease: 'power1.out' }); SFX.launch();
-      });
-      const wave = () => { const w = document.createElement('div'); w.className = 'sonarwave'; radar.appendChild(w); gsap.fromTo(w, { scale: .1, opacity: .9 }, { scale: 2.4, opacity: 0, duration: 1.6, ease: 'power1.out', onComplete: () => w.remove() }); };
-      await line(S.s6, bM2, m2, () => { [-6, 5, -6, 5].forEach((v, i) => launch(v, .3 + i * .35)); });
-      await line(S.s7, bM2, m2, () => {
-        radar.classList.add('red'); SFX.alarm(); for (let i = 0; i < 4; i++) gsap.delayedCall(i * .5, wave);
-        gsap.fromTo(alarm, { opacity: .25 }, { opacity: .9, duration: .35, yoyo: true, repeat: 3 });
-      });
+        /* ---- 10 · mission begins: one submarine blinks, the FIRE button lights up ---- */
+        K.leave('riya');
+        const fire = K.mk('div', 'sx-fire'); const off = K.img('fire_off', '', {}, fire), lit = K.img('fire_lit', 'lit', {}, fire);
+        gsap.fromTo(fire, { scale: 0 }, { scale: 1, duration: .5, ease: 'back.out(2.4)' });
+        gsap.fromTo(lit, { opacity: 0 }, { opacity: 1, duration: .45, yoyo: true, repeat: -1, delay: .6, ease: 'sine.inOut' });
+        K.who('meera', 'pointing');
+        await K.say(S.s10);
 
-      /* ---- Scene 6 · targets confirmed: each missile gets a targeting circle, 0 glows → MISSION 1 ---- */
-      await line(S.s8, bM2, m2, () => {
-        radar.classList.remove('red');
-        missiles.forEach((m, i) => gsap.delayedCall(.2 + i * .25, () => { const r = new Image(); r.src = 'assets/img/reticle.webp'; r.className = 'navlock'; m.appendChild(r); gsap.fromTo(r, { scale: 2, rotation: -90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: .35, ease: 'back.out(2)' }); SFX.lock(); }));
-        gsap.delayedCall(1.4, () => gsap.fromTo(nav.querySelectorAll('.z'), { filter: 'brightness(1)' }, { filter: 'brightness(2)', duration: .35, yoyo: true, repeat: 5 }));
-      });
-      await line(S.s9, bM2, m2);
-      await line(S.s10, bM2, m2);
-      await line(S.s11, bM2, m2);
-      const m1 = ost('MISSION 1', 'stamp'); SFX.ping(); SFX.reward && SFX.reward(true);
-      await wait(1.4); chk(); gsap.to(m1, { opacity: 0, scale: 1.2, duration: .3 });
+        /* ---- 11 · gameplay transition: the scale expands to fill the screen → MISSION 1 ---- */
+        K.who('meera', 'determined');
+        await K.say(S.s11);
+        K.leaveAll(); gsap.to(fire, { scale: 0, duration: .3 });
+        await gsap.to(scr, { scale: 2.3, opacity: 0, duration: .9, ease: 'power2.in' });
+        const m1 = K.stamp('MISSION 1', 'big', 0); SFX.reward && SFX.reward(true); await wait(1.3); K.chk();
+        gsap.to(m1, { scale: 3, opacity: 0, duration: .6, ease: 'power2.in' });
       }
-    } catch (e) { if (e !== SKIP) throw e; }
+    } catch (e) { if (e !== K.SKIP) throw e; }
 
-    /* ---- Dive · through the porthole into the sea ---- */
-    SD.hush(); st.onpointerdown = null;
-    gsap.set('#tapNext', { opacity: 0 });
-    const dr = $('#doors'); if (dr) { gsap.killTweensOf(dr.querySelectorAll('*')); dr.remove(); }
-    if (bg.style.backgroundImage.indexOf('sonar_room') < 0) { bg.style.backgroundImage = 'url(assets/img/sonar_room.webp)'; cast.innerHTML = sfx.innerHTML = ''; gsap.set([bg, cast, sfx], { x: 0, opacity: 1, scale: 1 }); }
-    SFX.swoosh(); SFX.splash(); SD.music('play'); SD.ambience('waves');    // into the sea: the mission theme takes over
-    for (let i = 0; i < 4; i++) { const r = document.createElement('div'); r.className = 'diveRing'; Object.assign(r.style, { left: '1710px', top: '380px', width: '200px', height: '200px', marginLeft: '-100px', marginTop: '-100px' }); sfx.appendChild(r); gsap.fromTo(r, { scale: .3, opacity: 1 }, { scale: 6, opacity: 0, duration: 1.2, delay: i * .15 }); }
-    gsap.to(cast, { opacity: 0, duration: .4 });
-    await gsap.to([bg, cast], { scale: 4.2, transformOrigin: '1710px 380px', duration: 1.3, ease: 'power3.in' });
-    await gsap.to(st, { opacity: 0, duration: .45 });
-    st.classList.add('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([st, bg, cast, sfx], { clearProps: 'all' });
+    /* ---- into the sea: the view rushes forward, the cockpit takes over ---- */
+    SD.hush(); K.st.onpointerdown = null; gsap.set('#tapNext', { opacity: 0 });
+    SFX.swoosh(); SFX.splash(); SD.music('play'); SD.ambience('waves');
+    gsap.to(cast, { opacity: 0, duration: .3 });
+    await gsap.to([bg, sfx], { scale: 2.4, opacity: 0, duration: .9, ease: 'power3.in' });
+    await gsap.to(K.st, { opacity: 0, duration: .35 });
+    K.st.classList.add('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([K.st, bg, cast, sfx], { clearProps: 'all' });
     await W.sail(1.4);
     await howTo();
   }
+
+  /* ---- row 12 · the ending: a calm sea, the ship sails on, the route cleared ---- */
+  async function storyEnd() {
+    const K = storyKit();
+    $('#skipStory').style.display = 'none';
+    try {
+      await K.scene('bg_sea', 1.04);
+      const ship = K.img('ship', 'sx-ship end', {}); gsap.fromTo(ship, { x: -700 }, { x: 0, duration: 2.2, ease: 'power2.out' });
+      gsap.to(ship, { y: 6, rotation: .8, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      const rc = K.stamp('ROUTE CLEARED!', 'end', 0); SFX.tada();
+      // confetti rains down (a short burst, then it settles)
+      const COL = ['#ffd66b', '#7ff2ff', '#ff8fb1', '#9dff9a', '#ffffff', '#ffb070'];
+      for (let i = 0; i < 40; i++) { const c = K.mk('div', 'sx-conf', { left: 200 + Math.random() * 1520 + 'px', top: '-30px', background: COL[i % COL.length] });
+        gsap.to(c, { y: 700 + Math.random() * 400, x: (Math.random() - .5) * 240, rotation: (Math.random() - .5) * 900, opacity: 0, duration: 2.4 + Math.random() * 1.6, delay: .4 + Math.random() * .8, ease: 'power1.in', onComplete: () => c.remove() }); }
+      K.who('riya', 'cheering'); K.who('meera', 'proud');
+      await K.say(S.finEnd);
+      await wait(.8);
+    } catch (e) { if (e !== K.SKIP) throw e; }
+    await gsap.to(K.st, { opacity: 0, duration: .4 });
+    K.st.classList.add('hidden'); K.cast.innerHTML = K.sfx.innerHTML = ''; gsap.set([K.st, K.bg, K.cast, K.sfx], { clearProps: 'all' }); $('#skipStory').style.display = '';
+  }
+
 
   /* ---------- how to play (story sheet): a live demo round, played for the child ----------
      Two real submarines come up; the helper glow shows the mission, the number, then the submarine;
@@ -439,8 +494,7 @@
     SD.where = { at: 'final', round: 3 };
     await signalRound(D.FIN_SIG, 5);
     W.pips(3, 3);
-    const end = W.banner('MISSION COMPLETE', 'ROUTE CLEARED!', 'The sea route is safe again!', 3.4);   // story sheet ending
-    await say(S.finEnd); await end;
+    W.stripOff(); await storyEnd();   // storyboard row 12
     await complete('fin', 'Sea route protected!', 'You compared, ordered and combined integers.', 'Compare · Order · Combine', 'Play again');
   }
 

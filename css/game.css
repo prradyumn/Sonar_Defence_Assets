@@ -264,19 +264,6 @@ img{-webkit-user-drag:none;user-select:none}
 .alarmglow{position:absolute;inset:0;box-shadow:inset 0 0 160px 40px rgba(255,40,30,.65);opacity:0}
 .diveRing{position:absolute;border-radius:50%;border:6px solid rgba(220,250,255,.8)}
 
-/* ---------- sonar-room doors (art: door_left / door_right, 960×1080 each) ---------- */
-#doors{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-#doors .door{position:absolute;top:0;width:960px;height:1080px}
-#doors .door.l{left:0}#doors .door.r{left:960px}
-#doors .door img{display:block;width:960px;height:1080px}
-#doors .door.l img{filter:drop-shadow(14px 0 24px rgba(0,8,24,.65))}#doors .door.r img{filter:drop-shadow(-14px 0 24px rgba(0,8,24,.65))}
-#doors .lamp{position:absolute;top:118px;width:30px;height:570px;border-radius:15px;background:rgba(170,252,255,.95);box-shadow:0 0 30px #5ff2ff,0 0 70px #22c6ff;opacity:0;mix-blend-mode:screen}
-#doors .door.l .lamp{left:892px}#doors .door.r .lamp{left:38px}
-#doors .seam{position:absolute;left:957px;top:0;width:6px;height:1080px;background:linear-gradient(rgba(170,252,255,0),rgba(210,253,255,.95) 50%,rgba(170,252,255,0));filter:blur(2px);opacity:0}
-#doors .spill{position:absolute;left:0;top:0;width:1920px;height:1080px;background:radial-gradient(ellipse 22% 70% at 50% 50%,rgba(190,250,255,.75),rgba(120,220,255,.25) 45%,rgba(0,0,0,0) 75%);mix-blend-mode:screen;opacity:0}
-.steam{position:absolute;width:160px;height:160px;margin:-80px 0 0 -80px;border-radius:50%;background:radial-gradient(circle,rgba(235,250,255,.75),rgba(235,250,255,0) 68%);filter:blur(3px)}
-.actor .flip{position:relative;height:100%;transform:scaleX(-1)}
-
 /* ---------- reward: confetti, praise word, star into the pips ---------- */
 #fxTop{position:absolute;inset:0;pointer-events:none}
 .ringfx{position:absolute;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;border:7px solid rgba(255,226,120,.95);box-shadow:0 0 34px rgba(255,210,80,.85),inset 0 0 24px rgba(255,230,140,.6)}
@@ -296,27 +283,6 @@ img{-webkit-user-drag:none;user-select:none}
 /* ---------- title ---------- */
 #title .logo span{display:inline-block;transform-origin:50% 100%}
 
-/* ---- story (story sheet): harbour shadows, alert text, the navigation screen, missiles, MISSION 1 ---- */
-.shadowsub{position:absolute;width:230px;opacity:.3;filter:brightness(.08) blur(1.5px);pointer-events:none;will-change:transform}
-.ost{position:absolute;left:0;right:0;top:200px;text-align:center;font:800 76px/1 Fredoka,sans-serif;letter-spacing:4px;color:#fff;-webkit-text-stroke:5px #06264a;paint-order:stroke;pointer-events:none}
-.ost.red{color:#ff5a4a;text-shadow:0 0 30px rgba(255,60,40,.9)}
-.ost.stamp{top:420px;font-size:150px;color:#ffd66b;text-shadow:0 0 40px rgba(255,200,60,.9),0 8px 0 #031a33}
-.nav{position:absolute;inset:0}
-.nav .bar{position:absolute;left:48px;top:328px;width:744px;height:6px;border-radius:3px;background:linear-gradient(90deg,#ff8a5c,#fff 50%,#5fe6ff);box-shadow:0 0 12px rgba(127,242,255,.7)}
-.nav i{position:absolute;top:318px;width:3px;height:26px;margin-left:-1.5px;background:#dffcff;border-radius:2px}
-.nav i.z{top:308px;height:46px;width:6px;margin-left:-3px;background:#ffd66b;box-shadow:0 0 12px #ffb21f}
-.nav b{position:absolute;top:356px;width:44px;margin-left:-22px;text-align:center;font:700 22px/1 Fredoka;color:#dffcff}
-.nav b.n{color:#ffb795}.nav b.p{color:#9ff6ff}.nav b.z{color:#ffd66b;font-size:28px;top:356px}
-.navd{position:absolute;top:60px;height:260px;width:0;border-left:5px dashed #ffd66b;margin-left:-2px;filter:drop-shadow(0 0 8px #ffb21f)}
-.navd span{position:absolute;left:-90px;top:-34px;width:180px;text-align:center;font:800 22px/1 Baloo;color:#ffe9a8;text-shadow:0 0 8px #ffb21f}
-.dist{position:absolute;height:10px;margin-top:-5px;border-radius:5px}
-.dist.n{background:rgba(255,138,92,.85);box-shadow:0 0 10px #ff8a5c}.dist.p{background:rgba(95,230,255,.9);box-shadow:0 0 10px #3ee0ff}
-.dist span{position:absolute;left:50%;top:-34px;transform:translateX(-50%);font:800 24px/1 Fredoka;color:#fff;text-shadow:0 0 8px #000}
-.rmis{position:absolute;width:30px;height:12px;margin:-6px 0 0 -15px;border-radius:6px;background:linear-gradient(90deg,#ff2d1f,#ffb08a);box-shadow:0 0 14px #ff3b2a}
-.navlock{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;filter:hue-rotate(165deg) saturate(2.2)}
-.sonarwave{position:absolute;left:420px;top:250px;width:400px;height:400px;margin:-200px 0 0 -200px;border-radius:50%;border:4px solid rgba(255,90,70,.8)}
-.radar.red{box-shadow:inset 0 0 90px rgba(255,40,30,.75)}
-
 /* ---- how to play: the live demo's step chip ---- */
 #howchip{position:absolute;left:50%;top:150px;display:flex;align-items:center;gap:16px;padding:10px 28px 10px 14px;border-radius:40px;white-space:nowrap;pointer-events:none;
   background:rgba(4,22,46,.92);border:3px solid #ffd66b;box-shadow:0 0 22px rgba(255,214,107,.45),0 10px 22px rgba(0,8,24,.45)}
@@ -329,3 +295,69 @@ img{-webkit-user-drag:none;user-select:none}
 #boot i{position:absolute;left:50%;top:45%;width:240px;height:240px;margin:-120px 0 0 -120px;border-radius:50%;border:4px solid rgba(127,242,255,.8);animation:helpRing 1.6s ease-out infinite}
 #boot i+i{animation-delay:.8s}
 #boot span{position:absolute;left:0;right:0;top:62%;text-align:center;font:700 30px/1 Fredoka,sans-serif;letter-spacing:4px;color:#7ff2ff}
+
+/* ---- the storyboard story (levels.js storyKit): calm backgrounds, glass UI, waist-up characters ---- */
+.sx-ship{position:absolute;left:180px;top:300px;width:560px;transform-origin:50% 80%;filter:drop-shadow(0 10px 10px rgba(0,30,60,.25))}
+.sx-sub{position:absolute;width:300px;opacity:.92;filter:drop-shadow(0 8px 10px rgba(0,20,40,.35))}
+.sx-sub.big{width:380px;opacity:1}
+.sx-mis{position:absolute;width:140px;transform-origin:50% 50%;filter:drop-shadow(0 4px 6px rgba(0,10,30,.35))}
+.sx-char{position:absolute;bottom:-10px;height:720px;transition:filter .25s;filter:drop-shadow(0 14px 18px rgba(0,20,50,.4))}
+.sx-char img{display:block;height:100%}
+.sx-char.meera{left:30px}.sx-char.riya{right:30px}
+.sx-char.dim{filter:brightness(.7) saturate(.8) drop-shadow(0 14px 18px rgba(0,20,50,.4))}
+.bubble.sx-b{bottom:330px;max-width:700px}
+.bubble.sx-b.l{left:600px}.bubble.sx-b.r{right:560px}
+/* the narrator and the system voice: a glass caption across the bottom, no tail */
+.bubble.narrator,.bubble.system{left:300px;right:300px;bottom:70px;max-width:none;text-align:center;color:#fff;padding:26px 40px 22px;border:2px solid rgba(127,242,255,.55);border-image:none;border-radius:26px;
+  background:linear-gradient(rgba(10,44,86,.86),rgba(4,22,48,.9));box-shadow:0 0 26px rgba(60,210,255,.3),inset 0 1px 0 rgba(255,255,255,.2);filter:none}
+.bubble.system{border-color:rgba(255,110,90,.7);box-shadow:0 0 26px rgba(255,80,60,.35),inset 0 1px 0 rgba(255,255,255,.2)}
+.bubble.narrator::after,.bubble.system::after{display:none}
+.bubble.narrator .nm,.bubble.system .nm{left:50%;right:auto;transform:translateX(-50%);top:-20px;background:#7ff2ff;color:#06264a;border-color:#0d3a66}
+.bubble.system .nm{background:#ff7a5c;color:#fff;border-color:#7a1c0c}
+/* big glass stamp for the on-screen text */
+.sx-stamp{position:absolute;left:0;right:0;top:120px;text-align:center;font:800 78px/1 Fredoka,sans-serif;letter-spacing:3px;color:#fff;-webkit-text-stroke:6px #06264a;paint-order:stroke;
+  text-shadow:0 6px 0 #031a33,0 0 30px rgba(127,242,255,.6);pointer-events:none}
+.sx-stamp.red{color:#ff6a50;text-shadow:0 6px 0 #3a0a04,0 0 34px rgba(255,60,40,.85)}
+.sx-stamp.big{top:420px;font-size:150px;color:#ffd66b;text-shadow:0 8px 0 #031a33,0 0 40px rgba(255,200,60,.9)}
+/* the glass navigation screen */
+.sx-screen{position:absolute;left:330px;top:150px;width:840px;height:300px;border-radius:28px;
+  background:linear-gradient(rgba(8,36,70,.86),rgba(3,16,36,.9));border:3px solid rgba(127,242,255,.6);box-shadow:0 0 30px rgba(60,210,255,.35),inset 0 1px 0 rgba(255,255,255,.18)}
+.sx-screen .bar{position:absolute;left:30px;right:30px;top:198px;height:6px;border-radius:3px;background:linear-gradient(90deg,#ff8a5c,#fff 50%,#5fe6ff);box-shadow:0 0 12px rgba(127,242,255,.7)}
+.sx-screen i{position:absolute;top:188px;width:3px;height:26px;margin-left:-1.5px;background:#dffcff;border-radius:2px}
+.sx-screen i.z{top:176px;height:50px;width:6px;margin-left:-3px;background:#ffd66b;box-shadow:0 0 12px #ffb21f}
+.sx-screen b{position:absolute;top:230px;width:44px;margin-left:-22px;text-align:center;font:700 26px/1 Fredoka;color:#dffcff;-webkit-text-stroke:3px #031a33;paint-order:stroke}
+.sx-screen b.n{color:#ffc8ad}.sx-screen b.p{color:#b8f8ff}.sx-screen b.z{color:#ffd66b;font-size:32px}
+.sx-screen .rmis{position:absolute}
+.sx-dist{position:absolute;top:148px;height:10px;margin-top:-5px;border-radius:5px}
+.sx-dist.n{background:rgba(255,138,92,.85);box-shadow:0 0 10px #ff8a5c}.sx-dist.p{background:rgba(95,230,255,.9);box-shadow:0 0 10px #3ee0ff}
+.sx-dist span{position:absolute;left:50%;top:-34px;transform:translateX(-50%);font:800 24px/1 Fredoka;color:#fff;text-shadow:0 0 8px #000}
+.sx-comms{position:absolute;right:150px;top:190px;width:300px;padding:18px 22px;border-radius:20px;display:flex;align-items:flex-end;gap:6px;
+  background:linear-gradient(rgba(8,36,70,.88),rgba(3,16,36,.92));border:2px solid rgba(127,242,255,.55);box-shadow:0 0 20px rgba(60,210,255,.3)}
+.sx-comms i{width:10px;border-radius:3px;background:#7ff2ff}.sx-comms i:nth-child(1){height:14px}.sx-comms i:nth-child(2){height:24px}.sx-comms i:nth-child(3){height:34px}
+.sx-comms span{margin-left:12px;font:800 24px/1.1 Fredoka;color:#fff;letter-spacing:1px}
+.sx-launcher{position:absolute;left:770px;bottom:120px;width:380px;height:253px}
+.sx-launcher .base{position:absolute;left:0;top:0;width:380px}
+.sx-launcher .barrel{position:absolute;left:300px;top:66px;width:330px;transform-origin:28px 46px}
+.sx-wave{position:absolute;left:1100px;top:720px;width:500px;height:500px;margin:-250px 0 0 -250px;border-radius:50%;border:4px solid rgba(127,242,255,.8);box-shadow:0 0 18px rgba(127,242,255,.5)}
+.sx-lock{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px}
+.sx-zero{position:absolute;left:910px;top:930px;width:100px;height:100px;border-radius:50%;text-align:center;font:800 64px/96px Fredoka;color:#06264a;
+  background:radial-gradient(circle at 40% 35%,#fff3c0,#ffd66b 55%,#e0a23a);border:4px solid #fff;box-shadow:0 0 30px rgba(255,214,107,.9)}
+.sx-fire{position:absolute;right:260px;top:470px;width:200px;height:200px}
+.sx-fire img{position:absolute;inset:0;width:100%;height:100%}
+.sx-ring{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:4px solid #7ff2ff;box-shadow:0 0 16px rgba(127,242,255,.8)}
+.sx-ring.hit{border-color:#ffb070;box-shadow:0 0 22px rgba(255,160,80,.9)}
+.sx-tick{position:absolute;top:110px;width:40px;margin-left:-20px;text-align:center;font:800 44px/1 Fredoka;color:#5dff8a;text-shadow:0 0 14px rgba(93,255,138,.8),0 3px 0 #031a33}
+.rmis{position:absolute;width:30px;height:12px;margin:-6px 0 0 -15px;border-radius:6px;background:linear-gradient(90deg,#ff2d1f,#ffb08a);box-shadow:0 0 14px #ff3b2a}   /* a missile dot on the glass screen */
+/* motion pass: sonar-disc transitions, kinetic stamps, sheens, bubbles, confetti */
+.sx-iris{position:absolute;width:400px;height:400px;margin:-200px 0 0 -200px;border-radius:50%;pointer-events:none;z-index:5;transform:scale(0);will-change:transform;
+  background:radial-gradient(circle,#0b3360 0 62%,#1fb6e8 66%,rgba(127,242,255,.6) 68%,rgba(127,242,255,0) 71%)}
+.sx-stamp span{display:inline-block;will-change:transform}
+.sx-stamp .sheen,.sx-screen .sheen{position:absolute;top:0;bottom:0;left:0;width:30%;pointer-events:none;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.45),rgba(255,255,255,0))}
+.sx-stamp{overflow:hidden;padding:10px 0}
+.sx-screen{overflow:hidden}
+.sx-stamp.end{top:120px;font-size:110px;color:#ffd66b;text-shadow:0 7px 0 #031a33,0 0 36px rgba(255,200,60,.9)}
+.sx-ship.end{left:690px;top:330px;width:540px}
+.sx-bub{position:absolute;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.95) 0 14%,rgba(200,245,255,.35) 26%,rgba(160,230,255,.12) 62%,rgba(255,255,255,.5) 74%,rgba(255,255,255,0) 78%)}
+.sx-bub.small{width:10px;height:10px;margin:-5px 0 0 -5px}
+.sx-conf{position:absolute;width:14px;height:20px;border-radius:3px}
+.sx-char.riya+.sx-char.meera,.sx-char.meera{z-index:1}

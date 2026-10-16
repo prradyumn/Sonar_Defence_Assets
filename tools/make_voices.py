@@ -30,7 +30,7 @@ VO_DIR = os.path.join(ROOT, 'assets', 'vo')
 MANIFEST = os.path.join(VO_DIR, 'vo_manifest.js')
 API = 'https://generativelanguage.googleapis.com/v1beta'
 FALLBACK_MODEL = 'gemini-2.5-flash-preview-tts'
-DEFAULT_VOICE = {'meera': 'Kore', 'riya': 'Leda'}
+DEFAULT_VOICE = {'meera': 'Kore', 'riya': 'Leda', 'narrator': 'Charon', 'system': 'Iapetus'}
 
 # persona + director's notes (carried over from the old tools/voice_studio.html)
 PROFILE = {
@@ -43,6 +43,16 @@ PROFILE = {
         'name': 'Cadet Riya',
         'persona': 'Cadet Riya is an excited, brave 11-year-old Indian girl on her very first patrol with the Coast Guard.',
         'style': 'Speak in a natural Indian English accent with a bright, young girl\u2019s voice. Energetic, curious and playful, quick pace, a big smile in the voice. Cheer loudly on words like "Shabash!", "Bullseye!" and "Woohoo!". Sound worried but brave when asking questions.',
+    },
+    'narrator': {
+        'name': 'Narrator',
+        'persona': 'The narrator of a children\u2019s adventure story about an Indian Coast Guard mission at sea.',
+        'style': 'Speak in a natural Indian English accent, warm and dramatic like a documentary storyteller for children. Build gentle suspense, clear and measured, a little urgency at the end.',
+    },
+    'system': {
+        'name': 'Defence System',
+        'persona': 'The automated alert and defence computer of a navy ship.',
+        'style': 'Speak like a calm, clear ship computer announcer: even, precise, slightly synthetic, crisp consonants, with urgency on "Alert!". Indian English pronunciation, no accent exaggeration.',
     },
 }
 
@@ -390,7 +400,7 @@ def main():
     ap = argparse.ArgumentParser(description='Generate Sonar Defence voice lines with Gemini TTS.',
                                  epilog='Example: export GEMINI_API_KEY=... && python3 tools/make_voices.py --only h1,h2')
     ap.add_argument('--only', help='comma-separated line ids, e.g. h1,h2')
-    ap.add_argument('--who', choices=['meera', 'riya'], help='only this character')
+    ap.add_argument('--who', choices=['meera', 'riya', 'narrator', 'system'], help='only this character')
     ap.add_argument('--force', action='store_true', help='regenerate even if the wav exists')
     ap.add_argument('--model', default='auto', help='TTS model name, or auto (newest Flash TTS model) [auto]')
     ap.add_argument('--meera', default=DEFAULT_VOICE['meera'], help='prebuilt voice for Commander Meera [Kore]')
@@ -418,7 +428,7 @@ def main():
     os.makedirs(VO_DIR, exist_ok=True)
     skip = [l for l in todo if not args.force and vo_file(l['id'])]
     make = [l for l in todo if l not in skip]
-    voice = {'meera': args.meera, 'riya': args.riya}
+    voice = {'meera': args.meera, 'riya': args.riya, 'narrator': DEFAULT_VOICE['narrator'], 'system': DEFAULT_VOICE['system']}
 
     if args.dry_run:
         for l in make:

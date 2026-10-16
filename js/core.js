@@ -81,7 +81,7 @@
      Over http(s) the files become Web Audio buffers (they overlap, duck under the voice and pause with the AudioContext);
      from file://, where fetch is blocked, each plays through one reused <audio> element. */
   const ONE = { sonar: .5, explosion: .85, splash: .55, torpedo: .75, door_open: .95, door_slide: .85, bubbles: .5, rush: .7 };
-  const BED = { music_calm: 'music', music_play: 'music', harbour: 'amb', waves: 'amb' };
+  const BED = { music_calm: 'music', music_play: 'music', waves: 'amb' };
   const viaWA = /^https?:$/.test(location.protocol), BUF = {}, EL = {}, beds = {};
   let want = { music: null, amb: null }, ducked = false;
   function loadSounds() {   // runs at boot: an offline context decodes without needing the player's first tap
@@ -261,8 +261,7 @@
   ]);
   // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action
   ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'jelly', 'pop', 'pip_on', 'pip_off',
-    'star_gold', 'star_silver', 'badge', 'marker', 'sig', 'pod', 'card', 'hint_arrow', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water',
-    'harbour', 'sonar_room', 'door_left', 'door_right']
+    'star_gold', 'star_silver', 'badge', 'marker', 'sig', 'pod', 'card', 'hint_arrow', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']
     .forEach(n => { const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
   function talker(who) {
     const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');

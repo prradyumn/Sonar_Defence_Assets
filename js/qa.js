@@ -10,7 +10,7 @@
   if (Q.get('qa') === '1') build(false);
   function build(open) {
   const PARTS = [
-    ['Story', [['Harbour', { at: 'hook', scene: 1 }], ['Control room', { at: 'hook', scene: 2 }], ['Dive', { at: 'hook', scene: 3 }]]],
+    ['Story', [['Part 1 · alert', { at: 'hook', scene: 1 }], ['Part 2 · positions', { at: 'hook', scene: 2 }], ['How to play', { at: 'hook', scene: 3 }]]],
     ['Teaching', [['Number line', { at: 'teach' }]]],
     ['Level 1 · Compare', [['R1 tutorial', { at: 'l1', round: 1 }], ['R2', { at: 'l1', round: 2 }], ['R3', { at: 'l1', round: 3 }]]],
     ['Level 2 · Order', [1, 2, 3].map(r => ['R' + r, { at: 'l2', round: r }])],
