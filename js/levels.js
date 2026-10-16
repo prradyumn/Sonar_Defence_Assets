@@ -105,6 +105,12 @@
       const who = L.who, side = who === 'riya' ? 'r' : 'l';
       const b = mk('div', `bubble ${who} sx-b ${side}`, {}, cast);
       b.innerHTML = `<span class="nm">${SCRIPT.WHO[who].name}</span><span class="txt"></span>`;
+      const p = people[who];   // sit just past the speaker (a pointing arm reaches far), never on top of them
+      if (p && p.on) {
+        const stg = $('#stage').getBoundingClientRect(), k = stg.width / 1920, r = p.im.getBoundingClientRect();
+        if (side === 'l') b.style.left = Math.min(1180, Math.max(420, (r.right - stg.left) / k - 30)) + 'px';
+        else b.style.right = Math.min(1180, Math.max(420, (stg.right - r.left) / k - 30)) + 'px';
+      }
       if (who === 'narrator' || who === 'system') { for (const k in people) people[k].el.classList.add('dim'); }
       gsap.fromTo(b, { opacity: 0, y: 18, scale: .94 }, { opacity: 1, y: 0, scale: 1, duration: .35, ease: 'back.out(2)' });
       const tn = gsap.fromTo('#tapNext', { opacity: 0 }, { opacity: .85, duration: .4, delay: 1.8 });
@@ -256,10 +262,11 @@
         K.who('meera', 'pointing');
         await K.say(S.s10);
 
-        /* ---- 11 · gameplay transition: the scale expands to fill the screen → MISSION 1 ---- */
+        /* ---- 11 · gameplay transition: "Ready? Launch the missiles." → the child presses FIRE → MISSION 1 ---- */
         K.who('meera', 'determined');
         await K.say(S.s11);
-        K.leaveAll(); gsap.to(fire, { scale: 0, duration: .3 });
+        await pressFire(K, fire, lit);
+        K.leaveAll(); gsap.to(fire, { scale: 0, duration: .3, delay: .25 });
         await gsap.to(scr, { scale: 2.3, opacity: 0, duration: .9, ease: 'power2.in' });
         const m1 = K.stamp('MISSION 1', 'big', 0); SFX.reward && SFX.reward(true); await wait(1.3); K.chk();
         gsap.to(m1, { scale: 3, opacity: 0, duration: .6, ease: 'power2.in' });
@@ -275,6 +282,26 @@
     K.st.classList.add('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([K.st, bg, cast, sfx], { clearProps: 'all' });
     await W.sail(1.4);
     await howTo();
+  }
+
+  // wait for the child to press the glowing FIRE button (taps elsewhere do nothing here; Skip story still skips)
+  function pressFire(K, fire, lit) {
+    return new Promise(res => {
+      if (K.skipping) return res();
+      fire.classList.add('ready'); gsap.killTweensOf(lit); gsap.set(lit, { opacity: 1 });
+      const pulse = gsap.to(fire, { scale: 1.08, duration: .55, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      const rings = setInterval(() => { const r = K.mk('div', 'sx-ring', { left: '0', top: '0' }, fire); gsap.fromTo(r, { scale: .8, opacity: .9, left: 100, top: 100 }, { scale: 2.2, opacity: 0, duration: 1.1, onComplete: () => r.remove() }); }, 700);
+      const hint = gsap.delayedCall(6, () => { const t = K.mk('div', 'sx-press', {}, fire); t.textContent = 'TAP FIRE!'; gsap.fromTo(t, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: .3 }); });   // 6 s: a nudge
+      const prevTap = K.st.onpointerdown; K.st.onpointerdown = null;
+      const done = () => { clearInterval(rings); pulse.kill(); hint.kill(); fire.onpointerdown = null; K.st.onpointerdown = prevTap; res(); };
+      fire.onpointerdown = e => {
+        e.stopPropagation(); SFX.tap(); SFX.launch(); W.shake && W.shake(4, .3);
+        gsap.fromTo(fire, { scale: .86 }, { scale: 1, duration: .4, ease: 'back.out(3)' });
+        for (let i = 0; i < 3; i++) { const r = K.mk('div', 'sx-ring hit', { left: '100px', top: '100px' }, fire); gsap.fromTo(r, { scale: .5, opacity: 1 }, { scale: 3 + i, opacity: 0, duration: .7, delay: i * .08, onComplete: () => r.remove() }); }
+        done();
+      };
+      const sk = $('#skipStory'), skip0 = sk.onclick; sk.onclick = e => { done(); skip0(e); };
+    });
   }
 
   /* ---- row 12 · the ending: a calm sea, the ship sails on, the route cleared ---- */

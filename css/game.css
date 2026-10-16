@@ -361,3 +361,7 @@ img{-webkit-user-drag:none;user-select:none}
 .sx-bub.small{width:10px;height:10px;margin:-5px 0 0 -5px}
 .sx-conf{position:absolute;width:14px;height:20px;border-radius:3px}
 .sx-char.riya+.sx-char.meera,.sx-char.meera{z-index:1}
+.bubble.sx-b{z-index:3}   /* always above the characters */
+.sx-fire.ready{cursor:pointer;pointer-events:auto;z-index:4}
+.sx-fire .sx-ring{margin:-60px 0 0 -60px}
+.sx-press{position:absolute;left:50%;top:100%;margin-top:14px;transform:translateX(-50%);white-space:nowrap;font:800 30px/1 Fredoka,sans-serif;color:#fff;-webkit-text-stroke:5px #06264a;paint-order:stroke;letter-spacing:2px}
