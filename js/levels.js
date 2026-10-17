@@ -379,8 +379,8 @@
     W.strip(eq(R.a, R.b) + ' = ?', { big: true });
     W.marker(0);
     await W.missiles([{ n: Math.abs(R.a), sign: Math.sign(R.a) }, { n: Math.abs(R.b), sign: Math.sign(R.b) }]);
-    if (R.opts) await W.spawn(R.opts, { stagger: .15 });
-    await say(R.voL);
+    if (R.opts) await W.spawn(R.opts, { stagger: .35 });
+    await wait(.5); await say(R.voL); await wait(.4);
     let strikes = 0, sel = null, busy = false, onCancel = () => {};
     const K = {   // the sheet's animation kinds
       pair: () => { const p = W.mslPairs()[0]; if (p) W.mslPulse(p); },                       // one opposite pair pulses
@@ -401,7 +401,7 @@
       const mistake = async () => { strikes++; const fb = R.fbL[Math.min(strikes, 3) - 1]; K[fb.kind](); await say(fb.line); };
       onCancel = () => { if (!R.opts && !W.mslPairs().length) { stop(); resolve(null); } };   // row 1: done when every pair is cancelled
       W.onMissile(async m => {
-        arm(); SD.skip(); if (busy) return;
+        arm(); SD.skip(); if (busy) return; W.mslHintsOff();   // a tap ends any hint glow, so the picked missile shows clearly
         if (!sel) { sel = m; W.mslSel(m, true); return; }
         if (sel === m) { W.mslSel(m, false); sel = null; return; }
         const a = sel; sel = null;
@@ -422,16 +422,17 @@
     // Correct Animation: the opposite pairs disappear, the missiles left move the marker from 0, then the shot
     if (hit) W.glow(hit, true);
     for (const [p, n] of W.mslPairs()) await W.mslCancel(p, n, true);
-    await (Math.abs(res) <= 14 ? W.panFor([0, res], .6) : W.panTo(Math.sign(res) * 7, .6));
+    await wait(.4); await (Math.abs(res) <= 14 ? W.panFor([0, res], 1) : W.panTo(Math.sign(res) * 7, 1));
     if (opp) await W.runMarker(W.mslRemain());
     else { await W.runMarker(W.mslRow(0)); await wait(.25); await W.runMarker(W.mslRow(1)); }
     if (!res) W.markerPulse();   // the marker stays at 0
-    if (hit) { W.glow(hit, false); await W.follow(res); const r = await W.lock(hit); SFX.right(); await W.fire(hit, r); }
+    await wait(.7);
+    if (hit) { W.glow(hit, false); await W.follow(res); const r = await W.lock(hit); SFX.right(); await wait(.4); await W.fire(hit, r); }
     mark(strikes === 0);
     W.reward({ big: false, confetti: true, pip: W.pipDone, at: hit ? null : { x: 960, y: 260 } });   // small confetti
     W.strip(eq(R.a, R.b) + ' = ' + f(res), { big: true });
-    await say(R.okL);
-    await wait(.4); W.clearMissiles(); W.markerOff(); await W.clearSubs(); W.stripOff();
+    await wait(.5); await say(R.okL);
+    await wait(1.4); W.clearMissiles(); W.markerOff(); await W.clearSubs(); W.stripOff();
   }
   async function level1(start = 0) {
     LV = 'l1'; await W.banner('', 'LEVEL 1', '');
@@ -455,20 +456,20 @@
       SD.where = { at: 'l2', round: 1 };
       await W.panTo(5); W.zeroGlow();
       const line = say(D.L2_TEACH.voL); await wait(1.4);
-      const off = await W.scan(11, ''); await line; off();
+      const off = await W.scan(11, ''); await line; await wait(.8); off();
     }
     for (let r = start; r < D.L2.length; r++) {
       SD.where = { at: 'l2', round: r + 1 };
       const R = D.L2[r];
       await W.panFor(R.subs);   // (0 joins the view when it fits)
-      W.strip(R.ost); await W.spawn(R.subs);
-      W.dragRope(true); await say(R.voL);
+      W.strip(R.ost); await W.spawn(R.subs, { stagger: .45 });
+      W.dragRope(true); await wait(.4); await say(R.voL); await wait(.3);
       const first = await strike(R, R.target); W.dragRope(false);
       mark(first);
       W.reward({ big: first, pip: W.pipDone });
-      W.strip(R.show, { big: true });   // Correct Animation: show +8 < +10
+      await wait(.5); W.strip(R.show, { big: true });   // Correct Animation: show +8 < +10
       await say(R.okL);
-      W.pips(D.L2.length, r + 1); await wait(.4); await W.clearSubs(); W.stripOff();
+      W.pips(D.L2.length, r + 1); await wait(1.4); await W.clearSubs(); W.stripOff();
       if (r < D.L2.length - 1) await W.sail();
     }
     W.defLine(false);
@@ -492,7 +493,7 @@
   async function orderRound(R) {
     const seq = [...R.subs].sort((a, b) => a - b);
     W.strip(R.ost, { big: true });
-    await say(R.voL);
+    await wait(.4); await say(R.voL); await wait(.3);
     let allFirst = true;
     for (let i = 0; i < seq.length; i++) {
       const next = seq[i], pulseNext = () => { W.pulseSub(W.subAt(next)); W.pulseTag(W.subAt(next)); };
@@ -502,13 +503,13 @@
           : { line: D.startWith(next), anim: pulseNext },   // "Start with the submarine with −12." and it pulses
         idleAnim: pulseNext, idleLine: R.idleL.line });   // the smallest number left pulses
       allFirst = allFirst && first;
-      W.badge(next, i + 1, W.lastHit); await wait(.3);
+      W.badge(next, i + 1, W.lastHit); await wait(.9);
     }
     mark(allFirst);
     if (R.cheer) W.strip(R.cheer, { big: true });   // ROUTE CLEARED! / ALL TARGETS CLEARED!
     W.reward({ big: !!R.cheer, confetti: true, pip: W.pipDone, at: { x: 960, y: 300 } });
-    await say(R.okL);
-    await wait(.6); W.clearBadges(); await W.clearSubs(); W.stripOff();
+    await wait(.5); await say(R.okL);
+    await wait(1.4); W.clearBadges(); await W.clearSubs(); W.stripOff();
   }
   async function level3(start = 0) {
     LV = 'l3'; W.dragRope(false); await W.panTo(0, .4); gsap.to('#scale', { autoAlpha: 0, duration: .5 });
@@ -517,8 +518,8 @@
     for (let r = start; r < D.L3.length; r++) {
       SD.where = { at: 'l3', round: r + 1 };
       const R = D.L3[r];
-      await W.spawn(R.subs, { at: scatter(R.subs.length), stagger: .3 });   // the submarines appear at random places
-      if (r === 0) { W.strip(D.L3_TEACH.ost, { big: true }); await say(D.L3_TEACH.voL); }
+      await W.spawn(R.subs, { at: scatter(R.subs.length), stagger: .5 });   // the submarines appear at random places
+      if (r === 0) { W.strip(D.L3_TEACH.ost, { big: true }); await wait(.4); await say(D.L3_TEACH.voL); await wait(.8); }
       await orderRound(R);
       W.pips(D.L3.length, r + 1);
       if (r < D.L3.length - 1) await W.sail();
@@ -541,7 +542,7 @@
     gsap.fromTo('#done .card', { scale: .5, opacity: 0 }, { scale: 1, opacity: 1, duration: .55, ease: 'back.out(1.7)' });
     gsap.fromTo('#dstars img', { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: .45, stagger: .18, delay: .4, ease: 'back.out(3)', onStart: () => SFX.pop() });
     gsap.fromTo('#dcta', { scale: 1 }, { scale: 1.07, duration: .6, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.2 });
-    await new Promise(r => { const c = gsap.delayedCall(5, r); $('#dcta').onclick = () => { c.kill(); r(); }; });
+    await new Promise(r => { const c = gsap.delayedCall(6, r); $('#dcta').onclick = () => { c.kill(); r(); }; });
     gsap.killTweensOf('#dcta'); gsap.set('#dcta', { scale: 1 });
     await gsap.to('#done .card', { scale: .8, opacity: 0, duration: .3 }); d.classList.add('hidden');
     await W.sail();

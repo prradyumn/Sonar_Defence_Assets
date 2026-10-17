@@ -166,7 +166,7 @@
     zchip.className = off ? (off < 0 ? 'l on' : 'r on') : '';
   }
   W.pan = () => PV.c;
-  W.panTo = (c, dur = .9) => { c = Math.max(PV.MIN + 8, Math.min(PV.MAX - 8, c)); gsap.killTweensOf(PV); if (Math.abs(c - PV.c) < .01) return Promise.resolve();
+  W.panTo = (c, dur = 1.3) => { c = Math.max(PV.MIN + 8, Math.min(PV.MAX - 8, c)); gsap.killTweensOf(PV); if (Math.abs(c - PV.c) < .01) return Promise.resolve();
     return new Promise(r => gsap.to(PV, { c, duration: dur, ease: 'power2.inOut', onUpdate: applyPan, onComplete: r })); };
   // centre the view on these values (and 0 as well when they all fit)
   W.panFor = (vals, dur) => { const lo = Math.min(...vals), hi = Math.max(...vals), lo0 = Math.min(lo, 0), hi0 = Math.max(hi, 0);
@@ -258,10 +258,12 @@
   W.glow = (s, on = true, color) => { const g = s.d.querySelector('.glow'); if (color) g.style.background = `radial-gradient(ellipse,${color},rgba(0,0,0,0) 65%)`; gsap.to(g, { opacity: on ? 1 : 0, duration: .3 }); if (on) gsap.fromTo(s.d, { scale: 1 }, { scale: 1.12, duration: .3, yoyo: true, repeat: 1 }); };
   W.dimOthers = (keep, on = true) => SUBS.forEach(s => s.alive && s !== keep && s.d.classList.toggle('dim', on));
   W.pulseAll = () => W.subs().forEach((s, i) => gsap.fromTo(s.d, { scale: 1 }, { scale: 1.1, duration: .35, yoyo: true, repeat: 3, delay: i * .08 }));
-  W.pulseSub = (s, delay = 0) => s && gsap.fromTo(s.d, { scale: 1 }, { scale: 1.12, duration: .3, yoyo: true, repeat: 3, delay, ease: 'sine.inOut' });
-  W.pulseLbl = (v, delay = 0) => { const l = LBL[v]; if (!l) return; l.classList.add('on'); gsap.fromTo(l, { scale: 1 }, { scale: 1.45, duration: .3, yoyo: true, repeat: 3, delay, ease: 'sine.inOut', onComplete: () => { if (!W.subs().some(s => s.v === v && !s.free)) l.classList.remove('on'); } }); };
-  W.pulseZero = (delay = 0) => { gsap.fromTo([TICK[0], LBL[0]].filter(Boolean), { scale: 1 }, { scale: 1.4, duration: .3, yoyo: true, repeat: 3, delay, ease: 'sine.inOut' }); if (defl) gsap.fromTo(defl, { opacity: 1 }, { opacity: .45, duration: .3, yoyo: true, repeat: 3, delay }); };
-  W.pulseTag = (s, delay = 0) => s && s.tag && gsap.fromTo(s.tag, { scale: 1 }, { scale: 1.35, duration: .3, yoyo: true, repeat: 3, delay, ease: 'sine.inOut' });
+  W.pulseSub = (s, delay = 0) => { if (!s) return;   // a gold halo + ring while it pulses
+    gsap.delayedCall(delay, () => s.d.classList.add('cue')); gsap.delayedCall(delay + 2.8, () => s.d.classList.remove('cue'));
+    gsap.fromTo(s.d, { scale: 1 }, { scale: 1.15, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut' }); };
+  W.pulseLbl = (v, delay = 0) => { const l = LBL[v]; if (!l) return; l.classList.add('on'); gsap.fromTo(l, { scale: 1 }, { scale: 1.45, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut', onComplete: () => { if (!W.subs().some(s => s.v === v && !s.free)) l.classList.remove('on'); } }); };
+  W.pulseZero = (delay = 0) => { gsap.fromTo([TICK[0], LBL[0]].filter(Boolean), { scale: 1 }, { scale: 1.45, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut' }); if (defl) gsap.fromTo(defl, { opacity: 1 }, { opacity: .35, duration: .4, yoyo: true, repeat: 5, delay }); };
+  W.pulseTag = (s, delay = 0) => s && s.tag && gsap.fromTo(s.tag, { scale: 1 }, { scale: 1.4, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut' });
   // the target ring: a cyan ring locks round a submarine and stays until the hints clear
   W.ring = s => { if (!s) return; const r = s.d.querySelector('.ring'); gsap.killTweensOf(r); gsap.set(r, { opacity: 1 }); gsap.fromTo(r, { scale: 1.6 }, { scale: 1, duration: .4, ease: 'back.out(2)' }); hintEls.push({ ring: r }); };
 
@@ -359,7 +361,7 @@
     s.classList.remove('glint'); void s.offsetWidth; s.classList.add('glint'); gsap.fromTo(s, { opacity: 0, y: -24, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .45, ease: 'back.out(2)' }); };
   W.stripOff = () => gsap.to('#strip', { opacity: 0, duration: .3 });
   W.pips = (n, done) => { const p = $('#pips'); p.innerHTML = ''; W.pipDone = done; for (let i = 0; i < n; i++) { const im = new Image(); im.src = 'assets/img/' + (i < done ? 'pip_on' : 'pip_off') + '.webp'; p.appendChild(im); } if (done > 0) gsap.fromTo(p.children[done - 1], { scale: 1.8 }, { scale: 1, duration: .4, ease: 'back.out(3)' }); if (p.children[done]) p.children[done].classList.add('now'); };
-  W.banner = async (k, t, s, hold = 1.7) => {
+  W.banner = async (k, t, s, hold = 2.4) => {
     const b = $('#banner'); $('#bk').textContent = k; $('#bt').textContent = t; $('#bs').textContent = s; b.classList.remove('hidden');
     gsap.fromTo('#banner .card', { scale: .6, opacity: 0 }, { scale: 1, opacity: 1, duration: .5, ease: 'back.out(1.8)' }); SFX.ping();
     gsap.fromTo(['#bk', '#bt', '#bs'], { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: .4, stagger: .12, delay: .15 });
@@ -382,19 +384,20 @@
       const im = new Image(); im.src = 'assets/img/story/' + (sign > 0 ? 'missile_red' : 'missile_blue') + '.webp'; d.appendChild(im);
       const m = { d, im, sign, row: r, col: k, x, y, alive: true }; d._m = m; MS.list.push(m);
       d.onpointerdown = e => { e.stopPropagation(); if (m.alive && MS.onTap) MS.onTap(m); };
-      gsap.fromTo(d, { x: sign > 0 ? -900 : 900, opacity: 0 }, { x: 0, opacity: 1, duration: .55, ease: 'power3.out', delay: k * .035 + r * .12 });   // red flies in from the left, blue from the right
+      gsap.fromTo(d, { x: sign > 0 ? -900 : 900, opacity: 0 }, { x: 0, opacity: 1, duration: .9, ease: 'power3.out', delay: k * .07 + r * .5 });   // red flies in from the left, then blue from the right
       gsap.to(im, { y: 4, duration: 1.1 + (k % 4) * .13, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: .6 });
     }
-    SFX.whoosh ? SFX.whoosh() : SFX.pop(); await wait(.7 + cols * .035);
+    SFX.whoosh ? SFX.whoosh() : SFX.pop(); gsap.delayedCall(.5, () => SFX.pop()); await wait(1.4 + cols * .07);
   };
   W.mslAlive = () => MS.list.filter(m => m.alive);
   W.onMissile = fn => { MS.onTap = fn; sg.classList.toggle('live', !!fn); };
-  W.mslSel = (m, on) => { m.d.classList.toggle('sel', on); gsap.to(m.d, { scale: on ? 1.15 : 1, y: on ? -6 : 0, duration: .2, ease: 'back.out(3)' }); if (on) SFX.tap(); };
+  W.mslSel = (m, on) => { m.d.classList.toggle('sel', on); gsap.to(m.d, { scale: on ? 1.3 : 1, y: on ? -10 : 0, duration: .25, ease: 'back.out(3)' }); if (on) SFX.tap(); };
   // the pairs that can still cancel (first + with first −, …) and the missiles left over after them
   W.mslPairs = () => { const p = W.mslAlive().filter(m => m.sign > 0), n = W.mslAlive().filter(m => m.sign < 0), out = []; for (let i = 0; i < Math.min(p.length, n.length); i++) out.push([p[i], n[i]]); return out; };
   W.mslRemain = () => { const p = W.mslAlive().filter(m => m.sign > 0), n = W.mslAlive().filter(m => m.sign < 0); return p.length > n.length ? p.slice(n.length) : n.slice(p.length); };
+  W.mslHintsOff = () => MS.list.forEach(m => { if (!m.d.classList.contains('hint')) return; m.d.classList.remove('hint'); gsap.killTweensOf(m.d, 'scale'); gsap.set(m.d, { scale: 1 }); });
   W.mslRow = r => W.mslAlive().filter(m => m.row === r);
-  W.mslPulse = (list, delay = 0) => list.forEach((m, i) => { m.d.classList.add('hint'); gsap.fromTo(m.d, { scale: 1 }, { scale: 1.18, duration: .3, yoyo: true, repeat: 3, delay: delay + i * .03, ease: 'sine.inOut', onComplete: () => m.d.classList.remove('hint') }); });
+  W.mslPulse = (list, delay = 0) => list.forEach((m, i) => { gsap.delayedCall(delay + i * .04, () => m.d.classList.add('hint')); gsap.fromTo(m.d, { scale: 1 }, { scale: 1.25, duration: .4, yoyo: true, repeat: 5, delay: delay + i * .04, ease: 'sine.inOut', onComplete: () => m.d.classList.remove('hint') }); });
   W.mslBad = (a, b) => { SFX.wrong(); [a, b].forEach(m => { m.d.classList.add('bad'); gsap.fromTo(m.d, { x: 0 }, { x: 10, duration: .06, yoyo: true, repeat: 7, ease: 'none', clearProps: 'x', onComplete: () => m.d.classList.remove('bad') }); }); };
   // the two rows slide towards each other: one group
   W.mslTogether = async () => { const r0 = W.mslRow(0), r1 = W.mslRow(1), dy = (CONFIG.SIG_Y2 - CONFIG.SIG_Y1) * .32; SFX.pop();
@@ -402,23 +405,28 @@
   // a + and a − meet halfway, flash and leave a glowing 0
   W.mslCancel = async (p, n, fast) => {
     p.alive = n.alive = false; gsap.killTweensOf([p.im, n.im]); p.d.classList.remove('sel', 'hint'); n.d.classList.remove('sel', 'hint');
-    const mx = (p.x + n.x) / 2, my = (p.y + n.y) / 2, t = fast ? .22 : .32;
+    const mx = (p.x + n.x) / 2, my = (p.y + n.y) / 2, t = fast ? .35 : .55;
+    // the link: a bright line joins the two, then they glide together along it
+    const dx = n.x - p.x, dy = n.y - p.y, ln = el('mlink', sg, { left: p.x + 'px', top: p.y + 'px', width: Math.hypot(dx, dy) + 'px' });
+    gsap.set(ln, { rotation: Math.atan2(dy, dx) * 180 / Math.PI }); SFX.lock();
+    await gsap.fromTo(ln, { scaleX: 0 }, { scaleX: 1, duration: fast ? .2 : .35, ease: 'power2.out' }); gsap.to(ln, { opacity: 0, duration: t, onComplete: () => ln.remove() });
     await Promise.all([gsap.to(p.d, { left: mx - 26, top: my, scale: 1, y: 0, duration: t, ease: 'power2.in' }), gsap.to(n.d, { left: mx + 26, top: my, scale: 1, y: 0, duration: t, ease: 'power2.in' })]);
     SFX.pop(); p.d.remove(); n.d.remove();
     const ring = el('zboom', sg, { left: mx + 'px', top: my + 'px' }); gsap.fromTo(ring, { scale: .2, opacity: 1 }, { scale: 1.3, opacity: 0, duration: .55, ease: 'power2.out', onComplete: () => ring.remove() });
     for (let i = 0; i < (fast ? 0 : 8); i++) { const a = i / 8 * 6.283, sp = el('pbub', sg, { left: mx + 'px', top: my + 'px', width: '10px', height: '10px', background: i % 2 ? '#ffd66b' : '#8ff3ff', border: 'none' }); gsap.to(sp, { x: Math.cos(a) * 90, y: Math.sin(a) * 60, opacity: 0, scale: .4, duration: .5, ease: 'power2.out', onComplete: () => sp.remove() }); }
     const z = el('zero0 big', sg, { left: mx + 'px', top: my + 'px' }); z.textContent = '0'; gsap.set(z, { xPercent: -50, yPercent: -50 });
     gsap.timeline({ onComplete: () => z.remove() }).fromTo(z, { scale: .2, rotation: -20 }, { scale: fast ? .8 : 1.1, rotation: 0, duration: .4, ease: 'back.out(3)' })
-      .to(z, { scale: .5, y: -40, opacity: 0, duration: .4, ease: 'power2.in' }, '+=.25');
+      .to(z, { scale: .5, y: -40, opacity: 0, duration: .4, ease: 'power2.in' }, '+=.5');
+    await wait(fast ? .25 : .55);
   };
   // missiles fly into the marker one by one and it steps along the scale (a long run goes quicker)
   W.runMarker = async list => {
-    const quick = list.length > 8, my = parseFloat(getComputedStyle(MS.marker).top) + 20 + CONFIG.SCALE_DY;
+    const quick = list.length > 8, my = parseFloat(getComputedStyle(MS.marker).top) + 20 + CONFIG.SCALE_DY; await wait(.4);
     for (const m of list) {
       const to = MS.mv + m.sign; gsap.killTweensOf(m.im);
-      await gsap.to(m.d, { left: X(MS.mv), top: my, scale: .45, duration: quick ? .16 : .32, ease: 'power2.in' });
+      await gsap.to(m.d, { left: X(MS.mv), top: my, scale: .45, duration: quick ? .24 : .45, ease: 'power2.in' });
       m.alive = false; m.d.remove(); SFX.step();
-      await gsap.to(MS.marker, { left: XR(to), duration: quick ? .08 : .26, ease: 'power2.out' }); MS.mv = to; W.follow(to);
+      await gsap.to(MS.marker, { left: XR(to), duration: quick ? .14 : .35, ease: 'power2.out' }); MS.mv = to; W.follow(to);
       if (LBL[to]) gsap.fromTo(LBL[to], { scale: 1.5 }, { scale: 1, duration: .3 });
     }
   };
