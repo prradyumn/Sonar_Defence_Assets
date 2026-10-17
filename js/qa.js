@@ -1,5 +1,5 @@
 /* qa: a jump menu for testers (not the layout editor). Press Q in the game, or open with ?qa=1 (Q again hides it).
-   Jump to any story scene, the teaching, any round of any level; set speed / sound; skip a line or answer for you. */
+   Jump to any story scene or any round of any level; set speed / sound; skip a line or answer for you. */
 (function () {
   const Q = new URLSearchParams(location.search);
   let root = null;
@@ -11,11 +11,9 @@
   function build(open) {
   const PARTS = [
     ['Story', [['Part 1 · alert', { at: 'hook', scene: 1 }], ['Part 2 · positions', { at: 'hook', scene: 2 }], ['How to play', { at: 'hook', scene: 3 }]]],
-    ['Teaching', [['Number line', { at: 'teach' }]]],
-    ['Level 1 · Compare', [['R1 tutorial', { at: 'l1', round: 1 }], ['R2', { at: 'l1', round: 2 }], ['R3', { at: 'l1', round: 3 }]]],
-    ['Level 2 · Order', [1, 2, 3].map(r => ['R' + r, { at: 'l2', round: r }])],
-    ['Level 3 · Combine', [1, 2, 3, 4, 5].map(r => ['R' + r, { at: 'l3', round: r }])],
-    ['Final mission', [['R1 order', { at: 'final', round: 1 }], ['R2 compare', { at: 'final', round: 2 }], ['R3 combine', { at: 'final', round: 3 }]]],
+    ['Level 1 · Missiles (+ and −)', SCRIPT.D.L1.map((R, i) => [(i ? 'R' + (i + 1) : 'R1 tutorial'), { at: 'l1', round: i + 1 }])],
+    ['Level 2 · Closer to 0', SCRIPT.D.L2.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + R1'), { at: 'l2', round: i + 1 }])],
+    ['Level 3 · Fire in order', SCRIPT.D.L3.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + R1'), { at: 'l3', round: i + 1 }])],
   ];
   const css = document.createElement('style');
   css.textContent = `
@@ -50,7 +48,7 @@
       `<button data-g="${gi}" data-i="${i}"${isHere(p) && Q.get('at') ? ' class="here"' : ''}>${label}</button>`).join('')}</div>`).join('')}
       <hr><h5>While playing</h5><div class="row">
         <button data-a="skip" title="End the current line">Skip line ⏭</button>
-        <button data-a="answer" title="Tap the right submarine / pair for you">Answer ✓</button>
+        <button data-a="answer" title="Cancel the next missile pair, or tap the right submarine, for you">Answer ✓</button>
         <button data-a="restart" title="Reload this part">Restart part ↻</button></div>
       <h5>Next jump</h5><div class="row">${['1', '2', '3'].map(s => `<button data-speed="${s}"${keep.speed === s ? ' class="on"' : ''}>${s}×</button>`).join('')}
         <button data-a="mute"${keep.mute ? ' class="on"' : ''}>Sound off</button></div>
@@ -69,12 +67,12 @@
     if (a === 'skip') window.SD && SD.skip();
     if (a === 'restart') { const w = (window.SD && SD.where) || {}; jump({ at: w.at && w.at !== 'title' ? w.at : cur.at, round: w.round || 1, scene: cur.scene }); }
     if (a === 'answer' && window.W) {
-      const box = (W._pairBoxes || []).find(x => !x._used && x.isConnected);
-      if (box) box.onpointerdown();
-      else if (W.waiting && W.subAt(W.expect)) W.subAt(W.expect).d.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      const pair = W.matching && W.mslPairs()[0], tap = el => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      if (pair) { tap(pair[0].d); setTimeout(() => tap(pair[1].d), 120); }
+      else if (W.waiting && W.subAt(W.expect)) tap(W.subAt(W.expect).d);
     }
   });
   // the current part, kept up to date
-  setInterval(() => { const w = (window.SD && SD.where) || {}; where.innerHTML = w.at ? `<b>${w.at}</b>${w.at !== 'title' && w.at !== 'hook' && w.at !== 'teach' ? ' · R' + w.round : ''}` : ''; }, 500);
+  setInterval(() => { const w = (window.SD && SD.where) || {}; where.innerHTML = w.at ? `<b>${w.at}</b>${w.at !== 'title' && w.at !== 'hook' ? ' · R' + w.round : ''}` : ''; }, 500);
   }
 })();

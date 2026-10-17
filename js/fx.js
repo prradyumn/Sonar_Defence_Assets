@@ -54,7 +54,7 @@
   /* ---------- 4 · break in two  +  6 · the distance beam ---------- */
   const sunk = $('#sunk'), scale = $('#scale');
   function breakApart(s) {
-    const x = X(s.v), y = s.cy, by = +gsap.getProperty(s.bob, 'y') || 0;
+    const x = s.x, y = s.cy, by = +gsap.getProperty(s.bob, 'y') || 0;
     const half = (clip, dir) => {
       const h = el('subhalf', sunk, { left: (x - 105) + 'px', top: (y - 45 + by) + 'px' }); const im = new Image(); im.src = 'assets/img/sub.webp'; im.style.clipPath = clip; h.appendChild(im);
       gsap.timeline({ delay: .08, onComplete: () => h.remove() })
@@ -71,7 +71,7 @@
   }
   function beam(v) {
     if (!v) return;
-    const a = X(Math.min(v, 0)), w = Math.abs(X(v) - X(0)), b = el('dbeam ' + (v < 0 ? 'neg' : 'pos'), scale, { left: a + 'px', width: w + 'px' });
+    const a = W.XR(Math.min(v, 0)), w = Math.abs(W.XR(v) - W.XR(0)), b = el('dbeam ' + (v < 0 ? 'neg' : 'pos'), scale, { left: a + 'px', width: w + 'px' });
     gsap.timeline({ delay: .35, onComplete: () => b.remove() })
       .fromTo(b, { scaleX: 0, transformOrigin: v < 0 ? '0% 50%' : '100% 50%', opacity: 1 }, { scaleX: 1, duration: .45, ease: 'power2.inOut' })
       .call(() => { const z = scale.querySelector('.tick.zero'); if (z) gsap.fromTo(z, { scaleY: 1 }, { scaleY: 1.5, duration: .18, yoyo: true, repeat: 1 }); snd.tone('sine', 1568, 0, .3, .06); })
@@ -79,8 +79,8 @@
   }
   const blast0 = W.blast;
   W.blast = s => {
-    const x = X(s.v); hitPan = pan(x);
-    breakApart(s); if (!SD.CALM) { frameFlash(); beam(s.v); }
+    const x = s.x; hitPan = pan(x);
+    breakApart(s); if (!SD.CALM) { frameFlash(); if (!s.free) beam(s.v); }
     gsap.delayedCall(.3, () => note(s.v, { oct: 2, long: true }));   // the hit rings out at its own pitch
     return blast0(s);
   };
@@ -88,20 +88,20 @@
   /* ---------- 5 · sonar sweep: a pulse runs out from 0 and finds each submarine before it rises ---------- */
   const spawn0 = W.spawn;
   async function sweep(vals) {
-    const L = el('shead', scale, { left: X(0) + 'px' }), R = el('shead', scale, { left: X(0) + 'px' }), found = new Set(), lbl = scale.querySelectorAll('.lbl');
+    const XR = W.XR, L = el('shead', scale, { left: XR(0) + 'px' }), R = el('shead', scale, { left: XR(0) + 'px' }), found = new Set(), far = Math.max(...vals.map(Math.abs)) + .6;
     snd.tone('sine', 700, 1600, .9, .07); snd.tone('sine', 1250, 900, .9, .05, .05, { out: true });
     const p = { d: 0 };
-    await gsap.fromTo(p, { d: 0 }, { d: 8.6, duration: .85, ease: 'power1.in', onUpdate() {
-      L.style.left = X(-p.d) + 'px'; R.style.left = X(p.d) + 'px';
+    await gsap.fromTo(p, { d: 0 }, { d: far, duration: .6 + far * .03, ease: 'power1.in', onUpdate() {
+      L.style.left = XR(-p.d) + 'px'; R.style.left = XR(p.d) + 'px';
       for (const v of vals) if (!found.has(v) && Math.abs(v) <= p.d) {
         found.add(v); note(v);
-        const l = lbl[v + 8]; if (l) gsap.fromTo(l, { scale: 1 }, { scale: 1.5, duration: .16, yoyo: true, repeat: 1, ease: 'back.out(3)' });
-        const ring = el('sring', scale, { left: X(v) + 'px' }); gsap.fromTo(ring, { scale: .3, opacity: 1 }, { scale: 1.8, opacity: 0, duration: .6, onComplete: () => ring.remove() });
+        const l = W.lbl(v); if (l) gsap.fromTo(l, { scale: 1 }, { scale: 1.5, duration: .16, yoyo: true, repeat: 1, ease: 'back.out(3)' });
+        const ring = el('sring', scale, { left: XR(v) + 'px' }); gsap.fromTo(ring, { scale: .3, opacity: 1 }, { scale: 1.8, opacity: 0, duration: .6, onComplete: () => ring.remove() });
       }
     } });
     gsap.to([L, R], { opacity: 0, duration: .2, onComplete: () => { L.remove(); R.remove(); } });
   }
-  W.spawn = async (vals, o = {}) => { if (+getComputedStyle(scale).opacity > .5) await sweep(vals); return spawn0(vals, o); };
+  W.spawn = async (vals, o = {}) => { if (!o.at && +getComputedStyle(scale).opacity > .5) await sweep(vals); return spawn0(vals, o); };
 
   /* ---------- 7 · tension while choosing: a low drone + soft heartbeat, gone the moment they fire ---------- */
   let pad = null, beat = 0;
@@ -112,7 +112,7 @@
       const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 380; f.connect(pad);
       [[55, 'sine', .9], [82.4, 'sine', .6], [110, 'sawtooth', .18]].forEach(([fr, ty, g0]) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = ty; o.frequency.value = fr; o.detune.value = (Math.random() - .5) * 14; g.gain.value = g0; o.connect(g); g.connect(f); o.start(); });
     }
-    const choosing = !SD.paused && (W.waiting || (W._pairBoxes || []).some(b => !b._used && b.isConnected));
+    const choosing = !SD.paused && (W.waiting || W.matching);
     pad.gain.setTargetAtTime(choosing ? .09 : 0, AC.currentTime, choosing ? .9 : .12);
     if (choosing && t - beat > .82) { beat = t; snd.tone('sine', 62, 44, .16, .07, 0, snd.music); snd.tone('sine', 60, 42, .14, .045, .2, snd.music); }
   });

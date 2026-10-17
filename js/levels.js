@@ -1,4 +1,4 @@
-/* levels: hook (story) → scale teaching → L1 compare → L2 order → L3 combine → final mixed mission.
+/* levels: hook (story) → L1 positive + negative missiles → L2 closer to the defence line → L3 fire in order (sheets L1–L3 V3) → story ending.
    Every spoken line comes from js/script.js (SCRIPT.S / SCRIPT.D) so recorded voices match by id. */
 (function () {
   const { $, Q, wait, fmt, SFX, say } = SD;
@@ -7,44 +7,36 @@
   const SCORE = {};                      // level → [true/false first-try per mission]
   let LV = 'l1';
   const mark = ok => (SCORE[LV] = SCORE[LV] || []).push(ok);
-  const rnd = a => a[Math.floor(Math.random() * a.length)];
 
-  /* ---------- one "fire at the right submarine" tap, with the 3-strike rule ---------- */
-  // m: { target, lines: { oopsL, hintL, nudgeL, idleL } }
-  async function strike(m) {
-    let wrong = 0; W.expect = m.target;
+  /* ---------- the sheets' hint animations ("Incorrect Animation" / "Inactivity Animation" columns) for Levels 2 and 3 ---------- */
+  const sub = v => W.subAt(v);
+  const ANIM = {
+    zeroBoth: R => { W.pulseZero(); R.subs.forEach((v, i) => W.pulseSub(sub(v), .15 + i * .1)); },      // 0 and both submarines pulse
+    both: R => R.subs.forEach((v, i) => W.pulseSub(sub(v), i * .1)),                                    // both submarines pulse
+    labelsSeq: R => R.subs.forEach((v, i) => W.pulseLbl(v, i * 1.1)),                                   // the two numbers pulse one after another
+    labels: R => R.subs.forEach(v => W.pulseLbl(v)),                                                    // both numbers glow
+    dist: R => R.subs.forEach((v, i) => W.distance(v, i * .5)),                                         // the distance from 0 to each position appears
+    targetRing: R => { W.pulseSub(sub(R.target)); W.pulseLbl(R.target); W.ring(sub(R.target)); },       // it pulses and the target ring appears
+    target: R => { W.pulseSub(sub(R.target)); W.pulseLbl(R.target); },                                  // the answer pulses
+    zeroTarget: R => { W.pulseZero(); W.pulseSub(sub(R.target), .15); W.pulseLbl(R.target, .15); },     // 0 and the answer pulse
+  };
+
+  /* ---------- fire at one submarine with the 3-strike rule ----------
+     A wrong tap gets Incorrect Feedback 1, 2, 3 (with their animations); after the third only the right submarine answers.
+     Idle: 6 s → the inactivity animation · 12 s → the inactivity line too · 22 s → both again. */
+  async function strike(R, target, o = {}) {
+    let wrong = 0; W.expect = target;
+    const idleAnim = o.idleAnim || (() => ANIM[R.idleL.kind](R)), idleLine = o.idleLine || R.idleL.line;
     for (;;) {
-      const s = await W.waitTap({
-        onIdle: () => { say(m.lines.idleL || S.idle); W.pulseAll(); },
-        onIdle2: () => say(S.take),
-        only: wrong >= 3 ? W.subAt(m.target) : null });
+      const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); say(idleLine); }, onIdle2: () => { idleAnim(); say(idleLine); }, only: wrong >= 3 ? W.subAt(target) : null });
       SD.skip();
-      if (s.v === m.target) {
-        W.clearHints(); W.rule(false);
-        const r = await W.lock(s); SFX.right();
-        await W.fire(s, r);
-        return wrong === 0;
-      }
+      if (s.v === target) { W.clearHints(); const r = await W.lock(s); SFX.right(); await W.fire(s, r); return wrong === 0; }
       wrong++;
-      const dir = Math.sign(m.target - s.v);
-      const red = await W.lock(s, 'red'); await W.wrong(s); red.remove();
-      W.clearHints();
-      if (wrong === 1) { W.hintArrow(s.v, dir); await say(m.lines.oopsL); }
-      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true, 'compare'); await say(m.lines.hintL); }
-      else { const t = W.subAt(m.target); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true, 'compare'); await say(m.lines.nudgeL); }
+      const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); W.clearHints();
+      const fb = o.fb ? o.fb(wrong) : R.fbL[Math.min(wrong, 3) - 1];
+      if (fb.anim) fb.anim(); else ANIM[fb.kind](R);
+      await say(fb.line);
     }
-  }
-  async function mission(m, o = {}) {
-    W.strip(m.text);
-    if (o.intro !== false) await say(m.sayL);
-    const first = await strike(m);
-    mark(first);
-    const cheer = first || Math.random() < .5 ? rnd(S.hits) : null;
-    W.reward({ big: first, word: cheer && cheer.text, pip: W.pipDone });
-    if (cheer) await say(cheer);
-    if (m.show) W.strip(m.show, { big: true });
-    await say(m.okL);
-    return first;
   }
 
   /* =====================================================================
@@ -373,198 +365,202 @@
     await gsap.to('#scale', { opacity: 0, duration: .4 });   // the teaching switches the scale on again, properly
   }
 
-  /* ---------- Teaching the navigation scale ---------- */
-  async function teach() {
-    W.pips(0, 0);
-    const intro = W.scaleIntro(); await say(S.g1); await intro; W.zeroGlow();
-    W.strip('Navigation scale · <b>0</b> is the centre');
-    await say(S.t1);
-    let scan = W.scan(8, 'Greater ▶'), line = say(S.t2);   // she narrates while the light sweeps
-    let off = await scan; await line; off();
-    scan = W.scan(-8, '◀ Smaller'); line = say(S.t3);
-    off = await scan; await line; off();
-    await W.spawn([-3, 2]);
-    W.glow(W.subAt(2), true); W.strip('<b>+2</b> is farther to the right', {});
-    await say(S.t4);
-    W.strip('+2 > −3', { big: true }); await wait(1.2);
-    await W.clearSubs();
-    await W.spawn([-2, -6]);
-    W.glow(W.subAt(-6), true, 'rgba(255,150,90,.6)'); W.strip('<b>−6</b> is farther to the left');
-    await say(S.t5);
-    W.strip('−6 < −2', { big: true }); W.rule(true, 'compare');
-    await say(S.t6);
-    await say(S.t7);
-    await W.clearSubs(); W.rule(false); W.stripOff();
+  /* =====================================================================
+     LEVEL 1 · positive and negative missiles (sheet L1 V3)
+     The enemy's red missiles are positive, the defence system's blue ones negative. The child taps one missile and then
+     an opposite one: the pair meets and cancels (0). Then they fire at the submarine on the answer (rows 2–10).
+     Two missiles of the same sign, or a wrong submarine, is a mistake: Incorrect Feedback 1, 2, 3 in turn.
+     On the right answer the rest of the pairs cancel, the missiles left fly into the marker (it steps along the rope) and we fire.
+     ===================================================================== */
+  const eq = (a, b) => `(${f(a)}) + (${f(b)})`;
+  async function missileRound(R) {
+    const res = R.a + R.b, opp = Math.sign(R.a) !== Math.sign(R.b); W.expect = res;
+    await W.panFor(R.opts || [0]);
+    W.strip(eq(R.a, R.b) + ' = ?', { big: true });
+    W.marker(0);
+    await W.missiles([{ n: Math.abs(R.a), sign: Math.sign(R.a) }, { n: Math.abs(R.b), sign: Math.sign(R.b) }]);
+    if (R.opts) await W.spawn(R.opts, { stagger: .15 });
+    await say(R.voL);
+    let strikes = 0, sel = null, busy = false, onCancel = () => {};
+    const K = {   // the sheet's animation kinds
+      pair: () => { const p = W.mslPairs()[0]; if (p) W.mslPulse(p); },                       // one opposite pair pulses
+      pairs: () => W.mslPairs().forEach((p, i) => W.mslPulse(p, i * .06)),                      // all possible pairs glow
+      demoPair: async () => { const p = W.mslPairs()[0]; if (!p || busy) return; busy = true; if (sel) { W.mslSel(sel, false); sel = null; } await W.mslCancel(p[0], p[1]); busy = false; onCancel(); },   // one pair moves together and disappears
+      remain: () => W.mslPulse(W.mslRemain()),                                                  // the missiles that will remain pulse
+      groupsEq: () => { W.mslPulse(W.mslRow(0)); W.mslPulse(W.mslRow(1)); },                    // both groups highlight equally
+      groups: () => { W.mslPulse(W.mslRow(0)); W.mslPulse(W.mslRow(1)); },                      // both missile groups pulse (together)
+      groupsMove: () => W.mslTogether(),                                                        // the groups move together
+      total: () => { W.mslPulse(W.mslAlive()); W.pulseSub(W.subAt(res)); W.pulseLbl(res); },  // the whole group and the total pulse
+    };
+    W.matching = true; W.dragRope(true);
+    const hit = await new Promise(resolve => {
+      let calls = [];
+      const idle = () => K[R.idleL.kind]();
+      const arm = () => { calls.forEach(c => c.kill()); calls = [gsap.delayedCall(6, idle), gsap.delayedCall(12, () => { idle(); say(R.idleL.line); }), gsap.delayedCall(22, () => { idle(); say(R.idleL.line); })]; };
+      const stop = () => { calls.forEach(c => c.kill()); W.onMissile(null); };
+      const mistake = async () => { strikes++; const fb = R.fbL[Math.min(strikes, 3) - 1]; K[fb.kind](); await say(fb.line); };
+      onCancel = () => { if (!R.opts && !W.mslPairs().length) { stop(); resolve(null); } };   // row 1: done when every pair is cancelled
+      W.onMissile(async m => {
+        arm(); SD.skip(); if (busy) return;
+        if (!sel) { sel = m; W.mslSel(m, true); return; }
+        if (sel === m) { W.mslSel(m, false); sel = null; return; }
+        const a = sel; sel = null;
+        if (a.sign !== m.sign) { busy = true; await W.mslCancel(a.sign > 0 ? a : m, a.sign > 0 ? m : a); busy = false; onCancel(); }
+        else { W.mslSel(a, false); W.mslBad(a, m); mistake(); }
+      });
+      if (R.opts) (async () => {
+        for (;;) {
+          const s = await W.waitTap({ noIdle: true, only: strikes >= 3 ? W.subAt(res) : null });
+          arm(); SD.skip();
+          if (s.v === res) { stop(); return resolve(s); }
+          busy = true; const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); busy = false; mistake();
+        }
+      })();
+      arm();
+    });
+    W.matching = false; W.dragRope(false); if (sel) W.mslSel(sel, false);
+    // Correct Animation: the opposite pairs disappear, the missiles left move the marker from 0, then the shot
+    if (hit) W.glow(hit, true);
+    for (const [p, n] of W.mslPairs()) await W.mslCancel(p, n, true);
+    await (Math.abs(res) <= 14 ? W.panFor([0, res], .6) : W.panTo(Math.sign(res) * 7, .6));
+    if (opp) await W.runMarker(W.mslRemain());
+    else { await W.runMarker(W.mslRow(0)); await wait(.25); await W.runMarker(W.mslRow(1)); }
+    if (!res) W.markerPulse();   // the marker stays at 0
+    if (hit) { W.glow(hit, false); await W.follow(res); const r = await W.lock(hit); SFX.right(); await W.fire(hit, r); }
+    mark(strikes === 0);
+    W.reward({ big: false, confetti: true, pip: W.pipDone, at: hit ? null : { x: 960, y: 260 } });   // small confetti
+    W.strip(eq(R.a, R.b) + ' = ' + f(res), { big: true });
+    await say(R.okL);
+    await wait(.4); W.clearMissiles(); W.markerOff(); await W.clearSubs(); W.stripOff();
   }
-
-  /* ---------- first-mission tutorial: show HOW to read a submarine's position (without giving the answer) ---------- */
-  async function tutorial() {
-    const demo = W.subAt(-3), lx = W.X(-3), ly = W.LBL_Y + W.CONFIG.SCALE_DY;   // the −3 label
-    const p = say(S.tut1);
-    await W.handTo(lx, ly, .9); await W.handTap(lx, ly);   // a glow pulses on the −3 label
-    gsap.fromTo(document.querySelectorAll('.lbl')[5], { scale: 1 }, { scale: 1.45, duration: .3, yoyo: true, repeat: 3 });
-    await p;
-    const p2 = say(S.tut2);
-    await W.handTo(lx, demo.cy, 1.1);                    // the glow slides along the sonar line to the submarine
-    W.glow(demo, true, 'rgba(160,240,255,.6)');
-    await p2;
-    W.glow(demo, false); W.hand(null);
-  }
-
-  /* ---------- Level 1 · Compare ---------- */
   async function level1(start = 0) {
-    LV = 'l1'; await W.banner('LEVEL 1', 'Compare Positions', 'Right is greater · Left is smaller');
-    const total = 5; let done = [0, 1, 4][start];
-    W.pips(total, done);
+    LV = 'l1'; await W.banner('', 'LEVEL 1', '');
+    W.pips(D.L1.length, start);
     for (let r = start; r < D.L1.length; r++) {
       SD.where = { at: 'l1', round: r + 1 };
-      const R = D.L1[r]; await W.spawn(R.subs);
-      for (let i = 0; i < R.m.length; i++) {
-        const m = R.m[i];
-        if (r === 0 && i === 0) { await tutorial(); W.strip(m.text); await say(S.tut3); await mission(m, { intro: false }); }
-        else await mission(m);
-        done++; W.pips(total, done); await wait(.4);
-      }
-      await W.clearSubs(); W.stripOff(); if (r < D.L1.length - 1) await W.sail();
+      await missileRound(D.L1[r]); W.pips(D.L1.length, r + 1);
+      if (r < D.L1.length - 1) await W.sail();
     }
-    await say(S.l1end);
-    await complete('l1', 'Level 1 cleared!', 'You compared positions on the scale.', 'Right → Greater &nbsp; Left → Smaller');
+    await complete('l1', 'LEVEL 1 COMPLETE!');
   }
 
-  /* ---------- Level 2 · Order ---------- */
-  const ORD = D.ORD;
+  /* =====================================================================
+     LEVEL 2 · fire at the submarine close to our defence line 0 (sheet L2 V3). The rope glides to each pair of positions;
+     0 keeps a glowing defence line (and a chip at the edge of the window when it is out of view).
+     ===================================================================== */
+  async function level2(start = 0) {
+    LV = 'l2'; await W.banner('', 'LEVEL 2', '');
+    W.pips(D.L2.length, start); W.defLine(true);
+    if (start === 0) {   // Teaching: "The smaller number closer to 0."
+      SD.where = { at: 'l2', round: 1 };
+      await W.panTo(5); W.zeroGlow();
+      const line = say(D.L2_TEACH.voL); await wait(1.4);
+      const off = await W.scan(11, ''); await line; off();
+    }
+    for (let r = start; r < D.L2.length; r++) {
+      SD.where = { at: 'l2', round: r + 1 };
+      const R = D.L2[r];
+      await W.panFor(R.subs);   // (0 joins the view when it fits)
+      W.strip(R.ost); await W.spawn(R.subs);
+      W.dragRope(true); await say(R.voL);
+      const first = await strike(R, R.target); W.dragRope(false);
+      mark(first);
+      W.reward({ big: first, pip: W.pipDone });
+      W.strip(R.show, { big: true });   // Correct Animation: show +8 < +10
+      await say(R.okL);
+      W.pips(D.L2.length, r + 1); await wait(.4); await W.clearSubs(); W.stripOff();
+      if (r < D.L2.length - 1) await W.sail();
+    }
+    W.defLine(false);
+    await complete('l2', 'LEVEL 2 COMPLETE!');
+  }
+
+  /* =====================================================================
+     LEVEL 3 · fire from the smaller number to the bigger (sheet L3 V3). The submarines float at random places in the water
+     with their numbers on them (the rope is put away); each hit gets its firing number 1, 2, 3, 4.
+     ===================================================================== */
+  function scatter(n) {   // random spots in the open water, apart from each other and clear of the cannon
+    const out = [];
+    for (let k = 0; k < 2000 && out.length < n; k++) {
+      const x = 340 + Math.random() * 1240, y = 235 + Math.random() * 290;
+      if (y > 420 && Math.abs(x - 960) < 280) continue;
+      if (out.every(p => Math.abs(p.x - x) > 270 || Math.abs(p.y - y) > 175)) out.push({ x, y });
+    }
+    while (out.length < n) out.push({ x: 360 + out.length * 400, y: 300 });
+    return out;
+  }
   async function orderRound(R) {
-    await W.spawn(R.subs, { stagger: .2 });
-    const seq = [...R.subs].sort((a, b) => R.dir * (a - b));
-    const txt = R.dir > 0 ? 'Clear the route from <b>left to right</b>.' : 'Clear the route from <b>right to left</b>.';
-    W.strip(txt); W.sweepArrow(R.dir);                       // mission-start cue: which way to sweep
-    await say(ORD.say(R.dir));
+    const seq = [...R.subs].sort((a, b) => a - b);
+    W.strip(R.ost, { big: true });
+    await say(R.voL);
     let allFirst = true;
     for (let i = 0; i < seq.length; i++) {
-      const next = seq[i];
-      const m = { target: next, lines: { oopsL: ORD.oops(R.dir), hintL: ORD.hint(R.dir), nudgeL: ORD.nudge(next), idleL: ORD.idle(R.dir) } };
-      if (i === 1) W.sweepArrow(R.dir);
-      const first = await strike(m); allFirst = allFirst && first;
-      W.badge(next, i + 1); SFX.right(); W.sparkle(W.lastHit.x, W.lastHit.y); await wait(.3);
+      const next = seq[i], pulseNext = () => { W.pulseSub(W.subAt(next)); W.pulseTag(W.subAt(next)); };
+      const first = await strike(R, next, {
+        fb: k => k === 1 ? { line: R.fbL[0].line, anim: () => {} }   // the wrong submarine shakes (W.wrong)
+          : k === 2 ? { line: R.fbL[1].line, anim: () => W.subs().forEach((s, j) => W.pulseTag(s, j * .08)) }   // the numbers left pulse
+          : { line: D.startWith(next), anim: pulseNext },   // "Start with the submarine with −12." and it pulses
+        idleAnim: pulseNext, idleLine: R.idleL.line });   // the smallest number left pulses
+      allFirst = allFirst && first;
+      W.badge(next, i + 1, W.lastHit); await wait(.3);
     }
-    W.clearHints(); mark(allFirst);
-    W.strip(R.chain, { big: true });
-    const cheer = rnd(S.hits); W.reward({ big: allFirst, word: cheer.text, pip: W.pipDone });
-    await say(cheer);
+    mark(allFirst);
+    if (R.cheer) W.strip(R.cheer, { big: true });   // ROUTE CLEARED! / ALL TARGETS CLEARED!
+    W.reward({ big: !!R.cheer, confetti: true, pip: W.pipDone, at: { x: 960, y: 300 } });
     await say(R.okL);
     await wait(.6); W.clearBadges(); await W.clearSubs(); W.stripOff();
   }
-  async function level2(start = 0) {
-    LV = 'l2'; await W.banner('LEVEL 2', 'Order the Submarines', 'The launcher fires in a sweep');
-    W.pips(D.L2.length, start);
-    if (start === 0) await say(S.l2intro);
-    for (let r = start; r < D.L2.length; r++) { SD.where = { at: 'l2', round: r + 1 }; await orderRound(D.L2[r]); W.pips(D.L2.length, r + 1); if (r < D.L2.length - 1) await W.sail(); }
-    await complete('l2', 'Level 2 cleared!', 'You ordered the submarines.', 'Left → Right: smallest to greatest');
-  }
-
-  /* ---------- Level 3 · Combine movement signals ---------- */
-  const eq = (a, b) => `(${f(a)}) + (${f(b)})`;
-  async function signalRound(R, idx) {
-    const res = R.a + R.b, same = Math.sign(R.a) === Math.sign(R.b), L = R.L;
-    W.strip(eq(R.a, R.b), { big: true });
-    W.marker(0);
-    await W.signals([{ n: Math.abs(R.a), sign: Math.sign(R.a) }, { n: Math.abs(R.b), sign: Math.sign(R.b) }]);
-    if (!same) {
-      await say(L.intro);
-      W.strip('Tap a pair to cancel it: one ▶ with one ◀');
-      const showPair = async () => {                       // a glow pulses on an open pair
-        const c = W.pairCentre(); if (!c) return;
-        say(S.pairDemo); await W.handTo(c.x, c.y, .9); await W.handTap(c.x, c.y);
-      };
-      if (idx === 0) gsap.delayedCall(.1, showPair);       // first time: show where to tap
-      // idle help while pairing: 6 s the pair boxes glow · 12 s spoken hint · 22 s a glow pulses on a pair
-      await W.pairUp(() => W.hand(null), { idle: () => say(S.pairIdle), idle2: showPair });
-      W.hand(null);
-      await say(L.after);
-    } else {
-      await say(L.intro);
-    }
-    W.strip(eq(R.a, R.b) + ' = <b>?</b>', { big: true });
-    await W.spawn(R.opts, { stagger: .15 });
-    await say(S.l3ask);
-    // 3-strike, but on the right answer the marker moves first, then we fire
-    let wrong = 0; W.expect = res;
-    for (;;) {
-      const s = await W.waitTap({ onIdle: () => { say(S.l3idle); W.pulseAll(); }, onIdle2: () => say(S.take), only: wrong >= 3 ? W.subAt(res) : null });
-      SD.skip();
-      if (s.v === res) {
-        W.clearHints(); const r = await W.lock(s); SFX.right();
-        if (same) { const all = W.sigAlive(); await W.runMarker(all.slice(0, Math.abs(R.a))); await wait(.2); await W.runMarker(all.slice(Math.abs(R.a))); }
-        else await W.runMarker();
-        await W.fire(s, r); break;
-      }
-      wrong++; const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); W.clearHints();
-      const dir = Math.sign(res - s.v);
-      if (wrong === 1) { W.hintArrow(s.v, dir); await say(L.oops); }
-      else if (wrong === 2) { W.hintArrow(s.v, dir); W.rule(true, same ? 'same' : 'pairs'); await say(L.hint); }
-      else { const t = W.subAt(res); W.dimOthers(t, true); W.hand(t); W.glow(t, true); W.rule(true, same ? 'same' : 'pairs'); await say(L.nudge); }
-    }
-    W.rule(false); mark(wrong === 0);
-    const cheer = wrong === 0 ? rnd(S.hits) : null;
-    W.reward({ big: wrong === 0, word: cheer && cheer.text, pip: W.pipDone });
-    if (cheer) await say(cheer);
-    W.strip(eq(R.a, R.b) + ' = ' + f(res), { big: true });
-    await say(L.ok);
-    W.clearSignals(); W.markerOff(); await W.clearSubs(); W.stripOff();
-  }
   async function level3(start = 0) {
-    LV = 'l3'; await W.banner('LEVEL 3', 'Additive Integer Defence', 'Signals move the defence marker');
+    LV = 'l3'; W.dragRope(false); await W.panTo(0, .4); gsap.to('#scale', { autoAlpha: 0, duration: .5 });
+    await W.banner('', 'LEVEL 3', '');   // "Level title appears."
     W.pips(D.L3.length, start);
-    if (start === 0) await say(S.l3intro);
-    for (let r = start; r < D.L3.length; r++) { SD.where = { at: 'l3', round: r + 1 }; await signalRound(D.L3[r], r); W.pips(D.L3.length, r + 1); if (r < D.L3.length - 1) await W.sail(); }
-    await complete('l3', 'Level 3 cleared!', 'You combined positive and negative moves.', 'Opposites cancel: +4 and −4 make 0');
+    for (let r = start; r < D.L3.length; r++) {
+      SD.where = { at: 'l3', round: r + 1 };
+      const R = D.L3[r];
+      await W.spawn(R.subs, { at: scatter(R.subs.length), stagger: .3 });   // the submarines appear at random places
+      if (r === 0) { W.strip(D.L3_TEACH.ost, { big: true }); await say(D.L3_TEACH.voL); }
+      await orderRound(R);
+      W.pips(D.L3.length, r + 1);
+      if (r < D.L3.length - 1) await W.sail();
+    }
+    // Level Completion: the sea calms, large confetti and the completion badge
+    W.reward({ big: true, confetti: true, at: { x: 960, y: 320 } });
+    await say(D.L3_END.voL); await say(D.L3_END.okL);
+    await complete('l3', D.L3_END.ost);
+    gsap.set('#scale', { autoAlpha: 1, opacity: 0 });
+    await storyEnd();   // the story's ending (storyboard row 12)
   }
 
-  /* ---------- Final mixed mission ---------- */
-  async function finalMission(start = 0) {
-    LV = 'fin'; await W.banner('FINAL MISSION', 'Protect the Route', 'Compare · Order · Combine', 2.4);
-    W.pips(3, start);
-    if (start < 1) { SD.where = { at: 'final', round: 1 }; await orderRound(D.FIN_ORD); W.pips(3, 1); await W.sail(); }
-    if (start < 2) { SD.where = { at: 'final', round: 2 }; await W.spawn(D.FIN_CMP.subs); await mission(D.FIN_CMP.m); await W.clearSubs(); W.stripOff(); W.pips(3, 2); await W.sail(); }
-    SD.where = { at: 'final', round: 3 };
-    await signalRound(D.FIN_SIG, 5);
-    W.pips(3, 3);
-    W.stripOff(); await storyEnd();   // storyboard row 12
-    await complete('fin', 'Sea route protected!', 'You compared, ordered and combined integers.', 'Compare · Order · Combine', 'Play again');
-  }
-
-  /* ---------- level complete card ---------- */
-  async function complete(lv, t, s, chain, cta = 'Next mission') {
+  /* ---------- level complete card (the completion badge): title + stars ---------- */
+  async function complete(lv, title) {
     const sc = SCORE[lv] || [], firsts = sc.filter(Boolean).length, n = sc.length || 1, stars = firsts === n ? 3 : firsts / n >= .6 ? 2 : 1;
     (window.GAME_RESULT = window.GAME_RESULT || {})[lv] = { stars, firstTry: firsts, missions: n };
-    $('#dt').textContent = t; $('#ds').textContent = s; $('#dchain').innerHTML = chain; $('#dcta').textContent = cta;
+    $('#dt').textContent = title; $('#ds').textContent = ''; $('#dchain').innerHTML = ''; $('#dcta').textContent = 'Next';
     $('#dstars').innerHTML = [0, 1, 2].map(i => `<img src="assets/img/${i < stars ? 'star_gold' : 'star_silver'}.webp" class="${i < stars ? '' : 'off'}">`).join('');
     const d = $('#done'); d.classList.remove('hidden'); SFX.tada();
     gsap.fromTo('#done .card', { scale: .5, opacity: 0 }, { scale: 1, opacity: 1, duration: .55, ease: 'back.out(1.7)' });
     gsap.fromTo('#dstars img', { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: .45, stagger: .18, delay: .4, ease: 'back.out(3)', onStart: () => SFX.pop() });
     gsap.fromTo('#dcta', { scale: 1 }, { scale: 1.07, duration: .6, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.2 });
-    const cheer = say(cta === 'Play again' ? S.doneF : S.done1);
-    await new Promise(r => { let c = null; cheer.then(() => { c = gsap.delayedCall(cta === 'Play again' ? 999 : 3, r); }); $('#dcta').onclick = () => { if (c) c.kill(); SD.skip(); r(); }; });
+    await new Promise(r => { const c = gsap.delayedCall(5, r); $('#dcta').onclick = () => { c.kill(); r(); }; });
     gsap.killTweensOf('#dcta'); gsap.set('#dcta', { scale: 1 });
     await gsap.to('#done .card', { scale: .8, opacity: 0, duration: .3 }); d.classList.add('hidden');
     await W.sail();
   }
 
-  /* ---------- run ---------- */
+  /* ---------- run: story → Level 1 → Level 2 → Level 3 (→ the story's ending) → back to the title ---------- */
   async function run() {
     const at = Q.get('at') || 'hook', r = parseInt(Q.get('round') || '1', 10) - 1;
-    const order = ['hook', 'teach', 'l1', 'l2', 'l3', 'final'];
-    for (let i = order.indexOf(at); i < order.length; i++) {
+    const order = ['hook', 'l1', 'l2', 'l3'];
+    for (let i = Math.max(0, order.indexOf(at)); i < order.length; i++) {
       const k = order[i], st = k === at ? r : 0;
       SD.where = { at: k, round: st + 1 };
       if (k !== 'hook' && k === at) { SD.music('play'); SD.ambience('waves'); }
       if (k === 'hook') await hook();
-      if (k === 'teach') await teach();
-      if (k === 'l1') { if (k === at && at !== 'teach') await W.scaleIntro(); await level1(st); }
+      if (k === 'l1') { await W.scaleIntro(); await level1(st); }
       if (k === 'l2') { if (k === at) await W.scaleIntro(); await level2(st); }
-      if (k === 'l3') { if (k === at) await W.scaleIntro(); await level3(st); }
-      if (k === 'final') { if (k === at) await W.scaleIntro(); await finalMission(st); location.search = Q.get('qa') === '1' ? '?qa=1' : ''; }
+      if (k === 'l3') await level3(st);
     }
+    location.search = Q.get('qa') === '1' ? '?qa=1' : '';
   }
   $('#btnSpeak').onclick = () => { const l = SD.lastLine; if (l) say(l.x, l.o.bubble ? {} : l.o); };
   $('#start').onclick = async () => {

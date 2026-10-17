@@ -30,104 +30,105 @@
     hp2: M('hp2', 'Find the submarine at the correct position!'),
     hp3: M('hp3', 'Aim at the right submarine to hit!'),
     hp4: M('hp4', 'Tap Fire!'),
-    // on patrol — teaching the scale
-    g1: R('g1', 'Whoa! The navigation scale is switching on!'),
-    t1: M('t1', 'This is our navigation scale. The centre point is zero.'),
-    t2: M('t2', 'Watch the navigation scale. As we move to the right, the numbers become greater.'),
-    t3: M('t3', 'As we move to the left, the numbers become smaller.'),
-    t4: M('t4', '+2 is farther to the right, so it is greater than −3.'),
-    t5: M('t5', '−6 is farther to the left, so it is smaller than −2.'),
-    t6: M('t6', 'Remember: right means greater, left means smaller.'),
-    t7: R('t7', 'Got it! Right is greater, left is smaller!'),
-    // first-mission tutorial
-    tut1: M('tut1', 'Your turn, cadet! Every submarine sits below a number on the scale.'),
-    tut2: M('tut2', 'See? This submarine is at −3.'),
-    tut3: M('tut3', 'Now find the submarine at +2. Tap it to fire!'),
-    // generic nudges
-    tap: M('tap', 'Tap a submarine to fire!'),
-    take: M('take', 'Take your time. Read the mission, then tap a submarine.'),
-    idle: M('idle', 'Read the mission again, then look at where each submarine is on the scale.'),
-    // Riya's reactions
-    hit1: R('hit1', 'Direct hit!'), hit2: R('hit2', 'Bullseye!'), hit3: R('hit3', 'Yes! Got it!'), hit4: R('hit4', 'Great shot!'),
-    done1: R('done1', 'Woohoo! Level cleared! Shabash!'),
-    doneF: R('doneF', 'We did it! The sea route is safe!'),
-    // level wrap-ups / intros
-    l1end: M('l1end', 'Right means greater. Left means smaller. Shabash, cadet!'),
-    l2intro: M('l2intro', 'Our launcher fires in a sweeping order. Follow the direction in each mission.'),
-    l3intro: M('l3intro', 'Enemy submarines now release movement signals. A signal moving right is positive. A signal moving left is negative.'),
-    l3ask: M('l3ask', 'Fire at the submarine where the marker will stop.'),
-    l3idle: M('l3idle', 'Where will the marker stop? Fire at that submarine.'),
-    pairIdle: M('pairIdle', 'Tap where a right signal and a left signal stand together.'),
-    pairDemo: M('pairDemo', 'Tap here! One right signal and one left signal cancel each other.'),
-    finEnd: M('finEnd', 'All enemy submarines are stopped. Mission complete! The sea route is safe again!'),   // story sheet ending
+      finEnd: M('finEnd', 'All enemy submarines are stopped. Mission complete! The sea route is safe again!'),   // story sheet ending
   };
-  S.hits = [S.hit1, S.hit2, S.hit3, S.hit4];
 
-  /* ---------- Level 1 · Compare ---------- */
+  /* ======== the three game levels: the learning designer's sheets "Integers- Submarine - L1/L2/L3 V3".
+     Every spoken line and on-screen text below is copied from the sheets (ids start with v3 so no old recording is reused).
+     Each row: vo = Game Instruction / VO, ok = Correct Feedback, fb = Incorrect Feedback 1–3 with their animation,
+     idle = Inactivity VO with its animation. Animation kinds are played by js/levels.js. ======== */
+  const reg = (id, R) => {
+    if (R.vo) R.voL = M(id + '_vo', R.vo);
+    if (R.ok) R.okL = M(id + '_ok', R.ok);
+    if (R.fb) R.fbL = R.fb.map(([t, k], i) => ({ line: M(id + '_f' + (i + 1), t), kind: k }));
+    if (R.idle) R.idleL = { line: M(id + '_idle', R.idle[0]), kind: R.idle[1] };
+  };
+
+  /* ---------- Level 1 · positive and negative missiles (sheet L1 V3) ----------
+     a = the first group, b = the second (positive = enemy red missiles, negative = defence blue missiles).
+     opts = the submarines the child can fire at: the answer and two likely mistakes, all within one view of the rope
+     (the sheet does not name them). Row 1 is matching only. */
+  const same = (t1, t2, t3, idle) => [[[t1, 'groups'], [t2, 'groupsMove'], [t3, 'total']], [idle, 'groups']];
   const L1 = [
-    { subs: [-3, 2], m: [{ target: 2, text: 'Fire at the submarine at <b>+2</b>.', ok: 'Correct! +2 is farther to the right.', show: '+2 is greater than −3 &nbsp;·&nbsp; +2 > −3',
-      lines: { oops: 'Oops! That submarine is at −3. Find +2 on the scale.', hint: '+2 is on the right side of zero. Look to the right.', nudge: 'Here is the submarine at +2. Fire!' } }] },
-    { subs: [-6, -2], m: [{ target: -2, text: 'Fire at the submarine <b>farther to the right</b>.', ok: 'Correct! −2 is farther to the right, so it is greater.', show: '−2 > −6',
-      lines: { oops: 'Oops! −6 is farther to the left.', hint: '6 is bigger than 2, but −6 sits farther left. Farther right means greater.', nudge: '−2 is farther to the right. Fire at −2!' } }] },
-    { subs: [-4, 0, 3], m: [
-      { target: 0, text: 'Fire at the submarine at <b>0</b>.', ok: 'Correct! That one is at 0, the centre.', show: '0 is the centre',
-        lines: { oops: 'Oops! Find the centre of the scale — that is 0.', hint: 'Zero is the bright gold mark in the middle.', nudge: 'This submarine is at 0. Fire!' } },
-      { target: 3, text: 'Fire at the submarine <b>to the right of 0</b>.', ok: 'Correct! +3 is to the right of 0, so it is greater than 0.', show: '+3 > 0',
-        lines: { oops: 'Oops! That one is on the left of 0.', hint: 'To the right of 0 means on the right side of the gold mark.', nudge: '+3 is to the right of 0. Fire!' } },
-      { target: -4, text: 'Fire at the submarine <b>to the left of 0</b>.', ok: 'Correct! −4 is to the left of 0, so it is smaller than 0.', show: '−4 < 0',
-        lines: { oops: 'Oops! Look on the left side of 0.', hint: 'To the left of 0 means on the left side of the gold mark.', nudge: '−4 is to the left of 0. Fire!' } }] },
+    { a: 4, b: -4, opts: null, vo: 'Enemy submarine launches 4 positive missiles. Defence system launches 4 negative missiles. Cancel the opposite missiles.',
+      ok: 'Positive and negative missiles cancel each other. 0 missiles left.',
+      fb: [['Match one positive missile with one negative missile.', 'pair'], ['Opposite missiles cancel each other.', 'demoPair'], ['Cancel all the opposite pairs.', 'pairs']],
+      idle: ['Start by matching one positive missile with one negative missile.', 'pair'] },
+    { a: 5, b: -3, opts: [-2, 2, 8], vo: 'Enemy submarine launches 5 positive missiles. Defence system launches 3 negative missiles. How many missiles have passed?',
+      ok: '2 positive missiles left.',
+      fb: [['Look for opposite missile pairs.', 'pair'], ['Cancel one positive missile with one negative missile.', 'pairs'], ['Count the missiles that remain.', 'remain']],
+      idle: ['Cancel the opposite missiles first.', 'pair'] },
+    { a: 6, b: -9, opts: [3, -3, -9], vo: 'Enemy submarine launches 6 positive missiles. Defence system launches 9 negative missiles. How many missiles have passed?',
+      ok: '3 negative missiles left.',
+      fb: [['Look for opposite missile pairs.', 'pair'], ['Match each positive missile with one negative missile.', 'pairs'], ['Count the missiles that remain.', 'remain']],
+      idle: ['Cancel the opposite missiles first.', 'pair'] },
+    { a: 11, b: 13, opts: [11, 13, 24], vo: 'Enemy submarine launches 11 positive missiles and 13 more positive missiles. How many missiles have passed?',
+      ok: '24 positive missiles left.', ...(([fb, idle]) => ({ fb, idle }))(same('These missiles have the same sign. Combine them.', 'There are no opposite missiles to cancel.', 'Count all the missiles together.', 'Combine the missiles and find the total.')) },
+    { a: -10, b: -15, opts: [-10, -15, -25], vo: 'Defence system launches 10 negative missiles and 15 more negative missiles. How many missiles have passed?',
+      ok: '25 negative missiles left.', ...(([fb, idle]) => ({ fb, idle }))(same('These missiles have the same sign. Combine them.', 'There are no opposite missiles to cancel.', 'Count all the missiles together.', 'Combine the missiles and find the total.')) },
+    { a: 7, b: -7, opts: [-7, 0, 7], vo: 'Enemy submarine launches 7 positive missiles. Defence system launches 7 negative missiles. How many missiles have passed?',
+      ok: 'Positive and negative missiles cancel each other. 0 missiles left.',
+      fb: [['Match one positive missile with one negative missile.', 'pair'], ['Both sides have the same number of missiles.', 'groupsEq'], ['Cancel every opposite pair.', 'pairs']],
+      idle: ['Start with one opposite pair.', 'pair'] },
+    { a: 9, b: -4, opts: [-5, 5, 9], vo: 'Enemy submarine launches 9 positive missiles. Defence system launches 4 negative missiles. How many missiles have passed?',
+      ok: '5 positive missiles left.',
+      fb: [['Match the opposite missiles first.', 'pair'], ['Cancel one positive missile with one negative missile.', 'pairs'], ['Count the missiles left.', 'remain']],
+      idle: ['Cancel the opposite missiles first.', 'pair'] },
+    { a: 5, b: -12, opts: [-7, -5, 7], vo: 'Enemy submarine launches 5 positive missiles. Defence system launches 12 negative missiles. How many missiles have passed?',
+      ok: '7 negative missiles left.',
+      fb: [['Look for opposite missile pairs.', 'pair'], ['Match each positive missile with one negative missile.', 'pairs'], ['Count the missiles left.', 'remain']],
+      idle: ['Cancel the opposite missiles first.', 'pair'] },
+    { a: 8, b: 6, opts: [2, 6, 14], vo: 'Enemy submarine launches 8 positive missiles and 6 more positive missiles. How many missiles have passed?',
+      ok: '14 positive missiles left.', ...(([fb, idle]) => ({ fb, idle }))(same('These missiles have the same sign.', 'Combine all the missiles.', 'Count the total missiles.', 'Combine the missiles and find the total.')) },
+    { a: -7, b: -9, opts: [-2, -9, -16], vo: 'Defence system launches 7 negative missiles and 9 more negative missiles. How many missiles have passed?',
+      ok: '16 negative missiles left.', ...(([fb, idle]) => ({ fb, idle }))(same('These missiles have the same sign.', 'Combine all the missiles.', 'Count the total missiles.', 'Combine the missiles and find the total.')) },
   ];
-  // the final mission's compare round uses the same shape
-  const FIN_CMP = { subs: [-4, 2], m: { target: 2, text: 'Fire at the submarine <b>farther to the right</b>.', ok: 'Correct! +2 is farther to the right, so it is greater.', show: '+2 > −4',
-    lines: { oops: 'Oops! −4 is on the left.', hint: 'Farther right means greater. Look right.', nudge: '+2 is farther to the right. Fire!' } } };
-  function regMission(id, m) {
-    m.sayL = M(id + '_say', strip(m.text)); m.okL = M(id + '_ok', m.ok);
-    for (const k of ['oops', 'hint', 'nudge']) m.lines[k + 'L'] = M(id + '_' + k, m.lines[k]);
-  }
-  L1.forEach((R1, r) => R1.m.forEach((m, i) => regMission(`l1_r${r + 1}_${i + 1}`, m)));
+  L1.forEach((R, r) => reg('v3l1_r' + (r + 1), R));
 
-  /* ---------- Level 2 · Order ---------- */
+  /* ---------- Level 2 · fire at the submarine close to our defence line (sheet L2 V3) ----------
+     show = the comparison the Correct Animation shows after the lock. */
+  const CHECK = 'Check which submarine is close to defence line 0.', FIRE = 'Fire at the submarine close to our defence line.';
+  const FIND = 'Find the submarine close to defence line 0.', WHICH = 'Which submarine is close to defence line 0?';
+  const L2_TEACH = { vo: 'For positive numbers, the submarine at the smaller number is closer to our defence line 0. The submarine at the bigger number is farther away. So, hit the submarine at the smaller number.' };
+  reg('v3l2_teach', L2_TEACH);
+  const cmp = (subs, target, ok, show, fb2, fb3, idle, o = {}) => ({ subs, target, vo: o.vo || FIRE, ost: FIRE, ok, show,
+    fb: [[CHECK, o.k1 || 'both'], [fb2, o.k2 || 'labels'], [fb3, o.k3 || 'target']], idle: [idle, 'zeroTarget'] });
   const L2 = [
-    { subs: [-6, -2, 1, 4], dir: 1, ok: 'Great! Left to right gives smallest to greatest.', chain: '−6 < −2 < +1 < +4' },
-    { subs: [-5, -1, 2, 6], dir: -1, ok: 'Great! Right to left gives greatest to smallest.', chain: '+6 > +2 > −1 > −5' },
-    { subs: [-7, -3, 0, 2, 5], dir: 1, ok: 'Excellent! Negatives, zero, then positives — smallest to greatest.', chain: '−7 < −3 < 0 < +2 < +5' },
+    cmp([8, 10], 8, 'Yes! Nice. +8 is smaller, and the submarine at +8 is closer to our defence line.', '+8 < +10', 'Check which is smaller: +8 or +10?', 'The smaller number is +8, and that submarine is close to our defence line.', WHICH, { k1: 'zeroBoth', k2: 'labelsSeq', k3: 'targetRing' }),
+    cmp([15, 17], 15, 'Yes! Nice. +15 is smaller, and the submarine at +15 is closer to our defence line.', '+15 < +17', 'Check which is smaller: +15 or +17?', 'The smaller number is +15, and that submarine is close to our defence line.', FIND),
+    cmp([-10, -12], -10, 'Yes! Nice. −10 is greater than −12, and the submarine at −10 is closer to our defence line.', '−10 > −12', 'Check which is greater: −10 or −12?', 'The greater number is −10, and that submarine is close to our defence line.', WHICH),
+    cmp([-5, -8], -5, 'Yes! −5 is greater, and the submarine at −5 is closer to our defence line.', '−5 > −8', 'Check which is greater: −5 or −8?', 'The greater number is −5, and that submarine is close to our defence line.', FIND),
+    cmp([-14, -9], -9, 'Yes! −9 is greater, and the submarine at −9 is closer to our defence line.', '−9 > −14', 'Check which is greater: −14 or −9?', 'The greater number is −9, and that submarine is close to our defence line.', FIND),
+    cmp([-3, -7], -3, 'Yes! −3 is greater, and the submarine at −3 is closer to our defence line.', '−3 > −7', 'Check which is greater: −3 or −7?', 'The greater number is −3, and that submarine is close to our defence line.', FIND),
+    cmp([-8, 4], 4, 'Yes! Nice. +4 is closer to our defence line. +4 is also greater than −8.', '+4 > −8', 'Check which position is closer to 0: −8 or +4?', '+4 is closer to defence line 0.', FIND, { k2: 'dist', vo: 'Submarines are at −8 and +4. Fire at the submarine close to our defence line.' }),
+    cmp([-6, 3], 3, 'Yes! +3 is closer to our defence line. +3 is greater than −6.', '+3 > −6', 'Check which position is closer to 0: −6 or +3?', '+3 is closer to defence line 0.', FIND, { k2: 'dist' }),
+    cmp([-2, 7], -2, 'Yes! −2 is closer to our defence line. But +7 is greater than −2.', '+7 > −2', 'Check which position is closer to 0: −2 or +7?', '−2 is closer to defence line 0.', FIND, { k2: 'dist' }),
+    cmp([-9, 5], 5, 'Yes! +5 is closer to our defence line. +5 is greater than −9.', '+5 > −9', 'Check which position is closer to 0: −9 or +5?', '+5 is closer to defence line 0.', FIND, { k2: 'dist' }),
   ];
-  const FIN_ORD = { subs: [-5, -1, 0, 3], dir: -1, ok: 'Route cleared from right to left!', chain: '+3 > 0 > −1 > −5' };
-  const ORD = {
-    say: d => d > 0 ? S.ordL || (S.ordL = M('ord_say_lr', 'Clear the route from left to right.')) : S.ordR || (S.ordR = M('ord_say_rl', 'Clear the route from right to left.')),
-    oops: d => M('ord_oops_' + (d > 0 ? 'lr' : 'rl'), `Not that one yet. Sweep from the ${d > 0 ? 'left' : 'right'}: which submarine is next?`),
-    hint: d => M('ord_hint_' + (d > 0 ? 'lr' : 'rl'), d > 0 ? 'Left to right means smallest first. Find the one farthest left.' : 'Right to left means greatest first. Find the one farthest right.'),
-    idle: d => M('ord_idle_' + (d > 0 ? 'lr' : 'rl'), d > 0 ? 'Start from the left end of the scale.' : 'Start from the right end of the scale.'),
-    nudge: v => M('ord_next_' + (v < 0 ? 'm' + -v : v > 0 ? 'p' + v : '0'), `${f(v)} is next. Fire!`),
-  };
-  const regOrder = (id, R2) => { ORD.say(R2.dir); ORD.oops(R2.dir); ORD.hint(R2.dir); ORD.idle(R2.dir); R2.subs.forEach(ORD.nudge); R2.okL = M(id + '_ok', R2.ok); };
-  L2.forEach((R2, r) => regOrder('l2_r' + (r + 1), R2)); regOrder('fin_r1', FIN_ORD);
-  regMission('fin_r2', FIN_CMP.m);
+  L2.forEach((R, r) => reg('v3l2_r' + (r + 1), R));
 
-  /* ---------- Level 3 · Combine movement signals ---------- */
+  /* ---------- Level 3 · fire in order, smaller number first (sheet L3 V3) ----------
+     ost = the numbers shown on screen; the child fires them from the smallest up. Rows 7 and 8 had no on-screen text in
+     the sheet (#ERROR!): their numbers come from the Learner Interaction column, shown mixed up like the other rows.
+     Incorrect Feedback 3 names the submarine to fire next ("Start with the submarine with −12."). */
+  const L3_TEACH = { vo: 'Oh no! There are many submarines now. Submarines that have smaller numbers are close to our defence line. First, we need to fire at them, then at the ones farther away.', ost: 'Smaller → Bigger' };
+  reg('v3l3_teach', L3_TEACH);
+  const ORD_FB1 = 'Check which submarine is closer to our defence line.', ORD_FB2 = 'Check which submarine has the smaller number and is closer to our defence line.';
+  const ORD_IDLE = 'Start with the submarine with the smaller number.', ORD_OK = 'Great! You fired from closer to farther.';
+  const ord = (subs, vo, cheer) => ({ subs, vo, ost: subs.map(f).join(', '), ok: ORD_OK, cheer, fb: [[ORD_FB1, 'shake'], [ORD_FB2, 'numbers']], idle: [ORD_IDLE, 'smallest'] });
   const L3 = [
-    { a: 4, b: -4, opts: [-8, 0, 8], ok: 'Equal moves in opposite directions cancel each other. +4 and −4 make 0.' },
-    { a: 5, b: -3, opts: [-2, 2, 8], ok: 'Two positive moves remain, so the final position is +2.' },
-    { a: 3, b: -5, opts: [-2, 2, 8], ok: 'Two negative moves remain, so the final position is −2.' },
-    { a: 2, b: 3, opts: [-5, 1, 5], ok: 'Both moves go right, so they combine. The final position is +5.' },
-    { a: -2, b: -3, opts: [-5, -1, 5], ok: 'Both moves go left, so they combine. The final position is −5.' },
+    ord([-3, -6, -9, -12], 'Fire from closer to our defence line to the farthest.', 'ROUTE CLEARED!'),
+    ord([-2, -5, -8, -11], 'Fire from closer to our defence line to farther.'),
+    ord([-4, -7, -10, -14], 'Fire from closer to our defence line to farther.'),
+    ord([-8, 2, -5, 11], 'Submarines have −8, +2, −5 and +11. Fire from the submarine closer to our defence line to the farthest.', 'ROUTE CLEARED!'),
+    ord([-3, 6, -9, 12], 'Fire from closer to our defence line to farther.'),
+    ord([4, -13, 10, -7], 'Fire from closer to our defence line to farther.'),
+    ord([11, 6, 17, 9], 'Fire from closer to our defence line to farther.', 'ALL TARGETS CLEARED!'),
   ];
-  const FIN_SIG = { a: 4, b: -6, opts: [-6, -2, 2], ok: 'Four pairs cancel. Two negative moves remain, so the final position is −2.' };
-  const dw = n => n > 0 ? 'right' : 'left';
-  function regSignal(id, R3, first) {
-    const res = R3.a + R3.b, same = Math.sign(R3.a) === Math.sign(R3.b), A = Math.abs(R3.a), B = Math.abs(R3.b);
-    const L = R3.L = {};
-    if (!same) {
-      L.intro = first ? M(id + '_intro', 'Four signals move right and four move left. Tap a pair to cancel it.') : M(id + '_intro', `${A} ${dw(R3.a)} moves and ${B} ${dw(R3.b)} moves. Tap the pairs to cancel them.`);
-      const left = Math.abs(res);
-      L.after = left === 0 ? M(id + '_after', 'All four pairs cancel. Nothing is left.') : M(id + '_after', `${Math.min(A, B)} pairs cancel. ${left} ${res > 0 ? 'positive' : 'negative'} moves remain.`);
-    } else L.intro = M(id + '_intro', `Both signals move ${dw(R3.a)}.`);
-    L.oops = same ? M('sig_oops_same_' + dw(R3.a), `Oops! Both moves go ${dw(R3.a)} from 0.`) : M('sig_oops_pairs', 'Oops! Count the moves that are left after the pairs cancel.');
-    L.hint = M(id + '_hint', same ? `${f(R3.a)} then ${f(R3.b)}: count every step ${R3.a > 0 ? 'to the right' : 'to the left'} from 0.` : (res === 0 ? 'Everything cancelled, so the marker does not move.' : `${Math.abs(res)} ${dw(res)} moves are left. Go ${Math.abs(res)} steps ${dw(res)} from 0.`));
-    L.nudge = M('sig_nudge_' + (res < 0 ? 'm' + -res : res > 0 ? 'p' + res : '0'), `The marker stops at ${f(res)}. Fire!`);
-    L.ok = M(id + '_ok', R3.ok);
-  }
-  L3.forEach((R3, r) => regSignal('l3_r' + (r + 1), R3, r === 0)); regSignal('fin_r3', FIN_SIG, false);
+  const startWith = v => M('v3l3_start_' + (v < 0 ? 'm' + -v : 'p' + v), `Start with the submarine with ${f(v)}.`);
+  L3.forEach((R, r) => { reg('v3l3_r' + (r + 1), R); [...R.subs].sort((x, y) => x - y).forEach(startWith); });
+  const L3_END = { vo: 'Great work! You cleared all the submarines in the right order.', ok: 'The route is clear!', ost: 'LEVEL 3 COMPLETE!' };
+  reg('v3l3_end', L3_END);
 
   /* how a line should be READ aloud (signs → words) — used by the browser voice and tools/make_voices.py */
   function spoken(t) {
@@ -138,5 +139,5 @@
       .replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b) => a + b.toUpperCase());
   }
 
-  window.SCRIPT = { WHO, LINES, S, D: { L1, L2, L3, FIN_ORD, FIN_CMP, FIN_SIG, ORD }, f, spoken, find: t => BY[t] || null };
+  window.SCRIPT = { WHO, LINES, S, D: { L1, L2, L2_TEACH, L3, L3_TEACH, L3_END, startWith }, f, spoken, find: t => BY[t] || null };
 })();

@@ -17,6 +17,12 @@
     else { stage.style.zoom = stage.style.left = stage.style.top = ''; stage.style.transform = `translate(${x}px,${y}px) scale(${s})`; }   // the layout editor maps pointer coordinates against a plain scale()
   }
   addEventListener('resize', fit); fit();
+  // screen px per stage px, and a pointer position in stage coordinates (WebKit reports zoomed boxes unzoomed, so use our own numbers)
+  const zoomed = () => ZOOM && !inset.edit;
+  const stageScale = () => zoomed() ? (parseFloat(stage.style.zoom) || 1) : stage.getBoundingClientRect().width / 1920;
+  const toStage = (cx, cy) => { const k = stageScale();
+    if (zoomed()) return { x: cx / k - parseFloat(stage.style.left || 0), y: cy / k - parseFloat(stage.style.top || 0) };
+    const r = stage.getBoundingClientRect(); return { x: (cx - r.left) / k, y: (cy - r.top) / k }; };
 
   /* ================= layout overrides: js/layout.js (window.LAYOUT, written by the editor) → one <style> ================= */
   const PX = { left: 1, top: 1, width: 1, height: 1, minHeight: 1, maxWidth: 1, marginLeft: 1, fontSize: 1 };
@@ -268,7 +274,7 @@
   const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
   // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action
   ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'jelly', 'pop', 'pip_on', 'pip_off',
-    'star_gold', 'star_silver', 'badge', 'marker', 'sig', 'pod', 'card', 'hint_arrow', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']
+    'star_gold', 'star_silver', 'badge', 'marker', 'card', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']
     .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
   // the story art too (characters, sprites, the water) — decoded in the background so no scene hitches when they first appear
   ['../door_left', '../door_right', 'bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'launcher_base', 'launcher_barrel', 'fire_off', 'fire_lit',
@@ -334,7 +340,7 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, stageScale, toStage, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

@@ -41,7 +41,6 @@
 
 /* the scale sits low on the glass (world SCALE_DY), kept inside the window frame */
 .cockpit #scaleBack{left:98px!important;width:1724px!important}
-.cockpit #rule{left:1170px;top:166px;width:640px}
 /* one HUD bar on the ceiling: hear-again button · mission text · progress pips */
 /* the mission panel: a slim navy steel plate with a brass rim, hung from two ceiling mounts on thin struts (cockpit.js drops / raises it) */
 #hudbar{position:absolute;left:460px;top:44px;width:1000px;height:80px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:0 18px 0 12px;border-radius:16px;pointer-events:none;

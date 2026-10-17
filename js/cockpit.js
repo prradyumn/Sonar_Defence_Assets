@@ -61,7 +61,7 @@
   const arrive = () => new Promise(r => { if (!move || !move.isActive()) return r(); move.then(() => r()); gsap.delayedCall(1, r); });
   W.aimHook = x => slideTo(x);                     // W.lock / W.wrong: line up under that submarine
   const clear0 = W.clearSubs;
-  W.clearSubs = () => { slideTo(X(0), .9); return clear0(); };
+  W.clearSubs = () => { slideTo(W.CONFIG.X0, .9); return clear0(); };   // back to the middle of the window
 
   /* ---- the mission panel: hangs from the ceiling on two struts; it comes down for each mission and goes up after.
      A new line during a mission refreshes the screen (scanline flicker) without moving the panel. ---- */
@@ -90,7 +90,7 @@
   /* ---- torpedo: out of the cannon's muzzle, running away from us (it shrinks) to the target ---- */
   W.fire = async (s, ret) => {
     await arrive();
-    const tx = X(s.v), ty = s.cy, sx = C.x, sy = MUZZLE_Y, cx = (sx + tx) / 2, cy = (sy + ty) / 2;
+    const tx = s.x, ty = s.cy, sx = C.x, sy = MUZZLE_Y, cx = (sx + tx) / 2, cy = (sy + ty) / 2;
     SFX.launch(); kick(10, .3);
     // recoil + muzzle flash + a burst of bubbles
     gsap.fromTo(cn, { y: 0 }, { keyframes: [{ y: 16, duration: .06, ease: 'power2.out' }, { y: 0, duration: .5, ease: 'elastic.out(1,.45)' }] });
@@ -113,7 +113,7 @@
 
   /* ---- a hit submarine sinks behind the scale (the scale is on the glass, the submarine is outside) ---- */
   const blast0 = W.blast;
-  W.blast = s => { $('#sunk').appendChild(s.d); hitMoment(s); return blast0(s); };
+  W.blast = s => { const x = s.x; $('#sunk').appendChild(s.d); s.d.style.left = x + 'px'; hitMoment(s); return blast0(s); };   // (#sunk does not pan with the rope)
 
   /* ---- a miss: the warning lamps flash red and the window glows ---- */
   const wrong0 = W.wrong;
@@ -135,8 +135,8 @@
 
   // 1 · direct hit: the number under the sub pops up big (the screen shake comes from world.js)
   function hitMoment(s) {
-    const x = X(s.v), y = s.cy, ly = W.LBL_Y - 150 + DY();   // just above its buoy
-    const lbl = document.querySelectorAll('#scale .lbl')[s.v + 8];
+    const x = s.x, y = s.cy, ly = s.free ? s.cy - 100 : W.LBL_Y - 150 + DY();   // just above its buoy (or above a free submarine)
+    const lbl = !s.free && W.lbl(s.v);
     if (lbl) gsap.fromTo(lbl, { scale: 1 }, { scale: 1.6, duration: .2, yoyo: true, repeat: 1, ease: 'back.out(3)' });
     const n = el('hitnum ' + (s.v < 0 ? 'neg' : s.v > 0 ? 'pos' : 'zero'), top, { left: x + 'px', top: ly + 'px' }); n.textContent = fmt(s.v);
     gsap.timeline({ onComplete: () => n.remove() })
