@@ -2,7 +2,7 @@
    world.js still draws the sea, the scale, the enemy submarines and every effect; this file swaps the ship's launcher for the
    bow cannon that slides along under the scale and fires the torpedoes, puts Meera and Riya at their stations (their talking sheets play while they speak) and adds cockpit
    feedback: red warning lamps on a miss, a hull kick when a torpedo leaves, the engines rumbling when we sail on.
-   The fun layer (bottom of the file) adds the hit moment, escape pods, sea life, the streak glow and the dive between levels. */
+   The fun layer (bottom of the file) adds the hit moment, escape pods, the streak glow and the dive between levels. */
 (function () {
   const { $, SFX } = SD, X = W.X, el = W.el, sea = $('#bubbles');   // sea: outside the glass, behind the scale
 
@@ -88,14 +88,18 @@
   const kick = (k = 10, d = .35) => W.shake(k / 2, d);   // the whole view shakes as one piece (world.js)
 
   /* ---- torpedo: out of the cannon's muzzle, running away from us (it shrinks) to the target ---- */
+  // recoil + muzzle flash + a burst of bubbles
+  function shot(k, nb = 9) {
+    const sx = C.x, sy = MUZZLE_Y;
+    SFX.launch(); kick(k, .3);
+    gsap.fromTo(cn, { y: 0 }, { keyframes: [{ y: 16, duration: .06, ease: 'power2.out' }, { y: 0, duration: .5, ease: 'elastic.out(1,.45)' }] });
+    gsap.fromTo(cflash, { opacity: 1, scale: .35 }, { opacity: 0, scale: 1.5, duration: .38, ease: 'power2.out' });
+    for (let i = 0; i < nb; i++) { const b = el('pbub', sea, { left: (sx + (Math.random() - .5) * 60) + 'px', top: (sy - 20 + Math.random() * 20) + 'px', width: '14px', height: '14px' }); gsap.to(b, { y: -60 - Math.random() * 90, x: (Math.random() - .5) * 120, scale: 1.6, opacity: 0, duration: 1 + Math.random() * .6, onComplete: () => b.remove() }); }
+  }
   W.fire = async (s, ret) => {
     await arrive();
     const tx = s.x, ty = s.cy, sx = C.x, sy = MUZZLE_Y, cx = (sx + tx) / 2, cy = (sy + ty) / 2;
-    SFX.launch(); kick(10, .3);
-    // recoil + muzzle flash + a burst of bubbles
-    gsap.fromTo(cn, { y: 0 }, { keyframes: [{ y: 16, duration: .06, ease: 'power2.out' }, { y: 0, duration: .5, ease: 'elastic.out(1,.45)' }] });
-    gsap.fromTo(cflash, { opacity: 1, scale: .35 }, { opacity: 0, scale: 1.5, duration: .38, ease: 'power2.out' });
-    for (let i = 0; i < 9; i++) { const b = el('pbub', sea, { left: (sx + (Math.random() - .5) * 60) + 'px', top: (sy - 20 + Math.random() * 20) + 'px', width: '14px', height: '14px' }); gsap.to(b, { y: -60 - Math.random() * 90, x: (Math.random() - .5) * 120, scale: 1.6, opacity: 0, duration: 1 + Math.random() * .6, onComplete: () => b.remove() }); }
+    shot(10);
     const t = new Image(); t.src = 'assets/img/torpedo.webp'; t.className = 'torp'; sea.appendChild(t);   // it runs outside, behind the scale on the glass
     const sup = cn.classList.contains('gold'); if (sup) { t.style.filter = 'sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.15) drop-shadow(0 0 12px #ffd66b)'; SFX.sparkle(); }
     const o = { p: 0 }; let last = 0;
@@ -116,18 +120,54 @@
   W.blast = s => { const x = s.x; $('#sunk').appendChild(s.d); s.d.style.left = x + 'px'; hitMoment(s); return blast0(s); };   // (#sunk does not pan with the rope)
 
   /* ---- a miss: the warning lamps flash red and the window glows ---- */
-  const wrong0 = W.wrong;
-  W.wrong = async s => {
+  const judder = () => gsap.fromTo(cn, { rotation: 0 }, { rotation: 2.5, duration: .05, yoyo: true, repeat: 5 });
+  W.alarm = () => {
     const lamps = $('#lamps').querySelectorAll('i'), edge = $('#lamps .edge');
     gsap.fromTo(lamps, { opacity: 0 }, { opacity: 1, duration: .14, yoyo: true, repeat: 5, ease: 'power1.inOut' });
     gsap.fromTo(edge, { opacity: 0 }, { opacity: .9, duration: .2, yoyo: true, repeat: 3 });
-    setStreak(0); kick(5, .3); arrive().then(() => gsap.fromTo(cn, { rotation: 0 }, { rotation: 2.5, duration: .05, yoyo: true, repeat: 5 }));   // the cannon judders: no shot
+    setStreak(0); kick(5, .3);
+  };
+  const wrong0 = W.wrong;
+  W.wrong = async s => {
+    W.alarm(); arrive().then(judder);   // the cannon judders: no shot
     return wrong0(s);
   };
 
+  /* ---- Level 1: the cannon is the missile launcher. W.launcher(sign) arms it with a − (blue) or + (red) badge; it glows and
+     takes taps (through a tap target in the HUD: the play layers sit above the cannon). W.launcher(0) puts it back.
+     The FIRE button (the story's button art) sits beside it: W.fireBtn('' | 'dim' | 'lit'). ---- */
+  const hud = $('#hud'), sign = document.createElement('b'); sign.className = 'sign'; cn.appendChild(sign);
+  const hit = document.createElement('div'); hit.id = 'launchHit'; hit.dataset.edit = 'launcher'; hud.appendChild(hit);
+  const fbtn = document.createElement('div'); fbtn.id = 'l1fire'; fbtn.dataset.edit = 'fire-button';
+  fbtn.innerHTML = '<img src="assets/img/story/fire_off.webp" alt=""><img class="lit" src="assets/img/story/fire_lit.webp" alt="">'; hud.appendChild(fbtn);
+  const LN = { launch: null, fire: null, pulse: null };
+  W.muzzle = () => ({ x: C.x, y: MUZZLE_Y });
+  W.launcher = s => {
+    const on = !!s, was = cn.classList.contains('armed');
+    cn.classList.toggle('armed', on); cn.classList.toggle('pos', s > 0); hit.classList.toggle('on', on);
+    if (on) sign.textContent = s > 0 ? '+' : '−';
+    if (on && !was) {   // it powers up: rises on its rail, the badge springs on
+      slideTo(W.CONFIG.X0, .5); servo(false); gsap.delayedCall(.3, SFX.clunk);
+      gsap.fromTo(cn, { y: 0 }, { keyframes: [{ y: -18, duration: .2, ease: 'power2.out' }, { y: 0, duration: .5, ease: 'bounce.out' }] });
+      gsap.fromTo(sign, { scale: 0, rotation: -90 }, { scale: 1, rotation: 0, duration: .5, delay: .25, ease: 'back.out(3)' });
+    }
+  };
+  W.cannonShot = () => { shot(3, SD.CALM ? 3 : 6); return W.muzzle(); };
+  W.launcherNo = () => { SFX.clunk(); judder(); };
+  W.onLaunch = fn => { LN.launch = fn; };
+  hit.onpointerdown = e => { e.stopPropagation(); if (LN.launch) LN.launch(); };
+  W.fireBtn = st => {
+    if (fbtn.className === (st || '')) return;
+    const was = fbtn.className; fbtn.className = st || ''; if (LN.pulse) { LN.pulse.kill(); LN.pulse = null; gsap.set(fbtn, { scale: 1 }); }
+    if (st && !was) gsap.fromTo(fbtn, { scale: 0 }, { scale: 1, duration: .45, ease: 'back.out(2.4)' });
+    if (st === 'lit') { SFX.blip(); LN.pulse = gsap.to(fbtn, { scale: 1.07, duration: .55, yoyo: true, repeat: -1, ease: 'sine.inOut' }); }
+  };
+  W.onFire = fn => { LN.fire = fn; };
+  fbtn.onpointerdown = e => { e.stopPropagation(); if (fbtn.className !== 'lit' || !LN.fire) return; SFX.tap(); gsap.fromTo(fbtn.querySelector('.lit'), { scale: .88 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); LN.fire(); };
+
   /* ---- full speed ahead: the engines rumble ---- */
   const sail0 = W.sail;
-  W.sail = async (dur = 1.6) => { kick(4, dur); visitor(); return sail0(dur); };
+  W.sail = async (dur = 1.6) => { kick(4, dur); return sail0(dur); };
 
   /* ======================= fun layer ======================= */
   const top = $('#fxTop'), glassFx = $('#glassFx'), vis = $('#visitors'), DY = () => W.CONFIG.SCALE_DY;
@@ -168,7 +208,6 @@
         .to(b, { opacity: 0, duration: .8 }, '-=.8');
     }
   }
-  const knock = (x, y) => { SFX.tap(); const k = el('knock', glassFx, { left: x + 'px', top: y + 'px' }); gsap.fromTo(k, { scale: .2, opacity: 1 }, { scale: 1.7, opacity: 0, duration: .55, ease: 'power2.out', onComplete: () => k.remove() }); };
 
   // 4 · streak: three first-try hits in a row turn the cannon gold; the next shot is a super torpedo
   let streak = 0;
@@ -182,25 +221,6 @@
     W._superDone = true;
     for (let i = 0; i < 3; i++) { const r = el('zboom', $('#fx'), { left: x + 'px', top: y + 'px' }); gsap.fromTo(r, { scale: .3, opacity: 1 }, { scale: 3 + i, opacity: 0, duration: .8, delay: i * .12, ease: 'power2.out', onComplete: () => r.remove() }); }
     gsap.delayedCall(.15, () => { W.sparkle(x - 80, y); W.sparkle(x + 80, y - 30); });
-  }
-
-  // 5 · sea life: every other time we sail on, a jellyfish drifts up to the window and knocks
-  const CREATURES = [
-    { src: 'jelly.webp', w: 150, from: [2120, 420], at: [1560, 280], away: [1500, -340], tap: [1560, 330] },
-  ];
-  let sails = 0, nextC = 0, visited = false;
-  function visitor() {
-    if (SD.paused) return;
-    if (SD.CALM) { if (visited) return; visited = true; }   // calm: one visitor per level (reset by the level banner)
-    else if (sails++ % 2) return;
-    const c = CREATURES[nextC++ % CREATURES.length], im = new Image(); im.src = 'assets/img/' + c.src; im.style.width = c.w + 'px'; vis.appendChild(im);
-    gsap.set(im, { xPercent: -50, yPercent: -50, x: c.from[0], y: c.from[1], scale: .85 });
-    gsap.timeline({ onComplete: () => im.remove() })
-      .to(im, { x: c.at[0], y: c.at[1], scale: 1, duration: .9, ease: 'power2.out' })
-      .to(im, { scale: 1.1, duration: .12, yoyo: true, repeat: 1, ease: 'power2.out', onStart: () => knock(...c.tap) })
-      .to(im, { scale: 1.1, duration: .12, yoyo: true, repeat: 1, ease: 'power2.out', onStart: () => knock(c.tap[0] + 12, c.tap[1] - 10) }, '+=.12')
-      .to(im, { x: c.away[0], y: c.away[1], scale: .8, duration: 1, ease: 'power2.in' }, '+=.25');
-    gsap.to(im, { rotation: 4, duration: .5, yoyo: true, repeat: 5, ease: 'sine.inOut' });
   }
 
   // 6 · deeper each level: the sea darkens a step, glowing plankton appear, the depth on the console counts down
@@ -220,7 +240,7 @@
   });
   const banner0 = W.banner;
   W.banner = (k, ...rest) => {
-    const d = DEPTH[k]; visited = false;
+    const d = DEPTH[k];
     if (d && d[0] !== D.lvl) {
       D.lvl = d[0];
       gsap.to(tint, { autoAlpha: [0, .12, .2, .27, .34][D.lvl], duration: 1.8, ease: 'sine.inOut' });

@@ -84,7 +84,6 @@
 #depthTint{position:absolute;inset:0;background:radial-gradient(130% 100% at 50% 0%,rgba(0,18,60,.55),rgba(0,6,30,.9));opacity:0;visibility:hidden;pointer-events:none}
 #plankton{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;display:none}   /* shown once there is plankton (cockpit.js) */
 .gbub{position:absolute;border-radius:50%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.95) 0 14%,rgba(220,250,255,.35) 26%,rgba(170,235,255,.12) 62%,rgba(255,255,255,.55) 76%,rgba(255,255,255,0) 80%)}
-.knock{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:3px solid rgba(230,252,255,.85);box-shadow:0 0 14px rgba(160,240,255,.6)}
 .hitnum{position:absolute;margin:-60px 0 0 -110px;width:220px;text-align:center;font:800 92px/1 Fredoka,sans-serif;color:#fff;-webkit-text-stroke:5px #06264a;paint-order:stroke;
   text-shadow:0 0 26px rgba(255,214,107,.9),0 6px 0 #031a33;pointer-events:none}
 .hitnum.neg{color:#ffb070}.hitnum.pos{color:#8ff3ff}.hitnum.zero{color:#ffd66b}
@@ -134,3 +133,20 @@ background:radial-gradient(120% 95% at 50% 46%,rgba(10,70,110,0) 58%,rgba(10,70,
 .sub.cue img{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 14px #ffd66b) drop-shadow(0 0 30px #ffb020)}
 .sub.cue .glow{opacity:1!important;background:radial-gradient(ellipse,rgba(255,224,120,.9),rgba(255,200,60,0) 68%)!important}
 .sub.cue .ring{border-color:#ffd66b;border-width:6px;animation:ring .9s ease-out infinite!important}
+
+/* Level 1: the cannon is the missile launcher (cockpit.js W.launcher): a − (blue) or + (red) badge, a glow; FIRE beside it */
+#cannon .sign{position:absolute;left:50%;top:44px;width:70px;height:70px;margin-left:-35px;border-radius:50%;display:none;box-sizing:border-box;
+  font:700 60px/58px Fredoka,sans-serif;color:#fff;text-align:center;background:radial-gradient(circle at 35% 30%,#5fb8ff,#1458b8);border:4px solid #fff;box-shadow:0 0 22px 4px rgba(73,190,255,.85)}
+#cannon.pos .sign{background:radial-gradient(circle at 35% 30%,#ff8a7a,#c8231a);box-shadow:0 0 22px 4px rgba(255,110,90,.85)}
+#cannon.armed .sign{display:block}
+#cannon.armed img{filter:drop-shadow(0 0 16px rgba(73,200,255,.95)) drop-shadow(0 0 34px rgba(73,200,255,.5))}
+#cannon.armed.pos img{filter:drop-shadow(0 0 16px rgba(255,110,90,.95)) drop-shadow(0 0 34px rgba(255,110,90,.5))}
+#launchHit{position:absolute;left:830px;top:720px;width:260px;height:240px;border-radius:40%;display:none;pointer-events:auto;cursor:pointer}
+#launchHit.on{display:block}
+#l1fire{position:absolute;left:1310px;top:715px;width:180px;height:180px;display:none;pointer-events:auto;cursor:pointer}
+#l1fire img{position:absolute;inset:0;width:100%;height:100%}
+#l1fire .lit{opacity:0;transition:opacity .25s}
+#l1fire.dim,#l1fire.lit{display:block}
+#l1fire.dim{filter:saturate(.3) brightness(.7)}
+#l1fire.lit .lit{opacity:1}
+#hudbar #strip.two{white-space:normal;line-height:1.1;text-overflow:clip}

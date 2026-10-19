@@ -4,7 +4,9 @@ Open `index.html` in Chrome: double-click it, or press **Go Live** in VS Code (L
 
 The game is played from inside the submarine cockpit (see *The cockpit* below).
 
-Flow: Story (from the story sheet, with Commander Meera & Cadet Riya: harbour with enemy submarines slipping in → the control-room doors open on a red alert → the navigation screen with defence line 0 → submarines at −6 and +5 → missiles launch → targets confirmed, MISSION 1 → dive through the porthole → How to play: a live demo round in the cockpit — the glow shows the mission, the number and the submarine, the cannon slides over and fires, with a step chip for each of the sheet's four steps) → Navigation-scale teaching → Level 1 Compare (with a first-mission tutorial) → Level 2 Order → Level 3 Combine signals → Final mixed mission.
+Flow (the story sheet's order; every line is from the sheets "Integers- Submarine - Story / L1 V3 / L2 V3 / L3 V3"): Story part 1 (rows 1–6: enemy submarines slip in → red alert → contact the defence station → the launcher rises → targets confirmed) → **Level 1** launch as many opposite missiles (teaching + tutorial + 6 practice rounds) → Story part 2, the L2 transition (rows 7–11: the navigation scale with border 0 → submarines at −6 and +5 → FIRE → MISSION 1) → How to play (a live demo round in the cockpit, a step chip for each of the sheet's four steps) → **Level 2** fire at the submarine close to border 0 → **Level 3** fire from the smaller number up → the story's ending (row 12, ROUTE CLEARED!).
+
+Level 1: the missiles that come sit in a row in the window (the enemy submarine's positive ones are red, the defence system's negative ones blue). The bow cannon becomes the launcher of the other sign (a − or + badge): each tap launches one missile into the row below, facing one that came (tap a launched missile to take it back). FIRE: if the numbers match, each pair meets and disappears (0 left); if not, the pairs link up, the ones with no partner flash red, the launched missiles fall away and the sheet's Incorrect Feedback 1 → 2 → 3 plays. After three mistakes the launcher stops at the right number. The sheet gives no animations or inactivity lines for Level 1: hints pulse the missiles that came / glow the launcher, and inactivity repeats the round's instruction.
 
 ```
 index.html          the game
@@ -40,7 +42,7 @@ The camera is inside the submarine, looking out through the big bow window (`ass
 - A miss: the cannon lines up under the wrong submarine and judders (no shot), the two ceiling lamps flash red and the window edge glows red.
 - Meera (left) and Riya (right) stand at their stations; whoever speaks plays their talking sheet and lights up. Dialogue appears on the console screen, which shows a slow sonar trace when nobody is talking.
 - Level 3 pair buttons sit high in the window, above the submarines. Cancelling a pair: the ▶ and ◀ collide, a ring bursts and a big glowing **0** springs out.
-- Fun layer (`js/cockpit.js`, bottom): every hit shakes the view (one whole-pixel shake of all layers, `W.shake` in `js/world.js`) and the submarine's number pops up big over its label; fish scatter from the blast; the enemy crew bail out in an escape pod with a white flag (`escape_pod.webp`); blast bubbles stick to the glass and slide down. Three first-try hits in a row turn the cannon gold and the next shot is a golden super torpedo. Every other time we sail on, a jellyfish (`jelly.webp`, Nano Banana 2) drifts up and knocks on the window. Each level dives deeper: the sea darkens a step, glowing plankton appear, and the console shows the depth (60 → 110 → 160 → 220 m). When a level is done, Meera's and Riya's stations glow and sparkle.
+- Fun layer (`js/cockpit.js`, bottom): every hit shakes the view (one whole-pixel shake of all layers, `W.shake` in `js/world.js`) and the submarine's number pops up big over its label; fish scatter from the blast; the enemy crew bail out in an escape pod with a white flag (`escape_pod.webp`); blast bubbles stick to the glass and slide down. Three first-try hits in a row turn the cannon gold and the next shot is a golden super torpedo. Each level dives deeper: the sea darkens a step, glowing plankton appear, and the console shows the depth (60 → 110 → 160 → 220 m). When a level is done, Meera's and Riya's stations glow and sparkle.
 - Art: the cockpit frame (`assets/img/cockpit.webp`, glass cut out) and the cannon are Gemini images in the game's style; the cannon's muzzle position is `MUZZLE_Y` in `js/cockpit.js` (read from `#cannon` in `css/cockpit.css`).
 - Code: `js/world.js` draws the sea, scale, submarines and effects; `js/cockpit.js` adds the sliding bow cannon (`W.aimHook`, `W.fire`), the crew and the cockpit effects; `css/cockpit.css` holds its layout. Layout constants (`SUB_Y`, `SUB_ROW`, `SIG_Y1/2`, `SCALE_DY`) are `DEFAULTS` in `js/world.js`.
 - The earlier ship-at-the-surface version was removed; it is still in the git history (before commit "Keep only the submarine cockpit version").
@@ -73,14 +75,14 @@ open http://localhost:8000/?edit=1
 - Rotation/scale on things the game itself rotates or scales (the cannon's lean, pop-ins) are overwritten by those animations
 
 ## Test shortcuts (URL)
-- `?at=teach | l1 | l2 | l3 | final` start at a section, `&round=2` start at a round
+- `?at=hook | l1 | l2 | l3` start at a section (`?at=hook&scene=2` = story part 2, `scene=3` = How to play), `&round=2` start at a round
 - `&speed=2` faster animations, `&mute=1` no sound/voice, `&autostart=1` skip the title button
 - In the story: tap = next line, "Skip story" jumps to the dive.
 
 ## Files
 - `js/script.js` EVERY spoken line ({id, who, text}) + level data. The game and `tools/make_voices.py` both read it — edit lines here (and re-record: `--only <id> --force`).
 - `js/core.js` stage fit, sound (Web-Audio sfx + tanpura/underwater music bed, ducked under voice), voice playback (recorded VO → browser voice), captions + name tag, the talking sheets
-- `js/world.js` parallax sea (far reef, seabed, fish schools, manta, rays, caustics, marine snow, bubbles), navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/blast (flash, shockwave, debris), hints, the helper glow (tutorial + nudges), badges, L3 signals + defence marker
+- `js/world.js` parallax sea (far reef, seabed, fish schools, rays, caustics, marine snow, bubbles), navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/blast (flash, shockwave, debris), hints, the helper glow (tutorial + nudges), badges, L3 signals + defence marker
 - `js/cockpit.js` the bow cannon + torpedo, the crew at their stations, console screen, warning lamps, hull kick
 - `js/qa.js` the QA jumper (`?qa=1`)
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
@@ -91,7 +93,7 @@ open http://localhost:8000/?edit=1
 ## Placeholders still in code (replace when the art arrives)
 - rule card → CSS (`#rule`)
 - left signal → `sig.webp` mirrored + recoloured in CSS (`.sig.neg`)
-- fish & manta → inline SVG in `world.js`
+- fish → inline SVG in `world.js`
 
 ## HUD
 The mission panel (`#hudbar`) is part of the ship: a slim navy steel plate with a brass rim and rivets, hanging from two brass ceiling mounts on thin struts. It comes down when a mission starts (servo whirr, latch clunk, the screen flickers on), refreshes its screen when the text changes, and goes back up into the ceiling between missions (`W.strip` / `W.stripOff`, cockpit.js). The hear-again button is a brass knob on the left; progress lamps sit on the right.
@@ -111,7 +113,7 @@ One bar on the ceiling holds the hear-again button, the mission text and the pro
 
 ## Calm mode (default) vs Full
 The game starts in **Calm** mode to keep the screen simple. The QA panel (**Q**) has a **Calm / Full** switch (saved per browser; `?fx=full` / `?fx=calm` also work).
-Calm keeps the hit's hero beats (blast + the sub breaking in two, escape pod, the number popping up, the sonar ping flying to progress) and drops: confetti, the floating praise word (Riya still says it), glass bubbles, frame glow, shock ring, debris, distance beam, current streaks, plankton, the manta, propeller and muzzle bubbles, the waiting rings on every sub (the 6 s help still pulses them) and the cannon's ring. Fish and rising bubbles are halved, one sea visitor per level, the console screen box shows only between missions, and only the crew member who is speaking is on screen.
+Calm keeps the hit's hero beats (blast + the sub breaking in two, escape pod, the number popping up, the sonar ping flying to progress) and drops: confetti, the floating praise word (Riya still says it), glass bubbles, frame glow, shock ring, debris, distance beam, current streaks, plankton, propeller and muzzle bubbles, the waiting rings on every sub (the 6 s help still pulses them) and the cannon's ring. Fish and rising bubbles are halved, the console screen box shows only between missions, and only the crew member who is speaking is on screen.
 
 ## Buoy trail + dialogue boxes
 - The number line is a **buoy trail**: a twisted rope strung right across the sea (under the window frame at both ends) with a red-and-white buoy at every whole number and a bigger gold buoy at 0 (`buoy.webp`, `buoy_zero.webp`, Nano Banana 2), each anchored by a short chain, the number under it. Numbers are 106 px apart (`STEP`). Buoys swing gently on their rings (rotation only, so their spacing never changes). A buoy with a submarine above it glows and grows; its number lights up in a chip.
@@ -122,8 +124,9 @@ The whole story is **one continuous underwater scene**: the camera never cuts.
 - **Water** (`js/water.js`): one WebGL canvas draws the backdrop with slow refraction ripples, moving caustic light, god rays and a soft Gaussian depth blur toward the bottom and edges. When the game is opened straight from a file (`file://`), browsers don't let WebGL read the image, so the plain background is used instead; Live Server and Vercel get the full effect.
 - The Coast Guard ship is a dark silhouette at the surface above; Meera and Riya speak from glass comms panels (LIVE) in the bottom corners; the narrator and the Defence System use a glass caption.
 - It opens through the sonar-room doors (`door_left/right.webp`): two lamp blinks, the latch kicks, air hisses, then both halves slide apart (0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1)) onto the water.
-- Part 1 (rows 1–6): subs slip in → they fire missiles up at the ship, the water flushes red, ALERT → Meera's radar → contact the defence station → the launcher rises from the seabed → sonar locks on, TARGETS CONFIRMED, the blue missiles meet the red ones.
-- Part 2 (rows 7–11): the navigation scale floats in; the subs swim onto −6, −2, +2 and +5 → distances to 0 → the FIRE button; after "Ready? Launch the missiles." the child presses FIRE → MISSION 1 → the game (also underwater). The ending (row 12) returns to the same water, brighter, with ROUTE CLEARED! and confetti.
+- Part 1 (rows 1–6): subs slip in → they fire missiles up at the ship, the water flushes red, ALERT → Meera's radar → contact the defence station → the launcher rises from the seabed → sonar locks on, TARGETS CONFIRMED, the blue missiles meet the red ones → Level 1.
+- Part 2 (rows 7–11, after Level 1; it fades in over the cockpit): the navigation scale floats in; the subs swim onto −6, −2, +2 and +5 → distances to 0 → the FIRE button; after "Ready? Launch the missiles." the child presses FIRE → MISSION 1 → How to play → Level 2. The ending (row 12) returns to the same water, brighter, with ROUTE CLEARED! and confetti.
+- Speakers: the sheet's "Officer", "Officer Veer" and "Officer 1st" are Commander Meera; "Officer Riya" is Cadet Riya. Row 7's line comes from its OST column (no dialogue); row 9 uses the OST column's "closer" line, since +5 is nearer border 0 than −6.
 - Motion: on-screen words spring in letter by letter with a light sweep; missiles leave bubble trails; sonar rings, target locks, shake on hits.
 - Voices: 8 new lines (n1 a2 m3 m4 d5 m6 m8 r9) use the browser voice until recorded (`python3 tools/make_voices.py` with a working key; the Narrator and Defence System voices are set up).
 

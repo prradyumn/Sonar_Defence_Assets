@@ -273,7 +273,7 @@
   ]);
   const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
   // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action
-  ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'jelly', 'pop', 'pip_on', 'pip_off',
+  ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'pop', 'pip_on', 'pip_off',
     'star_gold', 'star_silver', 'badge', 'marker', 'card', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']
     .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
   // the story art too (characters, sprites, the water) — decoded in the background so no scene hitches when they first appear

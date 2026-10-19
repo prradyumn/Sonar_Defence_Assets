@@ -10,10 +10,10 @@
   if (Q.get('qa') === '1') build(false);
   function build(open) {
   const PARTS = [
-    ['Story', [['Part 1 · alert', { at: 'hook', scene: 1 }], ['Part 2 · positions', { at: 'hook', scene: 2 }], ['How to play', { at: 'hook', scene: 3 }]]],
-    ['Level 1 · Missiles (+ and −)', SCRIPT.D.L1.map((R, i) => [(i ? 'R' + (i + 1) : 'R1 tutorial'), { at: 'l1', round: i + 1 }])],
-    ['Level 2 · Closer to 0', SCRIPT.D.L2.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + R1'), { at: 'l2', round: i + 1 }])],
-    ['Level 3 · Fire in order', SCRIPT.D.L3.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + R1'), { at: 'l3', round: i + 1 }])],
+    ['Story', [['Part 1 · alert (→ L1)', { at: 'hook', scene: 1 }], ['Part 2 · positions (→ L2)', { at: 'hook', scene: 2 }], ['How to play', { at: 'hook', scene: 3 }]]],
+    ['Level 1 · Launch missiles (+ and −)', SCRIPT.D.L1.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + tutorial'), { at: 'l1', round: i + 1 }])],
+    ['Level 2 · Closer to 0', SCRIPT.D.L2.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + tutorial'), { at: 'l2', round: i + 1 }])],
+    ['Level 3 · Fire in order', SCRIPT.D.L3.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + tutorial'), { at: 'l3', round: i + 1 }])],
   ];
   const css = document.createElement('style');
   css.textContent = `
@@ -48,7 +48,7 @@
       `<button data-g="${gi}" data-i="${i}"${isHere(p) && Q.get('at') ? ' class="here"' : ''}>${label}</button>`).join('')}</div>`).join('')}
       <hr><h5>While playing</h5><div class="row">
         <button data-a="skip" title="End the current line">Skip line ⏭</button>
-        <button data-a="answer" title="Cancel the next missile pair, or tap the right submarine, for you">Answer ✓</button>
+        <button data-a="answer" title="Launch the right number of missiles and FIRE, or tap the right submarine, for you">Answer ✓</button>
         <button data-a="restart" title="Reload this part">Restart part ↻</button></div>
       <h5>Next jump</h5><div class="row">${['1', '2', '3'].map(s => `<button data-speed="${s}"${keep.speed === s ? ' class="on"' : ''}>${s}×</button>`).join('')}
         <button data-a="mute"${keep.mute ? ' class="on"' : ''}>Sound off</button></div>
@@ -67,8 +67,13 @@
     if (a === 'skip') window.SD && SD.skip();
     if (a === 'restart') { const w = (window.SD && SD.where) || {}; jump({ at: w.at && w.at !== 'title' ? w.at : cur.at, round: w.round || 1, scene: cur.scene }); }
     if (a === 'answer' && window.W) {
-      const pair = W.matching && W.mslPairs()[0], tap = el => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-      if (pair) { tap(pair[0].d); setTimeout(() => tap(pair[1].d), 120); }
+      const tap = el => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      if (W.matching) {   // Level 1: take back extras, launch up to the right number, then FIRE
+        const need = W.mslRow(0).length, mine = W.mslRow(1);
+        mine.slice(need).forEach(m => tap(m.d));
+        for (let i = mine.length; i < need; i++) setTimeout(() => tap(document.getElementById('launchHit')), (i - mine.length) * 120);
+        setTimeout(() => tap(document.getElementById('l1fire')), Math.max(0, need - mine.length) * 120 + 600);
+      }
       else if (W.waiting && W.subAt(W.expect)) tap(W.subAt(W.expect).d);
     }
   });

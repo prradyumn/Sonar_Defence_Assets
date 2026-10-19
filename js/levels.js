@@ -1,4 +1,5 @@
-/* levels: hook (story) → L1 positive + negative missiles → L2 closer to the defence line → L3 fire in order (sheets L1–L3 V3) → story ending.
+/* levels: story part 1 → L1 launch opposite missiles → story part 2 → how to play → L2 closer to the border → L3 fire in order
+   (sheets L1–L3 V3 and the story sheet) → story ending.
    Every spoken line comes from js/script.js (SCRIPT.S / SCRIPT.D) so recorded voices match by id. */
 (function () {
   const { $, Q, wait, fmt, SFX, say } = SD;
@@ -23,11 +24,13 @@
 
   /* ---------- fire at one submarine with the 3-strike rule ----------
      A wrong tap gets Incorrect Feedback 1, 2, 3 (with their animations); after the third only the right submarine answers.
-     Idle: 6 s → the inactivity animation · 12 s → the inactivity line too · 22 s → both again. */
+     Idle: 6 s → the inactivity animation · 12 s → the inactivity line too · 22 s → both again.
+     o.guide (a level's first round, the tutorial): the helper glow shows what to tap, again after every miss. */
   async function strike(R, target, o = {}) {
     let wrong = 0; W.expect = target;
     const idleAnim = o.idleAnim || (() => ANIM[R.idleL.kind](R)), idleLine = o.idleLine || R.idleL.line;
-    for (;;) {
+    for (let k = 0; ; k++) {
+      if (o.guide) o.guide(k === 0);
       const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); say(idleLine); }, onIdle2: () => { idleAnim(); say(idleLine); }, only: wrong >= 3 ? W.subAt(target) : null });
       SD.skip();
       if (s.v === target) { W.clearHints(); const r = await W.lock(s); SFX.right(); await W.fire(s, r); return wrong === 0; }
@@ -43,8 +46,8 @@
      STORY — the storyboard told in ONE continuous underwater scene: the camera never cuts. The water is a WebGL
      canvas (js/water.js: refraction, caustics, god rays, depth blur); the Coast Guard ship is a silhouette at the
      surface; Meera and Riya speak from glass comms panels; the navigation scale floats in the water and the enemy
-     subs swim onto their numbers. Part 1 = rows 1–6, part 2 = rows 7–11, then FIRE → the game (also underwater).
-     The ending (row 12) returns to the same scene. ?at=hook&scene=2 starts at part 2, scene=3 at How to play.
+     subs swim onto their numbers. Part 1 = rows 1–6, then Level 1; part 2 = rows 7–11 (the L2 transition), then FIRE →
+     How to play → Level 2. The ending (row 12) returns to the same scene. ?at=hook&scene=2 starts at part 2, scene=3 at How to play.
      ===================================================================== */
   const IMG = n => 'assets/img/story/' + n + '.webp';
   const bezier = (x1, y1, x2, y2) => t => {          // CSS cubic-bezier as a GSAP ease (Newton on x, then y)
@@ -54,10 +57,11 @@
   };
   const DOOR_EASE = bezier(.45, 0, .2, 1);           // door_opening.svg: 0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1)
   let WATER = null;
-  function storyKit() {
+  function storyKit(fade) {   // fade: the story fades in over the cockpit (part 2 and the ending come after a level)
     const st = $('#story'), bg = $('#storyBg'), cast = $('#cast'), sfx = $('#storyFx');
     st.classList.remove('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([st, bg, cast, sfx], { clearProps: 'all' });
-    const K = { st, bg, cast, sfx, skipping: false, SKIP: {} };
+    if (fade) gsap.set(st, { opacity: 0 });
+    const K = { st, bg, cast, sfx, fade, skipping: false, SKIP: {} };
     K.chk = () => { if (K.skipping) throw K.SKIP; };
     $('#skipStory').onclick = e => { e.stopPropagation(); K.skipping = true; SD.skip(); };
     st.onpointerdown = e => { if (e.target.id !== 'skipStory') SD.skip(); };   // tap = next line
@@ -73,7 +77,8 @@
       if (WATER === null) { WATER = Water(cv) || false; if (WATER && !(await WATER.load(IMG('bg_under')))) WATER = false; }
       cv.style.display = WATER ? 'block' : 'none'; if (WATER) { Object.assign(WATER.state, { glow: 0, r: 1, g: 1, b: 1 }); WATER.start(); }
       K.cam = gsap.fromTo([cv, bg], { scale: 1.08 }, { scale: 1.02, duration: 30, ease: 'none' });
-      gsap.set(st, { opacity: 1 }); gsap.fromTo([cv, bg], { opacity: 0 }, { opacity: 1, duration: .6 });   // the overlay is solid from the first frame; only the water fades in
+      if (K.fade) await gsap.to(st, { opacity: 1, duration: .8 }); else gsap.set(st, { opacity: 1 });
+      gsap.fromTo([cv, bg], { opacity: 0 }, { opacity: 1, duration: .6 });   // the overlay is solid from the first frame; only the water fades in
       for (let i = 0; i < 9; i++) { const r = 4 + Math.random() * 9, b = mk('div', 'sx-bub', { left: 120 + Math.random() * 1680 + 'px', top: '1100px', width: 2 * r + 'px', height: 2 * r + 'px' });
         gsap.to(b, { y: -1250, x: (Math.random() - .5) * 120, duration: 7 + Math.random() * 6, delay: Math.random() * 5, repeat: -1, ease: 'none' }); }
     };
@@ -163,11 +168,12 @@
     return K;
   }
 
-  async function hook() {
+  /* part 1 = rows 1–6, then Level 1. part 2 = rows 7–11 (the L2 transition), then How to play and Level 2; scene 3 = How to play only */
+  async function hook(part = 1, scene = 1) {
     SD.music('calm'); SD.ambience('waves');
-    const K = storyKit(), { sfx, cast } = K, SCENE = Q.get('at') === 'hook' ? +(Q.get('scene') || 1) : 1;
+    const K = storyKit(part === 2), { sfx, cast } = K;
     await K.open();
-    if (SCENE < 2) await K.doors().catch(e => { if (e !== K.SKIP) throw e; });   // the story opens through the sonar-room doors
+    if (part === 1) await K.doors().catch(e => { if (e !== K.SKIP) throw e; });   // the story opens through the sonar-room doors
     // the Coast Guard ship above us: a dark silhouette at the surface
     const ship = K.img('ship', 'sx-hull', {}); gsap.fromTo(ship, { x: -400 }, { x: 0, duration: 4, ease: 'power2.out' }); gsap.to(ship, { y: 5, duration: 2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
     const subs = [];
@@ -176,7 +182,7 @@
         onComplete: () => { const p = K.px(u), r = K.mk('div', 'sx-ring', { left: p.x + 'px', top: p.y + 'px' }); gsap.fromTo(r, { scale: .2, opacity: .9 }, { scale: 2, opacity: 0, duration: 1, onComplete: () => r.remove() }); SFX.blip(); } });
       u.bob = gsap.to(u, { y: '+=8', duration: 1.6 + i * .2, yoyo: true, repeat: -1, ease: 'sine.inOut' }); subs.push(u); return u; };
     try {
-      if (SCENE < 2) {
+      if (part === 1) {
         /* 1 · enemy submarines slip in and take positions */
         sub(1180, 520, 0); sub(1520, 640, 1); sub(780, 440, 2);
         await K.say(S.n1);
@@ -237,7 +243,7 @@
         await wait(1.2); K.chk();
       }
 
-      if (SCENE < 3) {
+      if (part === 2 && scene < 3) {
         /* 7 · the navigation scale floats into the water; subs swim onto their positions */
         const nav = K.scale();
         const at = { };
@@ -281,7 +287,7 @@
     await gsap.to(K.st, { opacity: 0, scale: 1.15, duration: .8, ease: 'power2.in' });
     K.close(); K.st.classList.add('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([K.st, K.bg, cast, sfx], { clearProps: 'all' });
     await W.sail(1.4);
-    await howTo();
+    if (part === 2) await howTo();
   }
 
   // wait for the child to press the glowing FIRE button (taps elsewhere do nothing here; Skip story still skips)
@@ -306,7 +312,7 @@
 
   /* ---- row 12 · the ending: the same water, calm and bright, the route cleared ---- */
   async function storyEnd() {
-    const K = storyKit();
+    const K = storyKit(true);
     $('#skipStory').style.display = 'none';
     try {
       await K.open(); if (WATER) gsap.to(WATER.state, { glow: .6, duration: 2 });   // the light comes back
@@ -337,7 +343,7 @@
     step(1, 'READ THE MISSION');
     const intro = W.scaleIntro();
     await W.spawn([-4, T], { stagger: .25 });
-    W.strip(`Fire at the submarine at <b>${f(T)}</b>.`);
+    W.strip(D.L2[0].ost);   // the mission box: Level 2's mission (+3 is closer to border 0 than −4)
     const p1 = say(S.hp1);
     await intro; await W.handTo(960, 72, .3); await W.handTap(960, 72);   // the glow pulses on the mission text…
     await W.handTo(W.X(0), W.LBL_Y + W.CONFIG.SCALE_DY, .7);                 // …then on 0 in the middle of the scale
@@ -361,93 +367,85 @@
     W.glow(sub, false); await W.fire(sub, ret);
     W.sparkle(lx, sub.cy - 40); await p4; await wait(.8);
     gsap.to(chip, { opacity: 0, duration: .3, onComplete: () => chip.remove() });
-    await W.clearSubs(); W.stripOff(); W.labelsOn([]);
-    await gsap.to('#scale', { opacity: 0, duration: .4 });   // the teaching switches the scale on again, properly
+    await W.clearSubs(); W.stripOff(); W.labelsOn([]);   // the scale stays on: Level 2 follows
   }
 
   /* =====================================================================
-     LEVEL 1 · positive and negative missiles (sheet L1 V3)
-     The enemy's red missiles are positive, the defence system's blue ones negative. The child taps one missile and then
-     an opposite one: the pair meets and cancels (0). Then they fire at the submarine on the answer (rows 2–10).
-     Two missiles of the same sign, or a wrong submarine, is a mistake: Incorrect Feedback 1, 2, 3 in turn.
-     On the right answer the rest of the pairs cancel, the missiles left fly into the marker (it steps along the rope) and we fire.
+     LEVEL 1 · launch as many opposite missiles (sheet L1 V3)
+     The enemy submarine's missiles are positive (red), the defence system's negative (blue); they come into the top row.
+     The bow cannon is the launcher of the other sign: each tap launches one missile into the row below (tap a launched one
+     to take it back), then FIRE. The same number: each pair meets and disappears, 0 left. Any other number is a mistake:
+     the launched missiles fall away and Incorrect Feedback 1, 2, 3 play in turn; after the third the launcher stops at the
+     right number. Row 1 is the teaching (the missiles come, the launcher activates), row 2 the tutorial (a guiding glow).
      ===================================================================== */
-  const eq = (a, b) => `(${f(a)}) + (${f(b)})`;
-  async function missileRound(R) {
-    const res = R.a + R.b, opp = Math.sign(R.a) !== Math.sign(R.b); W.expect = res;
-    await W.panFor(R.opts || [0]);
-    W.strip(eq(R.a, R.b) + ' = ?', { big: true });
-    W.marker(0);
-    await W.missiles([{ n: Math.abs(R.a), sign: Math.sign(R.a) }, { n: Math.abs(R.b), sign: Math.sign(R.b) }]);
-    if (R.opts) await W.spawn(R.opts, { stagger: .35 });
-    await wait(.5); await say(R.voL); await wait(.4);
-    let strikes = 0, sel = null, busy = false, onCancel = () => {};
-    const K = {   // the sheet's animation kinds
-      pair: () => { const p = W.mslPairs()[0]; if (p) W.mslPulse(p); },                       // one opposite pair pulses
-      pairs: () => W.mslPairs().forEach((p, i) => W.mslPulse(p, i * .06)),                      // all possible pairs glow
-      demoPair: async () => { const p = W.mslPairs()[0]; if (!p || busy) return; busy = true; if (sel) { W.mslSel(sel, false); sel = null; } await W.mslCancel(p[0], p[1]); busy = false; onCancel(); },   // one pair moves together and disappears
-      remain: () => W.mslPulse(W.mslRemain()),                                                  // the missiles that will remain pulse
-      groupsEq: () => { W.mslPulse(W.mslRow(0)); W.mslPulse(W.mslRow(1)); },                    // both groups highlight equally
-      groups: () => { W.mslPulse(W.mslRow(0)); W.mslPulse(W.mslRow(1)); },                      // both missile groups pulse (together)
-      groupsMove: () => W.mslTogether(),                                                        // the groups move together
-      total: () => { W.mslPulse(W.mslAlive()); W.pulseSub(W.subAt(res)); W.pulseLbl(res); },  // the whole group and the total pulse
+  async function launchRound(R, teach) {
+    const n = Math.abs(R.give), given = Math.sign(R.give), mine = -given, room = 2;
+    W.launcher(0); W.fireBtn('');
+    await W.missiles(n, given, room);   // the missiles come towards the defence area
+    if (teach) { await wait(.3); W.launcher(mine); await wait(.6); await say(D.L1_TEACH.voL); await wait(.4); }   // the launcher activates
+    W.launcher(mine); W.fireBtn('dim');
+    W.strip(R.ost); await wait(.3); await say(R.voL);
+    let strikes = 0, busy = false;
+    const count = () => W.mslRow(1).length;
+    const ANIM = {   // no incorrect animations in the sheet for Level 1: point at the count
+      given: () => W.mslPulse(W.mslRow(0), 0, .18),                               // the missiles that came pulse one by one
+      launcher: () => { W.handTo(...pt('#launchHit')); if (!R.tutorial) gsap.delayedCall(2.6, () => W.hand(null)); },   // the launcher glows
+      both: () => { ANIM.given(); ANIM.launcher(); },
     };
-    W.matching = true; W.dragRope(true);
-    const hit = await new Promise(resolve => {
+    const pt = sel => { const c = W.centreOf($(sel)); return [c.x, c.y]; };
+    const guide = () => {   // the tutorial's glow: the launcher until there are enough, then FIRE (too many: the last one, to take back)
+      if (!R.tutorial || busy) return;
+      const k = count();
+      if (k < n) W.handTo(...pt('#launchHit')); else if (k === n) W.handTo(...pt('#l1fire')); else { const m = W.mslRow(1)[k - 1]; W.handTo(m.x, m.y); }
+    };
+    const ok = await new Promise(resolve => {
       let calls = [];
-      const idle = () => K[R.idleL.kind]();
-      const arm = () => { calls.forEach(c => c.kill()); calls = [gsap.delayedCall(6, idle), gsap.delayedCall(12, () => { idle(); say(R.idleL.line); }), gsap.delayedCall(22, () => { idle(); say(R.idleL.line); })]; };
-      const stop = () => { calls.forEach(c => c.kill()); W.onMissile(null); };
-      const mistake = async () => { strikes++; const fb = R.fbL[Math.min(strikes, 3) - 1]; K[fb.kind](); await say(fb.line); };
-      onCancel = () => { if (!R.opts && !W.mslPairs().length) { stop(); resolve(null); } };   // row 1: done when every pair is cancelled
-      W.onMissile(async m => {
-        arm(); SD.skip(); if (busy) return; W.mslHintsOff();   // a tap ends any hint glow, so the picked missile shows clearly
-        if (!sel) { sel = m; W.mslSel(m, true); return; }
-        if (sel === m) { W.mslSel(m, false); sel = null; return; }
-        const a = sel; sel = null;
-        if (a.sign !== m.sign) { busy = true; await W.mslCancel(a.sign > 0 ? a : m, a.sign > 0 ? m : a); busy = false; onCancel(); }
-        else { W.mslSel(a, false); W.mslBad(a, m); mistake(); }
+      const nudge = () => { W.mslPulse(W.mslRow(0), 0, .18); gsap.fromTo('#cannon', { scale: 1 }, { scale: 1.06, duration: .3, yoyo: true, repeat: 3, transformOrigin: '50% 100%' }); };
+      const arm = () => { calls.forEach(c => c.kill()); calls = [gsap.delayedCall(6, nudge), gsap.delayedCall(12, () => { nudge(); say(R.voL); }), gsap.delayedCall(22, () => { nudge(); say(R.voL); })]; };
+      const stop = () => { calls.forEach(c => c.kill()); W.onLaunch(null); W.onMissile(null); W.onFire(null); };
+      const fireState = () => W.fireBtn(count() ? 'lit' : 'dim');
+      W.matching = true;
+      W.onLaunch(() => {
+        arm(); SD.skip(); if (busy) return; W.mslHintsOff();
+        if (count() >= n + room || (strikes >= 3 && count() >= n)) return W.launcherNo();   // (after three mistakes it stops at the right number)
+        W.mslLaunch(mine, W.cannonShot()); fireState(); guide();
       });
-      if (R.opts) (async () => {
-        for (;;) {
-          const s = await W.waitTap({ noIdle: true, only: strikes >= 3 ? W.subAt(res) : null });
-          arm(); SD.skip();
-          if (s.v === res) { stop(); return resolve(s); }
-          busy = true; const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); busy = false; mistake();
-        }
-      })();
-      arm();
+      W.onMissile(m => { if (m.row !== 1 || busy) return; arm(); SD.skip(); W.mslTakeBack(m, W.muzzle()); fireState(); guide(); });
+      W.onFire(async () => {
+        if (busy || !count()) return; arm(); SD.skip(); W.hand(null);
+        if (count() === n) { stop(); return resolve(true); }
+        busy = true; strikes++; W.fireBtn('dim');
+        W.mslLinks(); await wait(.35); W.mslBad(W.mslRemain()); W.alarm(); await wait(1.1);   // the pairs link up; the missiles with no partner flash red
+        await W.mslDrop();
+        busy = false; const fb = R.fbL[Math.min(strikes, 3) - 1]; ANIM[fb.kind](); guide(); say(fb.line);
+      });
+      arm(); guide();
     });
-    W.matching = false; W.dragRope(false); if (sel) W.mslSel(sel, false);
-    // Correct Animation: the opposite pairs disappear, the missiles left move the marker from 0, then the shot
-    if (hit) W.glow(hit, true);
-    for (const [p, n] of W.mslPairs()) await W.mslCancel(p, n, true);
-    await wait(.4); await (Math.abs(res) <= 14 ? W.panFor([0, res], 1) : W.panTo(Math.sign(res) * 7, 1));
-    if (opp) await W.runMarker(W.mslRemain());
-    else { await W.runMarker(W.mslRow(0)); await wait(.25); await W.runMarker(W.mslRow(1)); }
-    if (!res) W.markerPulse();   // the marker stays at 0
-    await wait(.7);
-    if (hit) { W.glow(hit, false); await W.follow(res); const r = await W.lock(hit); SFX.right(); await wait(.4); await W.fire(hit, r); }
+    W.matching = false; W.hand(null); W.fireBtn(''); W.launcher(0);
+    // Correct Animation: each missile meets the one facing it, and all the pairs disappear
+    SFX.launch(); const pairs = W.mslPairs(), quick = pairs.length > 6;
+    pairs.forEach(([p, q], i) => gsap.delayedCall(i * (quick ? .12 : .3), () => W.mslCancel(p, q, quick)));
+    await wait(pairs.length * (quick ? .12 : .3) + 1.2);
     mark(strikes === 0);
-    W.reward({ big: false, confetti: true, pip: W.pipDone, at: hit ? null : { x: 960, y: 260 } });   // small confetti
-    W.strip(eq(R.a, R.b) + ' = ' + f(res), { big: true });
-    await wait(.5); await say(R.okL);
-    await wait(1.4); W.clearMissiles(); W.markerOff(); await W.clearSubs(); W.stripOff();
+    W.reward({ big: strikes === 0, confetti: true, pip: W.pipDone, at: { x: 960, y: (W.CONFIG.SIG_Y1 + W.CONFIG.SIG_Y2) / 2 } });
+    await wait(.4); await say(R.okL);
+    await wait(1.2); W.clearMissiles(); W.stripOff();
   }
   async function level1(start = 0) {
-    LV = 'l1'; await W.banner('', 'LEVEL 1', '');
+    LV = 'l1'; W.dragRope(false); gsap.set('#scale', { opacity: 0 });   // Level 1 has no scale: it comes in the L2 transition
+    await W.banner('', 'LEVEL 1', '');
     W.pips(D.L1.length, start);
     for (let r = start; r < D.L1.length; r++) {
       SD.where = { at: 'l1', round: r + 1 };
-      await missileRound(D.L1[r]); W.pips(D.L1.length, r + 1);
+      await launchRound(D.L1[r], r === 0); W.pips(D.L1.length, r + 1);
       if (r < D.L1.length - 1) await W.sail();
     }
     await complete('l1', 'LEVEL 1 COMPLETE!');
   }
 
   /* =====================================================================
-     LEVEL 2 · fire at the submarine close to our defence line 0 (sheet L2 V3). The rope glides to each pair of positions;
-     0 keeps a glowing defence line (and a chip at the edge of the window when it is out of view).
+     LEVEL 2 · fire at the submarine close to our border 0 (sheet L2 V3). The rope glides to each pair of positions;
+     0 keeps a glowing border line (and a chip at the edge of the window when it is out of view).
      ===================================================================== */
   async function level2(start = 0) {
     LV = 'l2'; await W.banner('', 'LEVEL 2', '');
@@ -463,8 +461,12 @@
       const R = D.L2[r];
       await W.panFor(R.subs);   // (0 joins the view when it fits)
       W.strip(R.ost); await W.spawn(R.subs, { stagger: .45 });
-      W.dragRope(true); await wait(.4); await say(R.voL); await wait(.3);
-      const first = await strike(R, R.target); W.dragRope(false);
+      const tut = r === 0;   // the first round is the tutorial: no dragging, the glow shows border 0, then the submarine close to it
+      W.dragRope(!tut); await wait(.4); await say(R.voL); await wait(.3);
+      const guide = tut && (async first => { const s = W.subAt(R.target); if (!s) return;
+        if (first) { await W.handTo(W.X(0), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseZero(); await wait(1.2); }
+        if (W.waiting) W.handTo(s.x, s.cy, .8); });
+      const first = await strike(R, R.target, { guide }); W.dragRope(false);
       mark(first);
       W.reward({ big: first, pip: W.pipDone });
       await wait(.5); W.strip(R.show, { big: true });   // Correct Animation: show +8 < +10
@@ -490,7 +492,7 @@
     while (out.length < n) out.push({ x: 360 + out.length * 400, y: 300 });
     return out;
   }
-  async function orderRound(R) {
+  async function orderRound(R, tut) {   // tut: the level's first round, the glow shows the submarine to fire next
     const seq = [...R.subs].sort((a, b) => a - b);
     W.strip(R.ost, { big: true });
     await wait(.4); await say(R.voL); await wait(.3);
@@ -501,7 +503,8 @@
         fb: k => k === 1 ? { line: R.fbL[0].line, anim: () => {} }   // the wrong submarine shakes (W.wrong)
           : k === 2 ? { line: R.fbL[1].line, anim: () => W.subs().forEach((s, j) => W.pulseTag(s, j * .08)) }   // the numbers left pulse
           : { line: D.startWith(next), anim: pulseNext },   // "Start with the submarine with −12." and it pulses
-        idleAnim: pulseNext, idleLine: R.idleL.line });   // the smallest number left pulses
+        idleAnim: pulseNext, idleLine: R.idleL.line,   // the smallest number left pulses
+        guide: tut && (() => { const s = W.subAt(next); if (s) W.handTo(s.x, s.cy, .6); }) });
       allFirst = allFirst && first;
       W.badge(next, i + 1, W.lastHit); await wait(.9);
     }
@@ -520,7 +523,7 @@
       const R = D.L3[r];
       await W.spawn(R.subs, { at: scatter(R.subs.length), stagger: .5 });   // the submarines appear at random places
       if (r === 0) { W.strip(D.L3_TEACH.ost, { big: true }); await wait(.4); await say(D.L3_TEACH.voL); await wait(.8); }
-      await orderRound(R);
+      await orderRound(R, r === 0);
       W.pips(D.L3.length, r + 1);
       if (r < D.L3.length - 1) await W.sail();
     }
@@ -548,16 +551,19 @@
     await W.sail();
   }
 
-  /* ---------- run: story → Level 1 → Level 2 → Level 3 (→ the story's ending) → back to the title ---------- */
+  /* ---------- run (the story sheet's order): story part 1 → Level 1 → story part 2 (L2 transition) → How to play → Level 2
+     → Level 3 (→ the story's ending) → back to the title. ?at=hook&scene=2 is part 2 ('nav'), scene=3 How to play. ---------- */
   async function run() {
-    const at = Q.get('at') || 'hook', r = parseInt(Q.get('round') || '1', 10) - 1;
-    const order = ['hook', 'l1', 'l2', 'l3'];
+    const scene = +(Q.get('scene') || 1), r = parseInt(Q.get('round') || '1', 10) - 1;
+    let at = Q.get('at') || 'hook'; if (at === 'hook' && scene > 1) at = 'nav';
+    const order = ['hook', 'l1', 'nav', 'l2', 'l3'];
     for (let i = Math.max(0, order.indexOf(at)); i < order.length; i++) {
       const k = order[i], st = k === at ? r : 0;
       SD.where = { at: k, round: st + 1 };
-      if (k !== 'hook' && k === at) { SD.music('play'); SD.ambience('waves'); }
-      if (k === 'hook') await hook();
-      if (k === 'l1') { await W.scaleIntro(); await level1(st); }
+      if (k !== 'hook' && k !== 'nav' && k === at) { SD.music('play'); SD.ambience('waves'); }
+      if (k === 'hook') await hook(1);
+      if (k === 'l1') await level1(st);
+      if (k === 'nav') await hook(2, k === at ? Math.max(2, scene) : 2);
       if (k === 'l2') { if (k === at) await W.scaleIntro(); await level2(st); }
       if (k === 'l3') await level3(st);
     }
