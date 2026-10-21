@@ -419,3 +419,7 @@ img{-webkit-user-drag:none;user-select:none}
 #sigs.live .msl.sel::after,#sigs.live .msl.hint::after,#sigs.live .msl.bad::after{animation:none;opacity:1}
 /* a matched pair: a bright link joins the two before they meet */
 .mlink{position:absolute;height:8px;margin-top:-4px;border-radius:4px;transform-origin:0 50%;background:linear-gradient(90deg,#ff8a6b,#fff 50%,#7ff2ff);box-shadow:0 0 18px rgba(255,255,255,.9)}
+/* story rows 8–9: an arrow from a position left towards our border (the negative side) */
+.sx-dist.arrow.n{color:rgba(255,138,92,.95)}.sx-dist.arrow.p{color:rgba(95,230,255,.95)}
+.sx-dist.arrow::before{content:"";position:absolute;left:-18px;top:50%;margin-top:-13px;border:13px solid transparent;border-right:20px solid currentColor;border-left:0}
+.sx-nav .sx-dist.arrow.p{top:119px}   /* +5's long arrow runs under the numbers, −6's short one above */

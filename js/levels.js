@@ -12,14 +12,11 @@
   /* ---------- the sheets' hint animations ("Incorrect Animation" / "Inactivity Animation" columns) for Levels 2 and 3 ---------- */
   const sub = v => W.subAt(v);
   const ANIM = {
-    zeroBoth: R => { W.pulseZero(); R.subs.forEach((v, i) => W.pulseSub(sub(v), .15 + i * .1)); },      // 0 and both submarines pulse
     both: R => R.subs.forEach((v, i) => W.pulseSub(sub(v), i * .1)),                                    // both submarines pulse
     labelsSeq: R => R.subs.forEach((v, i) => W.pulseLbl(v, i * 1.1)),                                   // the two numbers pulse one after another
     labels: R => R.subs.forEach(v => W.pulseLbl(v)),                                                    // both numbers glow
-    dist: R => R.subs.forEach((v, i) => W.distance(v, i * .5)),                                         // the distance from 0 to each position appears
     targetRing: R => { W.pulseSub(sub(R.target)); W.pulseLbl(R.target); W.ring(sub(R.target)); },       // it pulses and the target ring appears
     target: R => { W.pulseSub(sub(R.target)); W.pulseLbl(R.target); },                                  // the answer pulses
-    zeroTarget: R => { W.pulseZero(); W.pulseSub(sub(R.target), .15); W.pulseLbl(R.target, .15); },     // 0 and the answer pulse
   };
 
   /* ---------- fire at one submarine with the 3-strike rule ----------
@@ -161,8 +158,9 @@
       gsap.fromTo(s.querySelector('.sheen'), { xPercent: -120, opacity: 1 }, { xPercent: 560, duration: 1.1, delay: .3, ease: 'power2.inOut', onComplete() { this.targets()[0].style.opacity = 0; } });
       s.x = v => 300 + (v + 8) * 80 + 60;            // stage x (the scale's left is 300 px)
       s.zero = () => gsap.fromTo(s.querySelectorAll('.z'), { scale: 1 }, { scale: 1.5, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' });
-      s.toZero = (v, cls) => { const a = mk('div', 'sx-dist ' + cls, { left: Math.min(s.x(0), s.x(v)) - 300 + 'px', width: Math.abs(s.x(v) - s.x(0)) + 'px' }, s); a.innerHTML = `<span>${Math.abs(v)}</span>`;
-        gsap.fromTo(a, { scaleX: 0, transformOrigin: v < 0 ? '0% 50%' : '100% 50%' }, { scaleX: 1, duration: .6, ease: 'power2.out' }); return a; };
+      // an arrow from a position left towards our border (our territory is the negative side): short = close, long = far
+      s.toBorder = (v, cls) => { const x0 = s.x(-8) - 40, a = mk('div', 'sx-dist arrow ' + cls, { left: x0 - 300 + 'px', width: s.x(v) - x0 + 'px' }, s);
+        gsap.fromTo(a, { scaleX: 0, transformOrigin: '100% 50%' }, { scaleX: 1, duration: .7, ease: 'power2.out' }); return a; };
       return s;
     };
     return K;
@@ -251,13 +249,13 @@
         K.who('meera', 'determined');
         await K.say(S.s4);
 
-        /* 8 · −6 blinks, its distance to 0 lights up */
-        gsap.to(at[-6], { scale: 1.12, duration: .3, yoyo: true, repeat: 5 }); nav.toZero(-6, 'n'); nav.zero();
+        /* 8 · −6 blinks, an arrow points left towards our border: it is close */
+        gsap.to(at[-6], { scale: 1.12, duration: .3, yoyo: true, repeat: 5 }); nav.toBorder(-6, 'n');
         K.who('meera', 'pointing');
         await K.say(S.m8);
 
-        /* 9 · +5 blinks: its distance (5) is shorter, so it is closer */
-        gsap.to(at[5], { scale: 1.12, duration: .3, yoyo: true, repeat: 5 }); nav.toZero(5, 'p');
+        /* 9 · +5 blinks: its arrow to our border is much longer, so it is farther */
+        gsap.to(at[5], { scale: 1.12, duration: .3, yoyo: true, repeat: 5 }); nav.toBorder(5, 'p');
         K.who('riya', 'alert');
         await K.say(S.r9);
 
@@ -338,19 +336,19 @@
   async function howTo() {
     const chip = document.createElement('div'); chip.id = 'howchip'; $('#stage').appendChild(chip); gsap.set(chip, { xPercent: -50 });
     const step = (n, t) => { chip.innerHTML = `<span class="k">HOW TO PLAY</span><b>${n}</b><span class="t">${t}</span>`; gsap.fromTo(chip, { y: -16, opacity: 0, scale: .9 }, { y: 0, opacity: 1, scale: 1, duration: .35, ease: 'back.out(2.4)' }); SFX.pop(); };
-    const T = 3;
+    const T = -4;   // Level 2's rule: the smaller number is closer to our border
     // 1 · read the mission + check the scale
     step(1, 'READ THE MISSION');
     const intro = W.scaleIntro();
-    await W.spawn([-4, T], { stagger: .25 });
-    W.strip(D.L2[0].ost);   // the mission box: Level 2's mission (+3 is closer to border 0 than −4)
+    await W.spawn([T, 3], { stagger: .25 });
+    W.strip(D.L2[0].ost);   // the mission box: Level 2's mission (−4 is smaller than +3, so it is closer to our border)
     const p1 = say(S.hp1);
     await intro; await W.handTo(960, 72, .3); await W.handTap(960, 72);   // the glow pulses on the mission text…
     await W.handTo(W.X(0), W.LBL_Y + W.CONFIG.SCALE_DY, .7);                 // …then on 0 in the middle of the scale
     await p1;
-    // 2 · find the submarine at the correct position: the glow runs along the scale to +3, then up its sonar line
+    // 2 · find the submarine at the correct position: the glow runs along the scale to −4, then up its sonar line
     step(2, 'FIND THE TARGET');
-    const sub = W.subAt(T), lx = W.X(T), ly = W.LBL_Y + W.CONFIG.SCALE_DY;   // the +3 label
+    const sub = W.subAt(T), lx = W.X(T), ly = W.LBL_Y + W.CONFIG.SCALE_DY;   // the −4 label
     const p2 = say(S.hp2);
     await W.handTo(lx, ly, 1); W.labelsOn([T]); await W.handTap(lx, ly);
     await W.handTo(lx, sub.cy, .8); W.glow(sub, true, 'rgba(255,214,107,.6)');
@@ -444,27 +442,27 @@
   }
 
   /* =====================================================================
-     LEVEL 2 · fire at the submarine close to our border 0 (sheet L2 V3). The rope glides to each pair of positions;
-     0 keeps a glowing border line (and a chip at the edge of the window when it is out of view).
+     LEVEL 2 · fire at the submarine close to our border (sheet L2 V3): our territory is the negative side, so the smaller
+     number is closer to our border. The rope glides to each pair of positions (a 0 chip at the window's edge when 0 is out of view).
      ===================================================================== */
   async function level2(start = 0) {
     LV = 'l2'; await W.banner('', 'LEVEL 2', '');
-    W.pips(D.L2.length, start); W.defLine(true);
+    W.pips(D.L2.length, start);
     if (start === 0) {   // Teaching: "The smaller number closer to 0."
       SD.where = { at: 'l2', round: 1 };
-      await W.panTo(5); W.zeroGlow();
+      await W.panTo(-5);   // a light sweeps from the bigger numbers towards the smaller ones: towards our border
       const line = say(D.L2_TEACH.voL); await wait(1.4);
-      const off = await W.scan(11, ''); await line; await wait(.8); off();
+      const off = await W.scan(-11, ''); await line; await wait(.8); off();
     }
     for (let r = start; r < D.L2.length; r++) {
       SD.where = { at: 'l2', round: r + 1 };
       const R = D.L2[r];
       await W.panFor(R.subs);   // (0 joins the view when it fits)
       W.strip(R.ost); await W.spawn(R.subs, { stagger: .45 });
-      const tut = r === 0;   // the first round is the tutorial: no dragging, the glow shows border 0, then the submarine close to it
+      const tut = r === 0;   // the first round is the tutorial: no dragging, the glow shows the smaller number, then its submarine
       W.dragRope(!tut); await wait(.4); await say(R.voL); await wait(.3);
       const guide = tut && (async first => { const s = W.subAt(R.target); if (!s) return;
-        if (first) { await W.handTo(W.X(0), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseZero(); await wait(1.2); }
+        if (first) { await W.handTo(W.X(R.target), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseLbl(R.target); await wait(1.2); }
         if (W.waiting) W.handTo(s.x, s.cy, .8); });
       const first = await strike(R, R.target, { guide }); W.dragRope(false);
       mark(first);
@@ -474,7 +472,6 @@
       W.pips(D.L2.length, r + 1); await wait(1.4); await W.clearSubs(); W.stripOff();
       if (r < D.L2.length - 1) await W.sail();
     }
-    W.defLine(false);
     await complete('l2', 'LEVEL 2 COMPLETE!');
   }
 
