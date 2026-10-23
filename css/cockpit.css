@@ -166,3 +166,5 @@ background:radial-gradient(120% 95% at 50% 46%,rgba(10,70,110,0) 58%,rgba(10,70,
 .crack path{fill:none;stroke:rgba(235,250,255,.92);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
 .crack path.dk{stroke:rgba(0,20,40,.45);stroke-width:5.5}
 .warn{position:absolute;left:0;width:1920px;top:380px;text-align:center;font:700 120px/1 Fredoka,sans-serif;color:#ff5a4a;-webkit-text-stroke:9px #2a0606;paint-order:stroke;letter-spacing:4px;text-shadow:0 0 40px rgba(255,60,40,.8);pointer-events:none}
+#sinkCover{position:absolute;inset:0;pointer-events:auto;background:radial-gradient(circle at 50% 42%,#0a2a52,#010812 72%)}   /* the black after we sink */
+.warn.again{color:#ffd66b;-webkit-text-stroke-color:#3a2500;text-shadow:0 0 40px rgba(255,200,80,.6);top:470px}

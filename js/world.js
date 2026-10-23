@@ -8,12 +8,14 @@
   const stageEl = $('#stage'), shakeEl = document.createElement('div'); shakeEl.id = 'shake';
   [...stageEl.children].filter(c => !c.classList.contains('overlay')).forEach(c => shakeEl.appendChild(c));
   stageEl.insertBefore(shakeEl, stageEl.firstChild);
-  const SHK = { amp: 0, t: 0, d: 1 };
+  const SHK = { amp: 0, t: 0, d: 1 }, TILT = { r: 0, y: 0, was: false };   // TILT: the whole view rolls (r, degrees) and drops (y) as we sink
   gsap.ticker.add((t, dt) => {
-    if (!SHK.amp) return;
-    SHK.t += dt / 1000; const a = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d);
-    if (a < .5) { SHK.amp = 0; shakeEl.style.transform = 'translate3d(0,0,0)'; return; }
-    shakeEl.style.transform = `translate3d(${Math.round((Math.random() - .5) * 2 * a)}px,${Math.round((Math.random() - .5) * 1.2 * a)}px,0)`;
+    const tilt = !!(TILT.r || TILT.y);
+    if (!SHK.amp && !tilt && !TILT.was) return;
+    TILT.was = tilt; let x = 0, y = 0;
+    if (SHK.amp) { SHK.t += dt / 1000; const a = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d);
+      if (a < .5) SHK.amp = 0; else { x = Math.round((Math.random() - .5) * 2 * a); y = Math.round((Math.random() - .5) * 1.2 * a); } }
+    shakeEl.style.transform = `translate3d(${x}px,${y + TILT.y}px,0)` + (tilt ? ` rotate(${TILT.r}deg) scale(${1 + Math.abs(TILT.r) * .032 + Math.abs(TILT.y) / 540})` : '');   // (scaled up so the edges never show)
   });
   const shake = (k = 8, d = .4) => { const left = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d); if (k < left) return; SHK.amp = k; SHK.t = 0; SHK.d = d; };
   /* positions that come from code, not CSS — tunable live in the layout editor, saved in js/layout.js (LAYOUT.config) */
@@ -147,7 +149,7 @@
   }
   const scan = el('', sc); scan.id = 'scan';
   syncBuoys();
-  W.X = X; W.XR = XR; W.CONFIG = CONFIG; W.CONFIG_DEFAULTS = DEFAULTS; W.el = el; W.shake = shake; W.spawnBubble = big => spawnBubble(big);
+  W.X = X; W.XR = XR; W.CONFIG = CONFIG; W.CONFIG_DEFAULTS = DEFAULTS; W.el = el; W.shake = shake; W.tilt = TILT; W.spawnBubble = big => spawnBubble(big);
   // 0 (the border) out of view: a chip at that edge points to it (tap it to glide back)
   const zchip = el('', $('#fx')); zchip.id = 'zchip'; zchip.innerHTML = '<b>0</b>';
   zchip.onpointerdown = e => { e.stopPropagation(); W.panTo(0); };

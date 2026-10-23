@@ -221,17 +221,19 @@
      the bay to take it back), then FIRE. The same number: each one streaks to a missile that came and both are absorbed, 0 left.
      Any other number is a mistake, and it still fires: the pairs are absorbed; too few, and the missiles left over get through
      and hit the window (it cracks); too many, and ours are wasted. Each mistake costs one of the shield's three bars, the enemy
-     launches again and Incorrect Feedback 1, 2, 3 play in turn. Shield down (the third): SHIELD DOWN!, the glass is repaired,
-     the shield recharges and the guiding glow shows the way; the launcher also stops at the right number. Row 1 is the teaching (the missiles come, the launcher activates), row 2 the tutorial (a guiding glow).
+     launches again and Incorrect Feedback 1, 2, 3 play in turn. Shield down (the third): SHIELD DOWN!, we sink (the cockpit
+     rolls, the cracks spread, the sea goes dark), TRY AGAIN!, and the mission restarts with the glass mended, the shield
+     recharged, the guiding glow on and Incorrect Feedback 3 in the panel; the launcher stops at the right number. Row 1 is the teaching (the missiles come, the launcher activates), row 2 the tutorial (a guiding glow).
      ===================================================================== */
-  async function launchRound(R, teach) {
+  async function launchRound(R, teach, retry) {   // retry: the mission again after the shield went down (guided from the start)
     const n = Math.abs(R.give), given = Math.sign(R.give), mine = -given, room = 2;
     W.launcher(0); W.fireBtn('');
     await W.missiles(n, given);   // the missiles come towards the defence area
     if (teach) { await wait(.3); W.launcher(mine); await wait(.6); await say(S.l1a); await say(S.l1b); await wait(.2); }   // the launcher activates; Meera's two lines
     W.launcher(mine); W.bay(true); W.fireBtn('dim'); W.shield(3, true);
     W.strip(R.ost); await wait(.6);
-    let strikes = 0, busy = false, hull = 3, tut = !!R.tutorial;   // hull: the shield's bars · tut: the guiding glow is on
+    if (retry) note(R.fbL[2].line, R.ost);   // "Launch 5 negative missiles."
+    let strikes = retry ? 3 : 0, busy = false, hull = 3, tut = !!R.tutorial || !!retry;   // hull: the shield's bars · tut: the guiding glow is on
     const count = () => W.mslRow(1).length;
     const ANIM = {   // no incorrect animations in the sheet for Level 1: point at the count
       given: () => W.mslPulse(W.mslRow(0), 0, .18),                               // the missiles that came pulse one by one
@@ -274,12 +276,17 @@
         if (through) await Promise.all(left.map((m, i) => wait(i * .2).then(() => W.mslHitUs(m, hitAt(i))).then(() => W.impact(hitAt(i).x, hitAt(i).y, i < 3))));   // too few: they get through and hit us
         else { await Promise.all(left.map((m, i) => wait(i * .12).then(() => W.mslFizzle(m)))); W.alarm(); }   // too many: ours are wasted
         hull--; W.shield(hull); await wait(.6);
-        if (!hull) { await W.shieldDown(); await W.repair(); hull = 3; W.shield(3); tut = true; await wait(.8); }   // shield down: repair, and the glow guides from now on
+        if (!hull) {   // shield down: we sink, and the mission starts again
+          await W.shieldDown(); await W.sink();
+          stop(); W.matching = false; W.hand(null); noteEnd(); W.clearMissiles(); W.fireBtn(''); W.launcher(0); W.stripOff();
+          return resolve('restart');
+        }
         await W.missiles(n, given, true);   // the enemy launches again
         busy = false; arm(); const fb = R.fbL[Math.min(strikes, 3) - 1]; ANIM[fb.kind](); guide(); note(fb.line, R.ost);
       });
       arm(); guide();
     });
+    if (ok === 'restart') { await W.resurface(); return 'restart'; }
     W.matching = false; W.hand(null); W.fireBtn(''); W.launcher(0);
     // Correct Animation: each launched missile leaves the bay, meets one missile that came and both are absorbed: all the pairs disappear
     await volley(); await wait(.4); W.bay(false); W.shield(hull, false); W.repair();   // (any cracks from this round seal up)
@@ -294,7 +301,9 @@
     W.pips(D.L1.length, start);
     for (let r = start; r < D.L1.length; r++) {
       SD.where = { at: 'l1', round: r + 1 };
-      await launchRound(D.L1[r], r === 0); W.pips(D.L1.length, r + 1);
+      let retry = false;
+      while (await launchRound(D.L1[r], r === 0 && !retry, retry) === 'restart') retry = true;   // after a sinking, the same mission again
+      W.pips(D.L1.length, r + 1);
       if (r < D.L1.length - 1) await W.sail();
     }
     await complete('l1', 'LEVEL 1 COMPLETE!');

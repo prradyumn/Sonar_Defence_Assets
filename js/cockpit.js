@@ -184,7 +184,9 @@
   W.impact = (x, y, crack = true) => {
     SFX.boom(); W.shake(12, .55); W.alarm();
     const fl = $('#flash'); fl.style.setProperty('--fx', x + 'px'); fl.style.setProperty('--fy', y + 'px'); gsap.fromTo(fl, { opacity: 1 }, { opacity: 0, duration: .6, ease: 'power2.out' });
-    if (!crack) return;
+    if (crack) crackAt(x, y);
+  };
+  function crackAt(x, y) {
     const R = 160; let d = '';   // the crack: jagged lines out from the hit, and a small ring of broken glass
     for (let i = 0, rays = 8; i < rays; i++) { let a = i / rays * 6.283 + Math.random() * .5, r = 0; const len = 70 + Math.random() * 85; d += `M${R} ${R}`;
       while (r < len) { r = Math.min(len, r + 14 + Math.random() * 18); a += (Math.random() - .5) * .5; d += ` L${(R + Math.cos(a) * r).toFixed(1)} ${(R + Math.sin(a) * r).toFixed(1)}`; } }
@@ -192,7 +194,7 @@
     const c = el('crack', $('#glassFx'), { left: x - R + 'px', top: y - R + 'px' });
     c.innerHTML = `<svg width="${2 * R}" height="${2 * R}" viewBox="0 0 ${2 * R} ${2 * R}"><path class="dk" d="${d}"/><path d="${d}"/></svg>`;
     gsap.fromTo(c, { scale: .3, opacity: 0 }, { scale: 1, opacity: 1, duration: .12, ease: 'power3.out' }); cracks.push(c);
-  };
+  }
   W.shieldDown = async () => {
     const w = el('warn', $('#fxTop'), {}); w.textContent = 'SHIELD DOWN!'; SFX.alarm ? SFX.alarm() : SFX.wrong(); W.alarm();
     gsap.fromTo(w, { scale: .4, opacity: 0 }, { scale: 1, opacity: 1, duration: .35, ease: 'back.out(2.5)' });
@@ -292,6 +294,41 @@
         f: .8 + Math.random() * 1.6, ph: Math.random() * 6, a: .5 + Math.random() * .5, c: ['#9ff6ff', '#c7b3ff', '#7dffc8'][PK.length % 3] });
     }
     return banner0(k, ...rest);
+  };
+
+  // 8 · shield down, we sink: the cockpit lurches and rolls, the hull groans, bubbles rush up past the window, the cracks spread,
+  //     the lamps flash red, the sea goes dark and the depth races down; then black: TRY AGAIN! W.resurface() puts it all back
+  //     behind the black and fades in (Level 1 restarts the mission).
+  const SINK = { m: 0, cover: null };
+  W.sink = async () => {
+    const T = W.tilt, s = SD.snd; SINK.m = D.m;
+    s.tone('sawtooth', 95, 36, 3.4, .14); s.noise(3.4, .14, 260, 0, 40); SFX.sink();   // the hull groans
+    SFX.alarm(); gsap.delayedCall(1.3, SFX.alarm); gsap.delayedCall(2.6, SFX.alarm);
+    const lamps = gsap.fromTo('#lamps i, #lamps .edge', { opacity: 0 }, { opacity: 1, duration: .18, yoyo: true, repeat: 15, ease: 'power1.inOut' });
+    const w = el('warn', $('#fxTop'), {}); w.textContent = 'SINKING!';
+    gsap.fromTo(w, { scale: .4, opacity: 0 }, { scale: 1, opacity: 1, duration: .35, ease: 'back.out(2.5)' });
+    gsap.timeline().to(T, { r: -4, y: 18, duration: 1.1, ease: 'power2.in' }).to(T, { r: 3, y: 26, duration: 1.3, ease: 'sine.inOut' }).to(T, { r: -1.5, y: 34, duration: 1.1, ease: 'sine.in' });
+    W.shake(10, 3.4);
+    for (let i = 0; i < 46; i++) setTimeout(() => W.spawnBubble(true), i * 65);   // bubbles rush up: we are going down
+    gsap.to(tint, { autoAlpha: .88, duration: 3.2, ease: 'power1.in' });
+    gsap.to(D, { m: D.m + 240, duration: 3.4, ease: 'power2.in', onUpdate: showDepth });
+    [[520, 300], [1380, 260], [760, 560], [1250, 600], [980, 220]].forEach(([x, y], i) => gsap.delayedCall(.5 + i * .45, () => { crackAt(x, y); SFX.tap(); }));   // the cracks spread
+    await SD.wait(2.8);
+    SINK.cover = document.createElement('div'); SINK.cover.id = 'sinkCover'; $('#stage').appendChild(SINK.cover);
+    await gsap.fromTo(SINK.cover, { opacity: 0 }, { opacity: 1, duration: .9, ease: 'power2.in' });
+    lamps.kill(); w.remove();
+    const t2 = el('warn again', SINK.cover, {}); t2.textContent = 'TRY AGAIN!'; SFX.ping();
+    gsap.fromTo(t2, { scale: .5, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'back.out(2.4)' });
+    await SD.wait(1.5);
+  };
+  W.resurface = async () => {   // behind the black: the glass mended, upright, the sea and the depth back as they were
+    gsap.killTweensOf(W.tilt); gsap.set(W.tilt, { r: 0, y: 0 });
+    cracks.splice(0).forEach(c => c.remove());
+    gsap.set('#lamps i, #lamps .edge', { opacity: 0 });
+    gsap.killTweensOf([tint, D]); gsap.set(tint, { autoAlpha: [0, .12, .2, .27, .34][D.lvl] }); D.m = SINK.m; showDepth();
+    for (let i = 0; i < 16; i++) setTimeout(() => W.spawnBubble(true), i * 80);
+    const c = SINK.cover; SINK.cover = null; if (!c) return;
+    await gsap.to(c, { opacity: 0, duration: .8, ease: 'power2.out' }); c.remove();
   };
 
   // 7 · a level done: confetti and a glow at Meera's and Riya's stations (no jumping: the sheets stay as drawn)
