@@ -551,7 +551,7 @@
       });
       q('consts').querySelectorAll('.sde-k').forEach(r => { const inp = r.querySelector('input'), k = r.dataset.k; if (document.activeElement !== inp) inp.value = W.CONFIG[k]; r.classList.toggle('set', state.config[k] != null); });
     }
-    const CNOTE = { X0: 'x of 0 on the scale', STEP: 'px per whole number', SUB_Y: 'submarine centre y', SUB_ROW: 'row 2 offset for a close neighbour (negative = higher)', SIG_Y1: 'L1 row of missiles that come', SIG_Y2: 'L1 row of launched missiles', SIG_GAP: 'px between missile columns (at most)', SCALE_DY: 'moves the whole scale group down' };
+    const CNOTE = { X0: 'x of 0 on the scale', STEP: 'px per whole number', SUB_Y: 'submarine centre y', SUB_ROW: 'row 2 offset for a close neighbour (negative = higher)', SIG_Y1: 'L1 row of missiles that come', SIG_Y2: 'L1 launch bay (top row)', SIG_GAP: 'px between missile columns (at most)', SCALE_DY: 'moves the whole scale group down' };
     let constsBuilt = false;
     function renderConsts() {
       if (constsBuilt) return syncInspector(); constsBuilt = true;

@@ -23,7 +23,7 @@
     SUB_Y: 350,     // submarine centre y (row 1), out in the water above the scale
     SUB_ROW: -105,  // row 2 (a neighbour less than 2 apart) sits this much lower (negative = higher)
     SIG_Y1: 330,    // Level 1 missile rows: top (the missiles that come)
-    SIG_Y2: 530,    //                       bottom (the ones the child launches)
+    SIG_Y2: 545,    //                       the launch bay's top row (the ones the child launches collect there, rows of 5)
     SIG_GAP: 170,   // px between missile columns (at most: many missiles pack closer)
     SCALE_DY: -80,  // moves the whole scale group (rope, buoys, numbers, marker, hints) down
   };
@@ -341,9 +341,31 @@
   };
 
   /* ================= badges (ordering) ================= */
-  let BADGES = [];
-  W.badge = (v, n, at) => { const b = at ? el('badge', fx, { left: at.x + 'px', top: (at.y - 39) + 'px' }) : el('badge', sc, { left: XR(v) + 'px' }); b._v = at ? null : v; b.innerHTML = `<span>${n}</span>`; gsap.fromTo(b, { scale: 0, y: 60 }, { scale: 1, y: 0, duration: .45, ease: 'back.out(2.5)' }); BADGES.push(b); };
-  W.clearBadges = () => { BADGES.forEach(b => gsap.to(b, { opacity: 0, duration: .3, onComplete: () => b.remove() })); BADGES = []; };
+  /* Level 3's order row: empty places above the cannon, one per submarine. Every submarine hit leaves its number: it pops up
+     where the submarine was and flies down into the next place, so the row fills from the smallest up; when all are in,
+     "<" signs pop in between them and the numbers light up left to right (−12 < −9 < −6 < −3). */
+  let ORD = null;
+  const ORD_Y = 655, ordX = i => CONFIG.X0 + (i - (ORD.n - 1) / 2) * 190;
+  W.orderRow = n => {
+    W.clearOrder(); ORD = { n, chips: [], slots: [], els: [] };
+    for (let i = 0; i < n; i++) { const s = el('oslot', fx, { left: ordX(i) + 'px', top: ORD_Y + 'px' }); ORD.slots.push(s); ORD.els.push(s);
+      gsap.fromTo(s, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: .35, delay: i * .08, ease: 'back.out(2.5)' }); }
+  };
+  W.orderChip = async (v, at) => {
+    if (!ORD) return; const i = ORD.chips.length, c = el('ochip' + side(v), fx, { left: at.x + 'px', top: at.y + 'px' }); c.textContent = fmt(v); ORD.chips.push(c); ORD.els.push(c);
+    await gsap.fromTo(c, { scale: .2, opacity: 0 }, { scale: 1.5, opacity: 1, duration: .35, ease: 'back.out(3)' });
+    await wait(.3);
+    await gsap.to(c, { left: ordX(i), top: ORD_Y, scale: 1, duration: .6, ease: 'power2.inOut' });
+    SFX.step(); ORD.slots[i].classList.add('full'); gsap.fromTo(c, { scale: 1.25 }, { scale: 1, duration: .3, ease: 'back.out(3)' });
+  };
+  W.orderDone = async () => {
+    if (!ORD) return;
+    for (let i = 0; i < ORD.n - 1; i++) { const t = el('olt', fx, { left: (ordX(i) + ordX(i + 1)) / 2 + 'px', top: ORD_Y + 'px' }); t.textContent = '<'; ORD.els.push(t);
+      gsap.fromTo(t, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: .3, delay: i * .15, ease: 'back.out(3)' }); }
+    ORD.chips.forEach((c, i) => gsap.delayedCall(.4 + i * .18, () => { c.classList.add('lit'); SFX.ping(); gsap.fromTo(c, { y: 0 }, { y: -10, duration: .15, yoyo: true, repeat: 1 }); }));
+    await wait(.6 + ORD.n * .18);
+  };
+  W.clearOrder = () => { if (!ORD) return; ORD.els.forEach(e => gsap.to(e, { opacity: 0, duration: .3, onComplete: () => e.remove() })); ORD = null; };
 
   /* ================= HUD ================= */
   W.strip = (html, o = {}) => { const s = $('#strip'); s.innerHTML = o.big ? `<span class="big">${html}</span>` : html; s.style.fontSize = ''; s.classList.remove('two');
@@ -360,16 +382,19 @@
     await wait(hold); await gsap.to('#banner .card', { scale: .9, opacity: 0, duration: .3 }); b.classList.add('hidden');
   };
 
-  /* ================= Level 1: the missiles that come sit in the top row (the enemy's positive ones, red, pointing right, or the
-     defence system's negative ones, blue, pointing left). The child launches missiles of the other sign from the bow cannon into
-     the row below, one per column, so each launched missile faces one that came. FIRE: every opposite pair meets and cancels. ================= */
-  const MS = { list: [], marker: null, mv: 0, onTap: null, cols: 0, gap: 0, w: 0 };
+  /* ================= Level 1: the missiles that come sit in a row up in the water (the enemy's positive ones, red, pointing
+     right, or the defence system's negative ones, blue, pointing left). The child launches missiles of the other sign from the
+     bow cannon: they collect in the launch bay above it, in rows of 5 (easy to count). FIRE: they leave the bay one by one, each
+     streaks to one missile that came, and the two are absorbed into a bright core that collapses: defused. ================= */
+  const MS = { list: [], marker: null, mv: 0, onTap: null, cols: 0, gap: 0, w: 0, bay: null };
+  const BAY = { cols: 5, dx: 106, dy: 50, w: 96 };   // the launch bay: columns, spacing, missile size (its top row is CONFIG.SIG_Y2)
   W.marker = v => { if (!MS.marker) { MS.marker = el('', sc); MS.marker.id = 'marker'; } gsap.set(MS.marker, { left: XR(v), opacity: 1 }); gsap.fromTo(MS.marker, { y: -40 }, { y: 0, duration: .5, ease: 'bounce.out' }); MS.mv = v; };
   W.markerOff = () => { if (MS.marker) gsap.to(MS.marker, { opacity: 0, duration: .3 }); };
   W.markerPulse = () => MS.marker && gsap.fromTo(MS.marker, { scale: 1 }, { scale: 1.3, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' });
   const mslX = k => CONFIG.X0 + (k - (MS.cols - 1) / 2) * MS.gap;
+  const bayXY = k => ({ x: CONFIG.X0 + (k % BAY.cols - (BAY.cols - 1) / 2) * BAY.dx, y: CONFIG.SIG_Y2 + Math.floor(k / BAY.cols) * BAY.dy });
   function mkMsl(sign, row, k) {
-    const x = mslX(k), y = row === 0 ? CONFIG.SIG_Y1 : CONFIG.SIG_Y2, w = MS.w;
+    const at = row ? bayXY(k) : { x: mslX(k), y: CONFIG.SIG_Y1 }, x = at.x, y = at.y, w = row ? BAY.w : MS.w;
     const d = el('msl' + (sign < 0 ? ' neg' : '') + (row ? ' mine' : ''), sg, { left: x + 'px', top: y + 'px', width: w + 'px', height: (w * .33) + 'px', marginLeft: -w / 2 + 'px', marginTop: -w * .165 + 'px' });
     const im = new Image(); im.src = 'assets/img/story/' + (sign > 0 ? 'missile_red' : 'missile_blue') + '.webp'; d.appendChild(im);
     const m = { d, im, sign, row, col: k, x, y, alive: true }; d._m = m; MS.list.push(m);
@@ -377,10 +402,10 @@
     return m;
   }
   const bobMsl = (m, delay) => gsap.to(m.im, { y: 4, duration: 1.1 + (m.col % 4) * .13, yoyo: true, repeat: -1, ease: 'sine.inOut', delay });
-  // the missiles that come: n of one sign fly in (red from the left, blue from the right); room = spare columns on the right for launching too many
-  W.missiles = async (n, sign, room = 0) => {
-    W.clearMissiles();
-    MS.cols = n; MS.gap = Math.min(CONFIG.SIG_GAP, 1500 / (n + room)); MS.w = Math.min(150, MS.gap * .95);
+  // the missiles that come: n of one sign fly in (red from the left, blue from the right); again = a new wave in the same round
+  W.missiles = async (n, sign, again) => {
+    if (again) MS.list = MS.list.filter(m => m.alive); else W.clearMissiles();
+    MS.cols = n; MS.gap = Math.min(CONFIG.SIG_GAP, 1500 / n); MS.w = Math.min(150, MS.gap * .95);
     for (let k = 0; k < n; k++) {
       const m = mkMsl(sign, 0, k);
       gsap.fromTo(m.d, { x: sign > 0 ? -900 : 900, opacity: 0 }, { x: 0, opacity: 1, duration: .9, ease: 'power3.out', delay: k * .07 });
@@ -388,23 +413,30 @@
     }
     SFX.whoosh ? SFX.whoosh() : SFX.pop(); gsap.delayedCall(.5, () => SFX.pop()); await wait(1 + n * .07);
   };
-  // one missile from the cannon's muzzle (from) into the next free column of the bottom row
+  // the launch bay: a glass tray above the cannon where launched missiles collect (rows of 5)
+  W.bay = on => {
+    if (on && !MS.bay) {
+      const a = bayXY(0), rows = 3; MS.bay = el('', sg); MS.bay.id = 'bay';
+      Object.assign(MS.bay.style, { left: a.x - BAY.w / 2 - 26 + 'px', top: a.y - 40 + 'px', width: (BAY.cols - 1) * BAY.dx + BAY.w + 52 + 'px', height: (rows - 1) * BAY.dy + 80 + 'px' });
+      sg.insertBefore(MS.bay, sg.firstChild);
+      gsap.fromTo(MS.bay, { opacity: 0, scale: .85 }, { opacity: 1, scale: 1, duration: .45, ease: 'back.out(2)' });
+    }
+    if (!on && MS.bay) { const b = MS.bay; MS.bay = null; gsap.to(b, { opacity: 0, duration: .3, onComplete: () => b.remove() }); }
+  };
+  // one missile from the cannon's muzzle (from) into the next free place in the bay
   W.mslLaunch = (sign, from) => {
     const m = mkMsl(sign, 1, W.mslRow(1).length);
-    gsap.fromTo(m.d, { left: from.x, top: from.y, scale: .35, opacity: 0, rotation: sign > 0 ? -70 : 70 }, { left: m.x, top: m.y, scale: 1, opacity: 1, rotation: 0, duration: .45, ease: 'power2.out' });
-    gsap.fromTo(m.d, { y: 0 }, { y: -10, duration: .12, yoyo: true, repeat: 1, delay: .45, ease: 'power1.out' });
-    bobMsl(m, .7); return m;
+    gsap.fromTo(m.d, { left: from.x, top: from.y, scale: .35, opacity: 0, rotation: sign > 0 ? -70 : 70 }, { left: m.x, top: m.y, scale: 1, opacity: 1, rotation: 0, duration: .4, ease: 'power2.out' });
+    gsap.fromTo(m.d, { y: 0 }, { y: 5, duration: .1, yoyo: true, repeat: 1, delay: .4, ease: 'power1.out' });   // it settles into the bay
+    bobMsl(m, .6); return m;
   };
+  const reflow = () => W.mslRow(1).forEach((q, k) => { if (q.col === k) return; q.col = k; const p = bayXY(k); q.x = p.x; q.y = p.y; gsap.to(q.d, { left: q.x, top: q.y, duration: .3, ease: 'power2.out' }); });
   // a launched missile goes back into the cannon; the ones after it close up
   W.mslTakeBack = (m, to) => {
     m.alive = false; gsap.killTweensOf([m.d, m.im]); SFX.pop();
     gsap.to(m.d, { left: to.x, top: to.y, scale: .3, opacity: 0, duration: .35, ease: 'power2.in', onComplete: () => m.d.remove() });
-    W.mslRow(1).forEach((q, k) => { if (q.col === k) return; q.col = k; q.x = mslX(k); gsap.to(q.d, { left: q.x, duration: .3, ease: 'power2.out' }); });
+    reflow();
   };
-  // the launched missiles fall away (a wrong count: the child launches again)
-  W.mslDrop = async () => { const r = W.mslRow(1); r.forEach((m, i) => { m.alive = false; gsap.killTweensOf([m.d, m.im]);
-    gsap.to(m.d, { top: m.y + 300, rotation: (i % 2 ? 1 : -1) * (20 + Math.random() * 30), opacity: 0, duration: .8, delay: i * .03, ease: 'power2.in', onComplete: () => m.d.remove() }); });
-    if (r.length) await wait(.8); };
   W.mslAlive = () => MS.list.filter(m => m.alive);
   W.onMissile = fn => { MS.onTap = fn; sg.classList.toggle('live', !!fn); };
   // the pairs that can cancel (first + with first −, …) and the missiles left over after them
@@ -413,28 +445,44 @@
   W.mslHintsOff = () => MS.list.forEach(m => { if (!m.d.classList.contains('hint')) return; m.d.classList.remove('hint'); gsap.killTweensOf(m.d, 'scale'); gsap.set(m.d, { scale: 1 }); });
   W.mslRow = r => W.mslAlive().filter(m => m.row === r);
   W.mslPulse = (list, delay = 0, each = .04) => list.forEach((m, i) => { gsap.delayedCall(delay + i * each, () => m.d.classList.add('hint')); gsap.fromTo(m.d, { scale: 1 }, { scale: 1.25, duration: .4, yoyo: true, repeat: 5, delay: delay + i * each, ease: 'sine.inOut', onComplete: () => m.d.classList.remove('hint') }); });
-  // a wrong count: every launched missile links to the one it faces for a moment, so the ones with no partner stand out
-  W.mslLinks = () => W.mslPairs().forEach(([p, n], i) => { const ln = el('mlink', sg, { left: p.x + 'px', top: Math.min(p.y, n.y) + 'px', width: Math.abs(n.y - p.y) + 'px' });
-    gsap.set(ln, { rotation: 90, transformOrigin: '0 50%' }); gsap.timeline({ delay: i * .05, onComplete: () => ln.remove() }).fromTo(ln, { scaleX: 0 }, { scaleX: 1, duration: .25, ease: 'power2.out' }).to(ln, { opacity: 0, duration: .3 }, '+=.9'); });
+  // a missile that came with no partner gets through: it dives at the window, growing as it comes at us (resolves on impact)
+  W.mslHitUs = (m, to) => { m.alive = false; gsap.killTweensOf([m.d, m.im]); m.d.classList.remove('hint', 'bad');
+    return new Promise(r => gsap.to(m.d, { left: to.x, top: to.y, scale: 4.2, rotation: (to.x < m.x ? -1 : 1) * 14, duration: .55, ease: 'power2.in', onComplete: () => { m.d.remove(); r(); } })); };
+  // one of ours with nothing to cancel shoots on past the row and fizzles out in the water
+  W.mslFizzle = m => { m.alive = false; gsap.killTweensOf([m.d, m.im]); m.d.classList.remove('hint', 'bad');
+    const tx = m.x + (m.x - CONFIG.X0) * .8 + (Math.random() - .5) * 160, ty = CONFIG.SIG_Y1 - 150;
+    return new Promise(r => gsap.timeline({ onComplete: () => { m.d.remove(); r(); } })
+      .to(m.d, { rotation: m.sign > 0 ? -60 : 60, duration: .12 })
+      .to(m.d, { left: tx, top: ty, duration: .7, ease: 'power1.in' })
+      .add(() => { SFX.pop(); for (let k = 0; k < 6; k++) { const b = el('pbub', sg, { left: tx + 'px', top: ty + 'px', width: '12px', height: '12px' }); gsap.to(b, { x: (Math.random() - .5) * 80, y: -20 - Math.random() * 50, opacity: 0, duration: .7, onComplete: () => b.remove() }); } })
+      .to(m.d, { scale: .2, opacity: 0, duration: .25 })); };
   W.mslBad = list => { SFX.wrong(); list.forEach(m => { m.d.classList.add('bad'); gsap.fromTo(m.d, { x: 0 }, { x: 10, duration: .06, yoyo: true, repeat: 7, ease: 'none', clearProps: 'x', onComplete: () => m.d.classList.remove('bad') }); }); };
-  // a + and a − meet halfway, flash and leave a glowing 0
-  W.mslCancel = async (p, n, fast) => {
-    p.alive = n.alive = false; gsap.killTweensOf([p.im, n.im]); p.d.classList.remove('sel', 'hint'); n.d.classList.remove('sel', 'hint');
-    const mx = (p.x + n.x) / 2, my = (p.y + n.y) / 2, t = fast ? .35 : .55;
-    // the link: a bright line joins the two, then they glide together along it
-    const dx = n.x - p.x, dy = n.y - p.y, ln = el('mlink', sg, { left: p.x + 'px', top: p.y + 'px', width: Math.hypot(dx, dy) + 'px' });
-    gsap.set(ln, { rotation: Math.atan2(dy, dx) * 180 / Math.PI }); SFX.lock();
-    await gsap.fromTo(ln, { scaleX: 0 }, { scaleX: 1, duration: fast ? .2 : .35, ease: 'power2.out' }); gsap.to(ln, { opacity: 0, duration: t, onComplete: () => ln.remove() });
-    await Promise.all([gsap.to(p.d, { left: mx - 26, top: my, scale: 1, y: 0, duration: t, ease: 'power2.in' }), gsap.to(n.d, { left: mx + 26, top: my, scale: 1, y: 0, duration: t, ease: 'power2.in' })]);
-    SFX.pop(); p.d.remove(); n.d.remove();
-    const ring = el('zboom', sg, { left: mx + 'px', top: my + 'px' }); gsap.fromTo(ring, { scale: .2, opacity: 1 }, { scale: 1.3, opacity: 0, duration: .55, ease: 'power2.out', onComplete: () => ring.remove() });
-    for (let i = 0; i < (fast ? 0 : 8); i++) { const a = i / 8 * 6.283, sp = el('pbub', sg, { left: mx + 'px', top: my + 'px', width: '10px', height: '10px', background: i % 2 ? '#ffd66b' : '#8ff3ff', border: 'none' }); gsap.to(sp, { x: Math.cos(a) * 90, y: Math.sin(a) * 60, opacity: 0, scale: .4, duration: .5, ease: 'power2.out', onComplete: () => sp.remove() }); }
-    const z = el('zero0 big', sg, { left: mx + 'px', top: my + 'px' }); z.textContent = '0'; gsap.set(z, { xPercent: -50, yPercent: -50 });
-    gsap.timeline({ onComplete: () => z.remove() }).fromTo(z, { scale: .2, rotation: -20 }, { scale: fast ? .8 : 1.1, rotation: 0, duration: .4, ease: 'back.out(3)' })
-      .to(z, { scale: .5, y: -40, opacity: 0, duration: .4, ease: 'power2.in' }, '+=.5');
-    await wait(fast ? .25 : .55);
+  // FIRE: a launched missile (m) streaks from the bay to a missile that came (g); a bright core swells where they meet, both
+  // spin into it and are absorbed, the core collapses and breathes out a soft ring, a small 0 is left for a moment
+  W.mslDefuse = async (g, m, quick) => {
+    g.alive = m.alive = false; gsap.killTweensOf([g.im, m.im, g.d, m.d]); [g, m].forEach(q => q.d.classList.remove('hint', 'bad'));
+    const t = quick ? .4 : .55, ang = Math.atan2(g.y - m.y, g.x - m.x) * 180 / Math.PI;
+    gsap.to(m.d, { rotation: m.sign > 0 ? ang : ang + 180, duration: .12 });   // it turns to face its target…
+    const pos = { x: m.x, y: m.y }; let last = 0;
+    await gsap.to(pos, { x: g.x, y: g.y, duration: t, ease: 'power2.in', onUpdate() {   // …and streaks up to it, leaving bubbles
+      m.d.style.left = pos.x + 'px'; m.d.style.top = pos.y + 'px';
+      if (this.progress() - last > .2) { last = this.progress(); const b = el('pbub', sg, { left: pos.x + 'px', top: pos.y + 'px', width: '10px', height: '10px' }); gsap.to(b, { y: 20 + Math.random() * 20, scale: 1.6, opacity: 0, duration: .6, onComplete: () => b.remove() }); } } });
+    SFX.pop(); gsap.delayedCall(.18, () => SFX.blip());
+    const core = el('dcore', sg, { left: g.x + 'px', top: g.y + 'px' });
+    gsap.timeline({ onComplete: () => core.remove() }).fromTo(core, { scale: .2, opacity: 0 }, { scale: 1, opacity: 1, duration: .16, ease: 'power2.out' })
+      .to(core, { scale: 0, opacity: .6, duration: .38, ease: 'power3.in' }, '+=.12').set(core, { opacity: 0 });
+    const ring = el('zboom', sg, { left: g.x + 'px', top: g.y + 'px' });   // the pull inwards
+    gsap.fromTo(ring, { scale: 1.6, opacity: 0 }, { scale: .1, opacity: .9, duration: .5, ease: 'power3.in', onComplete: () => ring.remove() });
+    await gsap.to([g.d, m.d], { left: g.x, top: g.y, scale: 0, rotation: '+=260', opacity: 0, duration: .5, ease: 'power3.in' });
+    g.d.remove(); m.d.remove();
+    const puff = el('zboom', sg, { left: g.x + 'px', top: g.y + 'px' });   // a soft breath out
+    gsap.fromTo(puff, { scale: .1, opacity: .7 }, { scale: 1, opacity: 0, duration: .45, ease: 'power2.out', onComplete: () => puff.remove() });
+    for (let i = 0; i < (quick ? 4 : 8); i++) { const a = i / (quick ? 4 : 8) * 6.283, sp = el('pbub', sg, { left: g.x + 'px', top: g.y + 'px', width: '9px', height: '9px', background: i % 2 ? '#ffd66b' : '#8ff3ff', border: 'none' }); gsap.to(sp, { x: Math.cos(a) * 70, y: Math.sin(a) * 50, opacity: 0, scale: .4, duration: .45, ease: 'power2.out', onComplete: () => sp.remove() }); }
+    const z = el('zero0', sg, { left: g.x + 'px', top: g.y + 'px' }); z.textContent = '0'; gsap.set(z, { xPercent: -50, yPercent: -50 });
+    gsap.timeline({ onComplete: () => z.remove() }).fromTo(z, { scale: .2, opacity: 0 }, { scale: 1, opacity: 1, duration: .3, ease: 'back.out(3)' })
+      .to(z, { y: -30, opacity: 0, duration: .4, ease: 'power2.in' }, '+=.35');
   };
-  W.clearMissiles = () => { MS.list.forEach(m => { gsap.killTweensOf([m.d, m.im]); m.d.remove(); }); MS.list = []; W.onMissile(null); };
+  W.clearMissiles = () => { MS.list.forEach(m => { gsap.killTweensOf([m.d, m.im]); m.d.remove(); }); MS.list = []; W.onMissile(null); W.bay(false); };
 
   /* ================= reward: a burst of confetti, the praise word, a sonar contact (glowing blip with pulsing rings) that flies up and lights the next progress lamp ================= */
   const top = $('#fxTop'), COL = ['#ffd66b', '#ffb070', '#7ff2ff', '#ffffff', '#ff8fb1', '#9dff9a'];
@@ -496,7 +544,6 @@
       const dy = s.depth * CONFIG.SUB_ROW; s.cy = CONFIG.SUB_Y + dy;
       s.d.style.left = s.line.style.left = XR(s.v) + 'px'; s.d.style.top = (s.cy - SUB_H / 2) + 'px'; lineAt(s.line, s.cy);
     }
-    BADGES.forEach(b => { if (b._v != null) b.style.left = XR(b._v) + 'px'; });
     if (MS.marker && MS.mv != null) MS.marker.style.left = XR(MS.mv) + 'px';
     applyPan();
   };

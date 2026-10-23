@@ -1,5 +1,5 @@
 /* qa: a jump menu for testers (not the layout editor). Press Q in the game, or open with ?qa=1 (Q again hides it).
-   Jump to any story scene or any round of any level; set speed / sound; skip a line or answer for you. */
+   Jump to the hook or any round of any level; set speed / sound; skip a line or answer for you. */
 (function () {
   const Q = new URLSearchParams(location.search);
   let root = null;
@@ -10,10 +10,10 @@
   if (Q.get('qa') === '1') build(false);
   function build(open) {
   const PARTS = [
-    ['Story', [['Part 1 · alert (→ L1)', { at: 'hook', scene: 1 }], ['Part 2 · positions (→ L2)', { at: 'hook', scene: 2 }], ['How to play', { at: 'hook', scene: 3 }]]],
-    ['Level 1 · Launch missiles (+ and −)', SCRIPT.D.L1.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + tutorial'), { at: 'l1', round: i + 1 }])],
-    ['Level 2 · Closer to 0', SCRIPT.D.L2.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + tutorial'), { at: 'l2', round: i + 1 }])],
-    ['Level 3 · Fire in order', SCRIPT.D.L3.map((R, i) => [(i ? 'R' + (i + 1) : 'Teach + tutorial'), { at: 'l3', round: i + 1 }])],
+    ['Story', [['Hook (→ L1)', { at: 'hook' }]]],
+    ['Level 1 · Launch missiles (+ and −)', SCRIPT.D.L1.map((R, i) => [(i ? 'R' + (i + 1) : 'Intro + tutorial'), { at: 'l1', round: i + 1 }])],
+    ['Level 2 · Closer to 0', SCRIPT.D.L2.map((R, i) => [(i ? 'R' + (i + 1) : 'Intro + tutorial'), { at: 'l2', round: i + 1 }])],
+    ['Level 3 · Fire in order', SCRIPT.D.L3.map((R, i) => [(i ? 'R' + (i + 1) : 'Intro + tutorial'), { at: 'l3', round: i + 1 }])],
   ];
   const css = document.createElement('style');
   css.textContent = `

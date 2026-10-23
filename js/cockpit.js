@@ -163,6 +163,46 @@
     if (st === 'lit') { SFX.blip(); LN.pulse = gsap.to(fbtn, { scale: 1.07, duration: .55, yoyo: true, repeat: -1, ease: 'sine.inOut' }); }
   };
   W.onFire = fn => { LN.fire = fn; };
+
+  /* ---- Level 1's hull shield: three bars beside the cannon. A wrong FIRE costs a bar (W.shield(n)); at 0: SHIELD DOWN, the
+     repair (W.repair) mends the cracked glass and the shield charges back up. A missile that gets through hits the window
+     (W.impact): the cockpit shakes, the lamps flash red and the glass cracks. ---- */
+  const shieldEl = document.createElement('div'); shieldEl.id = 'shield'; shieldEl.dataset.edit = 'shield';
+  shieldEl.innerHTML = '<b class="ico"></b><span class="k">SHIELD</span><div class="bars"><i></i><i></i><i></i></div>'; hud.appendChild(shieldEl);
+  let hullN = 3;
+  W.shield = (n, show) => {
+    if (show === true && !shieldEl.classList.contains('on')) { shieldEl.classList.add('on'); gsap.fromTo(shieldEl, { scale: 0 }, { scale: 1, duration: .45, ease: 'back.out(2.4)' }); }
+    if (show === false) { gsap.to(shieldEl, { scale: .6, opacity: 0, duration: .3, onComplete: () => { shieldEl.classList.remove('on'); gsap.set(shieldEl, { clearProps: 'all' }); } }); }
+    shieldEl.querySelectorAll('.bars i').forEach((b, i) => { const on = i < n, was = i < hullN; b.classList.toggle('off', !on);
+      if (was && !on) gsap.fromTo(b, { scale: 1.6 }, { scale: 1, duration: .45, ease: 'back.out(3)' });   // a bar breaks
+      if (!was && on) gsap.fromTo(b, { scaleY: 0 }, { scaleY: 1, duration: .3, delay: i * .22, ease: 'back.out(3)', onStart: () => SFX.ding() }); });   // it charges back up
+    shieldEl.classList.toggle('low', n === 1); shieldEl.classList.toggle('down', n === 0);
+    if (n < hullN) gsap.fromTo(shieldEl, { x: 0 }, { x: 9, duration: .05, yoyo: true, repeat: 7, clearProps: 'x' });
+    hullN = n;
+  };
+  const cracks = [];
+  W.impact = (x, y, crack = true) => {
+    SFX.boom(); W.shake(12, .55); W.alarm();
+    const fl = $('#flash'); fl.style.setProperty('--fx', x + 'px'); fl.style.setProperty('--fy', y + 'px'); gsap.fromTo(fl, { opacity: 1 }, { opacity: 0, duration: .6, ease: 'power2.out' });
+    if (!crack) return;
+    const R = 160; let d = '';   // the crack: jagged lines out from the hit, and a small ring of broken glass
+    for (let i = 0, rays = 8; i < rays; i++) { let a = i / rays * 6.283 + Math.random() * .5, r = 0; const len = 70 + Math.random() * 85; d += `M${R} ${R}`;
+      while (r < len) { r = Math.min(len, r + 14 + Math.random() * 18); a += (Math.random() - .5) * .5; d += ` L${(R + Math.cos(a) * r).toFixed(1)} ${(R + Math.sin(a) * r).toFixed(1)}`; } }
+    for (let i = 0; i <= 9; i++) { const a = i / 9 * 6.283, r = 18 + Math.random() * 10; d += (i ? ' L' : ' M') + (R + Math.cos(a) * r).toFixed(1) + ' ' + (R + Math.sin(a) * r).toFixed(1); }
+    const c = el('crack', $('#glassFx'), { left: x - R + 'px', top: y - R + 'px' });
+    c.innerHTML = `<svg width="${2 * R}" height="${2 * R}" viewBox="0 0 ${2 * R} ${2 * R}"><path class="dk" d="${d}"/><path d="${d}"/></svg>`;
+    gsap.fromTo(c, { scale: .3, opacity: 0 }, { scale: 1, opacity: 1, duration: .12, ease: 'power3.out' }); cracks.push(c);
+  };
+  W.shieldDown = async () => {
+    const w = el('warn', $('#fxTop'), {}); w.textContent = 'SHIELD DOWN!'; SFX.alarm ? SFX.alarm() : SFX.wrong(); W.alarm();
+    gsap.fromTo(w, { scale: .4, opacity: 0 }, { scale: 1, opacity: 1, duration: .35, ease: 'back.out(2.5)' });
+    gsap.to(w, { opacity: .35, duration: .25, yoyo: true, repeat: 3, delay: .4 });
+    await SD.wait(1.9); await gsap.to(w, { opacity: 0, scale: 1.1, duration: .3 }); w.remove();
+  };
+  W.repair = async () => {   // the cracks seal up with a shimmer
+    if (!cracks.length) return; SFX.sparkle(); cracks.splice(0).forEach((c, i) => { gsap.to(c, { opacity: 0, scale: 1.06, duration: .7, delay: i * .12, onComplete: () => c.remove() }); });
+    W.sparkle(960, 420); await SD.wait(.9);
+  };
   fbtn.onpointerdown = e => { e.stopPropagation(); if (fbtn.className !== 'lit' || !LN.fire) return; SFX.tap(); gsap.fromTo(fbtn.querySelector('.lit'), { scale: .88 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); LN.fire(); };
 
   /* ---- full speed ahead: the engines rumble ---- */
@@ -178,8 +218,9 @@
     const x = s.x, y = s.cy, ly = s.free ? s.cy - 100 : W.LBL_Y - 150 + DY();   // just above its buoy (or above a free submarine)
     const lbl = !s.free && W.lbl(s.v);
     if (lbl) gsap.fromTo(lbl, { scale: 1 }, { scale: 1.6, duration: .2, yoyo: true, repeat: 1, ease: 'back.out(3)' });
-    const n = el('hitnum ' + (s.v < 0 ? 'neg' : s.v > 0 ? 'pos' : 'zero'), top, { left: x + 'px', top: ly + 'px' }); n.textContent = fmt(s.v);
-    gsap.timeline({ onComplete: () => n.remove() })
+    const n = !s.free && el('hitnum ' + (s.v < 0 ? 'neg' : s.v > 0 ? 'pos' : 'zero'), top, { left: x + 'px', top: ly + 'px' });   // (Level 3's own number chip takes its place)
+    if (n) n.textContent = fmt(s.v);
+    if (n) gsap.timeline({ onComplete: () => n.remove() })
       .fromTo(n, { scale: .2, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: -30, duration: .45, ease: 'back.out(2.6)' })
       .to(n, { y: -110, scale: .7, opacity: 0, duration: .55, ease: 'power2.in' }, '+=.45');
     W.scare(x, y);

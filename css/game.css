@@ -76,8 +76,6 @@ img{-webkit-user-drag:none;user-select:none}
 .blast{position:absolute;width:340px;height:340px;margin:-170px 0 0 -170px;background:url(../assets/img/blast_sheet.webp) 0 0/1360px 340px no-repeat}
 .torp{position:absolute;width:120px;height:37px;margin:-18px 0 0 -60px}
 .tbub{position:absolute;border-radius:50%;border:2px solid rgba(220,250,255,.85);background:rgba(255,255,255,.18)}
-.badge{position:absolute;top:470px;width:74px;height:78px;margin-left:-37px;background:url(../assets/img/badge.webp) center/contain no-repeat}
-.badge span{position:absolute;left:0;right:0;top:27px;text-align:center;font:700 32px/1 Fredoka,sans-serif;color:#5a3a00}
 .sweep{position:absolute;top:478px;height:46px;background:url(../assets/img/sweep.webp) center/100% 100% no-repeat}
 .sweep.left{transform:scaleX(-1)}
 
@@ -418,8 +416,18 @@ img{-webkit-user-drag:none;user-select:none}
 /* missiles that can be tapped breathe a soft cyan outline; a picked one turns white, hints turn gold, a mistake red */
 #sigs.live .msl.sel::after,#sigs.live .msl.hint::after,#sigs.live .msl.bad::after{animation:none;opacity:1}
 /* a matched pair: a bright link joins the two before they meet */
-.mlink{position:absolute;height:8px;margin-top:-4px;border-radius:4px;transform-origin:0 50%;background:linear-gradient(90deg,#ff8a6b,#fff 50%,#7ff2ff);box-shadow:0 0 18px rgba(255,255,255,.9)}
 /* story rows 8–9: an arrow from a position left towards our border (the negative side) */
 .sx-dist.arrow.n{color:rgba(255,138,92,.95)}.sx-dist.arrow.p{color:rgba(95,230,255,.95)}
 .sx-dist.arrow::before{content:"";position:absolute;left:-18px;top:50%;margin-top:-13px;border:13px solid transparent;border-right:20px solid currentColor;border-left:0}
 .sx-nav .sx-dist.arrow.p{top:119px}   /* +5's long arrow runs under the numbers, −6's short one above */
+/* Level 1: the launch bay above the cannon, and the core that absorbs a defused pair */
+#bay{position:absolute;border-radius:30px;background:linear-gradient(rgba(10,44,86,.38),rgba(5,28,58,.55));border:3px solid rgba(127,242,255,.5);box-shadow:0 0 24px rgba(73,220,255,.3),inset 0 0 28px rgba(73,220,255,.22)}
+.dcore{position:absolute;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fff 0,rgba(214,252,255,.95) 20%,rgba(127,242,255,.55) 44%,rgba(73,220,255,0) 70%)}
+/* Level 3's order row: empty places, the number chips that fill them, the < signs */
+.oslot{position:absolute;width:150px;height:66px;margin:-33px 0 0 -75px;border-radius:22px;box-sizing:border-box;border:3px dashed rgba(127,242,255,.6);background:rgba(4,18,42,.35)}
+.oslot.full{border-color:transparent;background:none}
+.ochip{position:absolute;width:140px;height:62px;margin:-31px 0 0 -70px;border-radius:22px;box-sizing:border-box;text-align:center;font:800 44px/56px Fredoka,sans-serif;color:#fff;
+  background:rgba(4,18,42,.92);border:3px solid #5fe6ff;box-shadow:0 0 16px rgba(60,220,255,.55);transition:box-shadow .3s,background .3s}
+.ochip.neg{border-color:#ff9a6b;box-shadow:0 0 16px rgba(255,130,80,.6)}.ochip.zero{border-color:#ffd66b}
+.ochip.lit{background:rgba(20,70,120,.95);box-shadow:0 0 26px rgba(255,214,107,.95)}
+.olt{position:absolute;width:44px;margin:-30px 0 0 -22px;text-align:center;font:800 50px/60px Fredoka,sans-serif;color:#ffd66b;text-shadow:0 0 12px rgba(255,190,60,.85),0 3px 0 #031a33}

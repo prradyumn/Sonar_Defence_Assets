@@ -4,9 +4,13 @@ Open `index.html` in Chrome: double-click it, or press **Go Live** in VS Code (L
 
 The game is played from inside the submarine cockpit (see *The cockpit* below).
 
-Flow (the story sheet's order; every line is from the sheets "Integers- Submarine - Story / L1 V3 / L2 V3 / L3 V3"): Story part 1 (rows 1–6: enemy submarines slip in → red alert → contact the defence station → the launcher rises → targets confirmed) → **Level 1** launch as many opposite missiles (teaching + tutorial + 6 practice rounds) → Story part 2, the L2 transition (rows 7–11: the navigation scale → submarines at −6 (close to our border) and +5 (farther) → FIRE → MISSION 1) → How to play (a live demo round in the cockpit, a step chip for each of the sheet's four steps) → **Level 2** fire at the submarine close to our border (the smaller number) → **Level 3** fire from the smaller number up → the story's ending (row 12, ROUTE CLEARED!).
+Flow: the hook (one short scene: enemy submarines slip in, they fire, ALERT) → **Level 1** launch as many opposite missiles (intro + tutorial + 6 practice rounds) → **Level 2** fire at the submarine close to our border (the smaller number) → **Level 3** fire from the smaller number up → the ending (ROUTE CLEARED!).
 
-Level 1: the missiles that come sit in a row in the window (the enemy submarine's positive ones are red, the defence system's negative ones blue). The bow cannon becomes the launcher of the other sign (a − or + badge): each tap launches one missile into the row below, facing one that came (tap a launched missile to take it back). FIRE: if the numbers match, each pair meets and disappears (0 left); if not, the pairs link up, the ones with no partner flash red, the launched missiles fall away and the sheet's Incorrect Feedback 1 → 2 → 3 plays. After three mistakes the launcher stops at the right number. The sheet gives no animations or inactivity lines for Level 1: hints pulse the missiles that came / glow the launcher, and inactivity repeats the round's instruction.
+**Dialogue:** only 7 lines are spoken, all Meera (the dialogue list for the game, `SCRIPT.S` in `js/script.js`): the hook (2), Level 1's intro (2), Level 2's intro (2, over the number line while light sweeps left, "smaller · closer", then right, "bigger · farther") and Level 3's intro (1). Everything else from the L1–L3 sheets — each round's instruction, the correct lines, the wrong-answer hints and the inactivity lines — is on-screen text in the mission panel (a hint shows for a few seconds, then the round's text comes back), with the same visual hints as before.
+
+Level 1: the missiles that come sit in a row in the window (the enemy submarine's positive ones are red, the defence system's negative ones blue). The bow cannon becomes the launcher of the other sign (a − or + badge): each tap launches one missile into the launch bay above it, where they collect in rows of 5 (tap one in the bay to take it back). FIRE: each missile leaves the bay, streaks to one missile that came and both are absorbed into a bright core (a small 0 is left for a moment). If the numbers don't match it still fires: the pairs are absorbed; too few, and the missiles left over get through and hit the window (the cockpit shakes, the glass cracks); too many, and ours shoot past and fizzle out. Each mistake costs a bar of the 3-bar hull SHIELD beside the cannon, the enemy launches again and the sheet's Incorrect Feedback 1 → 2 → 3 plays. Shield empty: SHIELD DOWN!, the glass is repaired, the shield recharges and the guiding glow shows the way for the rest of the round; the launcher also stops at the right number. The shield refills every round. The sheet gives no animations or inactivity lines for Level 1: hints pulse the missiles that came / glow the launcher, and inactivity repeats the round's instruction.
+
+Level 3: empty places for the numbers sit above the cannon. Every submarine hit leaves its own number: it pops up where the submarine sank and flies into the next place, so the row fills from the smallest up; when the last one is in, "<" signs pop in between (−12 < −9 < −6 < −3) and the numbers light up left to right. (The sheet's correct animation shows firing-order numbers 1, 2, 3, 4; this replaces them.)
 
 ```
 index.html          the game
@@ -75,18 +79,18 @@ open http://localhost:8000/?edit=1
 - Rotation/scale on things the game itself rotates or scales (the cannon's lean, pop-ins) are overwritten by those animations
 
 ## Test shortcuts (URL)
-- `?at=hook | l1 | l2 | l3` start at a section (`?at=hook&scene=2` = story part 2, `scene=3` = How to play), `&round=2` start at a round
+- `?at=hook | l1 | l2 | l3` start at a section, `&round=2` start at a round
 - `&speed=2` faster animations, `&mute=1` no sound/voice, `&autostart=1` skip the title button
 - In the story: tap = next line, "Skip story" jumps to the dive.
 
 ## Files
 - `js/script.js` EVERY spoken line ({id, who, text}) + level data. The game and `tools/make_voices.py` both read it — edit lines here (and re-record: `--only <id> --force`).
 - `js/core.js` stage fit, sound (Web-Audio sfx + tanpura/underwater music bed, ducked under voice), voice playback (recorded VO → browser voice), captions + name tag, the talking sheets
-- `js/world.js` parallax sea (far reef, seabed, fish schools, rays, caustics, marine snow, bubbles), navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/blast (flash, shockwave, debris), hints, the helper glow (tutorial + nudges), badges, L3 signals + defence marker
+- `js/world.js` parallax sea (far reef, seabed, fish schools, rays, caustics, marine snow, bubbles), navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/blast (flash, shockwave, debris), hints, the helper glow (tutorial + nudges), Level 1's missiles + launch bay, Level 3's order row
 - `js/cockpit.js` the bow cannon + torpedo, the crew at their stations, console screen, warning lamps, hull kick
 - `js/qa.js` the QA jumper (`?qa=1`)
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
-- `js/levels.js` flow + pedagogy: story scenes (lines `s1`–`s11`, how-to `hp1`–`hp4`, ending `finEnd` → ROUTE CLEARED!), teaching, tutorial, 3-strike (Oops + direction arrow → Hint + rule card → Nudge + pulsing glow on the answer), idle help (6 s visual → 12 s spoken → 22 s reminder), stars
+- `js/levels.js` flow + pedagogy: the hook (lines `h1`, `h2`), the level intros (`l1a` `l1b`, `l2a` `l2b`, `l3a`), the ending (ROUTE CLEARED!), tutorial glow in each level's first round, 3-strike feedback as panel text, idle help (6 s visual → 12 s text → 22 s reminder), stars
 - `tools/make_voices.py` makes the voice files
 - `assets/img` web versions of the art pack (all `.webp`; the sonar-room doors are `door_left/right.webp`)
 
@@ -124,13 +128,13 @@ The whole story is **one continuous underwater scene**: the camera never cuts.
 - **Water** (`js/water.js`): one WebGL canvas draws the backdrop with slow refraction ripples, moving caustic light, god rays and a soft Gaussian depth blur toward the bottom and edges. When the game is opened straight from a file (`file://`), browsers don't let WebGL read the image, so the plain background is used instead; Live Server and Vercel get the full effect.
 - The Coast Guard ship is a dark silhouette at the surface above; Meera and Riya speak from glass comms panels (LIVE) in the bottom corners; the narrator and the Defence System use a glass caption.
 - It opens through the sonar-room doors (`door_left/right.webp`): two lamp blinks, the latch kicks, air hisses, then both halves slide apart (0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1)) onto the water.
-- Part 1 (rows 1–6): subs slip in → they fire missiles up at the ship, the water flushes red, ALERT → Meera's radar → contact the defence station → the launcher rises from the seabed → sonar locks on, TARGETS CONFIRMED, the blue missiles meet the red ones → Level 1.
-- Part 2 (rows 7–11, after Level 1; it fades in over the cockpit): the navigation scale floats in; the subs swim onto −6, −2, +2 and +5 → distances to 0 → the FIRE button; after "Ready? Launch the missiles." the child presses FIRE → MISSION 1 → How to play → Level 2. The ending (row 12) returns to the same water, brighter, with ROUTE CLEARED! and confetti.
-- Speakers: the sheet's "Officer", "Officer Veer" and "Officer 1st" are Commander Meera; "Officer Riya" is Cadet Riya. Row 7's line comes from its OST column (no dialogue).
+- The hook: the doors open on the water, three enemy subs slip in (Meera: "Enemy submarines are entering our sea territory! We have to protect our borders!") → they fire missiles up at the ship, the water flushes red, ALERT! ALERT! (Meera: "Oh no! They're firing missiles. We have to defuse them.") → the cockpit frame closes in → Level 1.
+- The ending (after Level 3) returns to the same water, brighter, with ROUTE CLEARED! and confetti (no words).
+- The longer storyboard (control room, defence station, the navigation-scale scenes, How to play) was cut when the dialogue was cut down; it is in the git history.
 
-**Our border:** our territory is the negative side of the scale, so the smaller (more negative) number is closer to our border. Level 2 always fires the smaller number and Level 3 fires from the smallest up, as both teaching lines say. Where the L2 sheet picked the greater number (rows 3–8 and 10), the answer and its lines were changed to the smaller one, worded like rows 1–2; the sheet's "border 0" reads "our border". In the story, rows 8–9 draw arrows from −6 (short) and +5 (long) pointing left towards our border.
+**Our border:** our territory is the negative side of the scale, so the smaller (more negative) number is closer to our border. Level 2 always fires the smaller number and Level 3 fires from the smallest up, as both teaching lines say. Where the L2 sheet picked the greater number (rows 3–8 and 10), the answer and its lines were changed to the smaller one, worded like rows 1–2; the sheet's "border 0" reads "our border". Level 2's intro sweeps the number line left (smaller, closer to our border) then right (bigger, farther).
 - Motion: on-screen words spring in letter by letter with a light sweep; missiles leave bubble trails; sonar rings, target locks, shake on hits.
-- Voices: 8 new lines (n1 a2 m3 m4 d5 m6 m8 r9) use the browser voice until recorded (`python3 tools/make_voices.py` with a working key; the Narrator and Defence System voices are set up).
+- Voices: the 7 lines (h1 h2 l1a l1b l2a l2b l3a) use the browser voice until recorded (`python3 tools/make_voices.py` with a working key).
 
 ## Formats
 Every file the game loads is WebP (images) or OGG (sound); fonts are woff2. The supplied story source art in `assets/submarine_story_assets/` is kept as full-resolution WebP (19 MB of PNG → 2.5 MB); the original PNGs are in `~/Downloads/Sonar_Defence_Archive_2026-10-09/story_source_png/`. Source art is excluded from the Vercel upload (`.vercelignore`).

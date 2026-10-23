@@ -1,6 +1,6 @@
-/* levels: story part 1 → L1 launch opposite missiles → story part 2 → how to play → L2 closer to the border → L3 fire in order
-   (sheets L1–L3 V3 and the story sheet) → story ending.
-   Every spoken line comes from js/script.js (SCRIPT.S / SCRIPT.D) so recorded voices match by id. */
+/* levels: the hook → L1 launch opposite missiles → L2 closer to the border → L3 fire in order (sheets L1–L3 V3) → the ending.
+   Only the 7 lines in SCRIPT.S are spoken (the hook + one intro per level); the rounds' instructions, correct lines and
+   wrong-answer hints are on-screen text in the mission panel (note() below). */
 (function () {
   const { $, Q, wait, fmt, SFX, say } = SD;
   const { S, D } = SCRIPT;
@@ -8,6 +8,12 @@
   const SCORE = {};                      // level → [true/false first-try per mission]
   let LV = 'l1';
   const mark = ok => (SCORE[LV] = SCORE[LV] || []).push(ok);
+  /* feedback is on-screen text: it shows in the mission panel; back = the round's text, shown again after a while.
+     noteEnd() cancels a pending return (call it when the round moves on). */
+  let noteN = 0;
+  const note = (text, back, hold = 4) => { const n = ++noteN; W.strip(text); if (back) gsap.delayedCall(hold, () => { if (n === noteN) W.strip(back); }); };
+  const noteEnd = () => { noteN++; };
+  const readFor = t => Math.min(3.2, Math.max(1.6, t.split(' ').length * .32));   // time to read a line in the panel
 
   /* ---------- the sheets' hint animations ("Incorrect Animation" / "Inactivity Animation" columns) for Levels 2 and 3 ---------- */
   const sub = v => W.subAt(v);
@@ -21,30 +27,29 @@
 
   /* ---------- fire at one submarine with the 3-strike rule ----------
      A wrong tap gets Incorrect Feedback 1, 2, 3 (with their animations); after the third only the right submarine answers.
-     Idle: 6 s → the inactivity animation · 12 s → the inactivity line too · 22 s → both again.
+     Idle: 6 s → the inactivity animation · 12 s → the inactivity line too (as text) · 22 s → both again.
      o.guide (a level's first round, the tutorial): the helper glow shows what to tap, again after every miss. */
   async function strike(R, target, o = {}) {
     let wrong = 0; W.expect = target;
     const idleAnim = o.idleAnim || (() => ANIM[R.idleL.kind](R)), idleLine = o.idleLine || R.idleL.line;
     for (let k = 0; ; k++) {
       if (o.guide) o.guide(k === 0);
-      const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); say(idleLine); }, onIdle2: () => { idleAnim(); say(idleLine); }, only: wrong >= 3 ? W.subAt(target) : null });
+      const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); note(idleLine, R.ost); }, onIdle2: () => { idleAnim(); note(idleLine, R.ost); }, only: wrong >= 3 ? W.subAt(target) : null });
       SD.skip();
-      if (s.v === target) { W.clearHints(); const r = await W.lock(s); SFX.right(); await W.fire(s, r); return wrong === 0; }
+      if (s.v === target) { noteEnd(); W.clearHints(); const r = await W.lock(s); SFX.right(); await W.fire(s, r); return wrong === 0; }
       wrong++;
       const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); W.clearHints();
       const fb = o.fb ? o.fb(wrong) : R.fbL[Math.min(wrong, 3) - 1];
       if (fb.anim) fb.anim(); else ANIM[fb.kind](R);
-      await say(fb.line);
+      note(fb.line, R.ost); await wait(.5);
     }
   }
 
   /* =====================================================================
      STORY — the storyboard told in ONE continuous underwater scene: the camera never cuts. The water is a WebGL
      canvas (js/water.js: refraction, caustics, god rays, depth blur); the Coast Guard ship is a silhouette at the
-     surface; Meera and Riya speak from glass comms panels; the navigation scale floats in the water and the enemy
-     subs swim onto their numbers. Part 1 = rows 1–6, then Level 1; part 2 = rows 7–11 (the L2 transition), then FIRE →
-     How to play → Level 2. The ending (row 12) returns to the same scene. ?at=hook&scene=2 starts at part 2, scene=3 at How to play.
+     surface; Meera speaks from a glass comms panel. The hook (before Level 1) is one short scene with her two lines;
+     the ending (after Level 3) returns to the same water, with no words.
      ===================================================================== */
   const IMG = n => 'assets/img/story/' + n + '.webp';
   const bezier = (x1, y1, x2, y2) => t => {          // CSS cubic-bezier as a GSAP ease (Newton on x, then y)
@@ -146,136 +151,40 @@
       if (hold) tl.to(L, { y: -24, opacity: 0, duration: .3, stagger: .015, ease: 'power2.in', onComplete: () => o.remove() }, '+=' + hold);
       o.tl = tl; return o;
     };
-    // the navigation scale floating in the water (glass): −8 … +8, 0 glowing
-    K.scale = () => {
-      const s = mk('div', 'sx-nav');
-      let h = '<div class="bar"></div>';
-      for (let v = -8; v <= 8; v++) h += `<i class="${v ? '' : 'z'}" style="left:${(v + 8) * 80 + 60}px"></i><b class="${v < 0 ? 'n' : v > 0 ? 'p' : 'z'}" style="left:${(v + 8) * 80 + 60}px">${f(v)}</b>`;
-      s.innerHTML = h + '<i class="sheen"></i>';
-      gsap.fromTo(s, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: .5, ease: 'power3.out' });
-      gsap.fromTo(s.querySelector('.bar'), { scaleX: 0 }, { scaleX: 1, duration: .6, delay: .1, ease: 'power2.out' });
-      gsap.fromTo(s.querySelectorAll('i:not(.sheen),b'), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .25, stagger: { each: .02, from: 'center' }, delay: .3 });
-      gsap.fromTo(s.querySelector('.sheen'), { xPercent: -120, opacity: 1 }, { xPercent: 560, duration: 1.1, delay: .3, ease: 'power2.inOut', onComplete() { this.targets()[0].style.opacity = 0; } });
-      s.x = v => 300 + (v + 8) * 80 + 60;            // stage x (the scale's left is 300 px)
-      s.zero = () => gsap.fromTo(s.querySelectorAll('.z'), { scale: 1 }, { scale: 1.5, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' });
-      // an arrow from a position left towards our border (our territory is the negative side): short = close, long = far
-      s.toBorder = (v, cls) => { const x0 = s.x(-8) - 40, a = mk('div', 'sx-dist arrow ' + cls, { left: x0 - 300 + 'px', width: s.x(v) - x0 + 'px' }, s);
-        gsap.fromTo(a, { scaleX: 0, transformOrigin: '100% 50%' }, { scaleX: 1, duration: .7, ease: 'power2.out' }); return a; };
-      return s;
-    };
     return K;
   }
 
-  /* part 1 = rows 1–6, then Level 1. part 2 = rows 7–11 (the L2 transition), then How to play and Level 2; scene 3 = How to play only */
-  async function hook(part = 1, scene = 1) {
+  /* the hook: one short scene before Level 1. Enemy submarines slip into our waters (Meera: h1); they fire missiles up at
+     the ship, the water flushes red, ALERT (Meera: h2); then the cockpit frame closes in around the view. */
+  async function hook() {
     SD.music('calm'); SD.ambience('waves');
-    const K = storyKit(part === 2), { sfx, cast } = K;
+    const K = storyKit(), { sfx, cast } = K;
     await K.open();
-    if (part === 1) await K.doors().catch(e => { if (e !== K.SKIP) throw e; });   // the story opens through the sonar-room doors
+    await K.doors().catch(e => { if (e !== K.SKIP) throw e; });   // the story opens through the sonar-room doors
     // the Coast Guard ship above us: a dark silhouette at the surface
     const ship = K.img('ship', 'sx-hull', {}); gsap.fromTo(ship, { x: -400 }, { x: 0, duration: 4, ease: 'power2.out' }); gsap.to(ship, { y: 5, duration: 2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
     const subs = [];
-    const sub = (x, y, i, bay = true) => { const u = K.img(bay ? 'sub_bay' : '../sub', 'sx-sub', { left: x + 'px', top: y + 'px' });
+    const sub = (x, y, i) => { const u = K.img('sub_bay', 'sx-sub', { left: x + 'px', top: y + 'px' });
       gsap.fromTo(u, { x: 1000, opacity: 0 }, { x: 0, opacity: 1, duration: 2.4, delay: .3 + i * .4, ease: 'power3.out',
         onComplete: () => { const p = K.px(u), r = K.mk('div', 'sx-ring', { left: p.x + 'px', top: p.y + 'px' }); gsap.fromTo(r, { scale: .2, opacity: .9 }, { scale: 2, opacity: 0, duration: 1, onComplete: () => r.remove() }); SFX.blip(); } });
       u.bob = gsap.to(u, { y: '+=8', duration: 1.6 + i * .2, yoyo: true, repeat: -1, ease: 'sine.inOut' }); subs.push(u); return u; };
     try {
-      if (part === 1) {
-        /* 1 · enemy submarines slip in and take positions */
-        sub(1180, 520, 0); sub(1520, 640, 1); sub(780, 440, 2);
-        await K.say(S.n1);
+      /* enemy submarines slip into our waters */
+      sub(1180, 520, 0); sub(1520, 640, 1); sub(780, 440, 2);
+      await wait(1); K.chk();
+      K.who('meera', 'determined');
+      await K.say(S.h1);
 
-        /* 2 · they fire missiles up at the ship: the water flushes red, ALERT */
-        subs.forEach((u, i) => gsap.delayedCall(i * .35, () => { const p = K.px(u), m = K.img('missile_red', 'sx-mis', { left: p.x - 40 + 'px', top: p.y - 70 + 'px' }); SFX.launch(); K.trail(m);
-          gsap.to(m, { x: -260 - i * 140, y: -620, rotation: -62, duration: 1.6, ease: 'power1.in', onComplete: () => m.remove() }); }));
-        await wait(1.4); K.chk();
-        K.tint(1.5, .55, .5); SFX.alarm();
-        const al = K.stamp('ALERT! ALERT!', 'red', 0); gsap.to(al, { opacity: .45, duration: .4, yoyo: true, repeat: -1, delay: .9 });
-        await K.say(S.a2, () => gsap.delayedCall(1.3, SFX.alarm));
-        gsap.killTweensOf(al); gsap.to(al, { opacity: 0, duration: .3, onComplete: () => al.remove() });
-
-        /* 3 · Meera calls in: missiles heading towards us (a radar on her panel) */
-        const radar = K.mk('div', 'sx-radar'); radar.innerHTML = '<i class="sw"></i>'; gsap.to(radar.firstChild, { rotation: 360, duration: 2.4, repeat: -1, ease: 'none' });
-        gsap.fromTo(radar, { scale: 0 }, { scale: 1, duration: .45, ease: 'back.out(2)' });
-        [[60, 150], [110, 70], [190, 120]].forEach(([x, y], i) => { const d = K.mk('div', 'rmis', { left: x + 'px', top: y + 'px' }, radar); gsap.to(d, { left: 120, top: 120, duration: 5, delay: i * .2, ease: 'none' }); });
-        K.who('meera', 'shocked');
-        await K.say(S.m3);
-
-        /* 4 · contact the defence station */
-        K.who('meera', 'determined');
-        const com = K.mk('div', 'sx-comms'); com.innerHTML = '<i></i><i></i><i></i><span>DEFENCE STATION</span>';
-        gsap.fromTo(com, { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: .45, ease: 'back.out(2)' });
-        gsap.to(com.querySelectorAll('i'), { opacity: .2, duration: .3, stagger: .15, yoyo: true, repeat: -1 });
-        K.stamp('CONTACT DEFENCE STATION');
-        await K.say(S.m4, () => gsap.delayedCall(.6, SFX.doorBeep));
-        K.tint(1, 1, 1, 1.2); gsap.to([com, radar], { opacity: 0, scale: .9, duration: .35 });
-
-        /* 5 · the defence launcher rises from the seabed and turns into position */
-        K.leaveAll();
-        const ln = K.mk('div', 'sx-launcher'); K.img('launcher_base', 'base', {}, ln); const barrel = K.img('launcher_barrel', 'barrel', {}, ln);
-        gsap.fromTo(ln, { y: 420 }, { y: 0, duration: .9, ease: 'back.out(1.3)' }); SFX.doorSlide(1);
-        gsap.fromTo(barrel, { rotation: 0 }, { rotation: -38, duration: 1.2, delay: .8, ease: 'power2.inOut', onStart: () => SFX.clunk() });
-        const reds = [[1220, 200], [1480, 130], [1700, 260]].map(([x, y]) => { const m = K.img('missile_red', 'sx-mis', { left: x + 'px', top: y + 'px' }); gsap.set(m, { rotation: 155 }); gsap.to(m, { x: -110, y: 50, duration: 7, ease: 'none' }); return m; });
-        K.stamp('DEFENCE SYSTEM READY');
-        await K.say(S.d5);
-
-        /* 6 · sonar scans the missiles, target rings lock on, 0 glows → counterattack */
-        for (let i = 0; i < 3; i++) { const w = K.mk('div', 'sx-wave'); gsap.fromTo(w, { scale: .2, opacity: .9 }, { scale: 3.2, opacity: 0, duration: 1.6, delay: i * .4, onComplete: () => w.remove() }); }
-        SFX.ping();
-        reds.forEach((m, i) => gsap.delayedCall(.6 + i * .35, () => { const p = K.px(m), r = K.img('../reticle', 'sx-lock', { left: p.x + 'px', top: p.y + 'px' });
-          gsap.fromTo(r, { scale: 2, rotation: -90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: .35, ease: 'back.out(2)' }); SFX.lock(); gsap.to(r, { x: -100, y: 46, duration: 5.5, ease: 'none' }); m._lock = r; }));
-        const zero = K.mk('div', 'sx-zero'); zero.textContent = '0'; gsap.fromTo(zero, { scale: 0 }, { scale: 1, duration: .4, delay: 1.6, ease: 'back.out(3)' }); gsap.to(zero, { scale: 1.15, duration: .5, yoyo: true, repeat: -1, delay: 2, ease: 'sine.inOut' });
-        K.who('meera', 'determined');
-        K.stamp('TARGETS CONFIRMED!');
-        await K.say(S.m6);
-        reds.forEach((m, i) => gsap.delayedCall(i * .25, () => {
-          const b = K.img('missile_blue', 'sx-mis', { left: '1080px', top: '600px' }); SFX.launch(); gsap.set(b, { rotation: -38 }); K.trail(b, .05, 12);
-          const p = K.px(m);
-          gsap.to(b, { left: p.x - 70, top: p.y - 30, duration: .7, ease: 'power1.in', onComplete: () => { b.remove(); m.remove(); if (m._lock) m._lock.remove(); SFX.boom(); W.shake && W.shake(3, .25);
-            const r = K.mk('div', 'sx-ring hit', { left: p.x + 'px', top: p.y + 'px' }); gsap.fromTo(r, { scale: .3, opacity: 1 }, { scale: 2.6, opacity: 0, duration: .6, onComplete: () => r.remove() });
-            for (let j = 0; j < 8; j++) { const q = K.mk('div', 'sx-bub small', { left: p.x + 'px', top: p.y + 'px' }); gsap.to(q, { x: (Math.random() - .5) * 160, y: (Math.random() - .5) * 120 - 40, scale: 2, opacity: 0, duration: .9, onComplete: () => q.remove() }); } } });
-        }));
-        await wait(1.6); K.chk();
-        K.leaveAll(); gsap.to([zero, ln], { opacity: 0, y: 60, duration: .5 });
-        subs.forEach(u => { u.bob.kill(); gsap.to(u, { x: 1100, opacity: 0, duration: 1.2, ease: 'power2.in', onComplete: () => u.remove() }); }); subs.length = 0;
-        await wait(1.2); K.chk();
-      }
-
-      if (part === 2 && scene < 3) {
-        /* 7 · the navigation scale floats into the water; subs swim onto their positions */
-        const nav = K.scale();
-        const at = { };
-        [-6, -2, 2, 5].forEach((v, i) => { at[v] = sub(nav.x(v) - 105, 380, i, false); });
-        K.who('meera', 'determined');
-        await K.say(S.s4);
-
-        /* 8 · −6 blinks, an arrow points left towards our border: it is close */
-        gsap.to(at[-6], { scale: 1.12, duration: .3, yoyo: true, repeat: 5 }); nav.toBorder(-6, 'n');
-        K.who('meera', 'pointing');
-        await K.say(S.m8);
-
-        /* 9 · +5 blinks: its arrow to our border is much longer, so it is farther */
-        gsap.to(at[5], { scale: 1.12, duration: .3, yoyo: true, repeat: 5 }); nav.toBorder(5, 'p');
-        K.who('riya', 'alert');
-        await K.say(S.r9);
-
-        /* 10 · mission begins: the FIRE button lights up */
-        K.leave('riya');
-        const fire = K.mk('div', 'sx-fire'); K.img('fire_off', '', {}, fire); const lit = K.img('fire_lit', 'lit', {}, fire);
-        gsap.fromTo(fire, { scale: 0 }, { scale: 1, duration: .5, ease: 'back.out(2.4)' });
-        gsap.fromTo(lit, { opacity: 0 }, { opacity: 1, duration: .45, yoyo: true, repeat: -1, delay: .6, ease: 'sine.inOut' });
-        K.who('meera', 'pointing');
-        await K.say(S.s10);
-
-        /* 11 · "Ready? Launch the missiles." → the child presses FIRE → MISSION 1 */
-        K.who('meera', 'determined');
-        await K.say(S.s11);
-        await pressFire(K, fire, lit);
-        K.leaveAll(); gsap.to(fire, { scale: 0, duration: .3, delay: .25 }); gsap.to(nav, { opacity: 0, y: 40, duration: .5 });
-        subs.forEach(u => gsap.to(u, { opacity: 0, duration: .5 }));
-        const m1 = K.stamp('MISSION 1', 'big', 0); SFX.reward && SFX.reward(true); await wait(1.3); K.chk();
-        gsap.to(m1, { scale: 3, opacity: 0, duration: .6, ease: 'power2.in' });
-      }
+      /* they fire missiles up at the ship: the water flushes red, ALERT */
+      subs.forEach((u, i) => gsap.delayedCall(i * .35, () => { const p = K.px(u), m = K.img('missile_red', 'sx-mis', { left: p.x - 40 + 'px', top: p.y - 70 + 'px' }); SFX.launch(); K.trail(m);
+        gsap.to(m, { x: -260 - i * 140, y: -620, rotation: -62, duration: 1.6, ease: 'power1.in', onComplete: () => m.remove() }); }));
+      await wait(1.4); K.chk();
+      K.tint(1.5, .55, .5); SFX.alarm();
+      const al = K.stamp('ALERT! ALERT!', 'red', 0); gsap.to(al, { opacity: .45, duration: .4, yoyo: true, repeat: -1, delay: .9 });
+      K.who('meera', 'shocked');
+      await K.say(S.h2, () => gsap.delayedCall(1.3, SFX.alarm));
+      gsap.killTweensOf(al); gsap.to(al, { opacity: 0, duration: .3, onComplete: () => al.remove() });
+      K.tint(1, 1, 1, 1); await wait(.5); K.chk();
     } catch (e) { if (e !== K.SKIP) throw e; }
 
     /* into the game: the same water — the cockpit frame closes in around the view */
@@ -285,30 +194,9 @@
     await gsap.to(K.st, { opacity: 0, scale: 1.15, duration: .8, ease: 'power2.in' });
     K.close(); K.st.classList.add('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([K.st, K.bg, cast, sfx], { clearProps: 'all' });
     await W.sail(1.4);
-    if (part === 2) await howTo();
   }
 
-  // wait for the child to press the glowing FIRE button (taps elsewhere do nothing here; Skip story still skips)
-  function pressFire(K, fire, lit) {
-    return new Promise(res => {
-      if (K.skipping) return res();
-      fire.classList.add('ready'); gsap.killTweensOf(lit); gsap.set(lit, { opacity: 1 });
-      const pulse = gsap.to(fire, { scale: 1.08, duration: .55, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-      const rings = setInterval(() => { const r = K.mk('div', 'sx-ring', { left: '0', top: '0' }, fire); gsap.fromTo(r, { scale: .8, opacity: .9, left: 100, top: 100 }, { scale: 2.2, opacity: 0, duration: 1.1, onComplete: () => r.remove() }); }, 700);
-      const hint = gsap.delayedCall(6, () => { const t = K.mk('div', 'sx-press', {}, fire); t.textContent = 'TAP FIRE!'; gsap.fromTo(t, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: .3 }); });   // 6 s: a nudge
-      const prevTap = K.st.onpointerdown; K.st.onpointerdown = null;
-      const done = () => { clearInterval(rings); pulse.kill(); hint.kill(); fire.onpointerdown = null; K.st.onpointerdown = prevTap; res(); };
-      fire.onpointerdown = e => {
-        e.stopPropagation(); SFX.tap(); SFX.launch(); W.shake && W.shake(4, .3);
-        gsap.fromTo(fire, { scale: .86 }, { scale: 1, duration: .4, ease: 'back.out(3)' });
-        for (let i = 0; i < 3; i++) { const r = K.mk('div', 'sx-ring hit', { left: '100px', top: '100px' }, fire); gsap.fromTo(r, { scale: .5, opacity: 1 }, { scale: 3 + i, opacity: 0, duration: .7, delay: i * .08, onComplete: () => r.remove() }); }
-        done();
-      };
-      const sk = $('#skipStory'), skip0 = sk.onclick; sk.onclick = e => { done(); skip0(e); };
-    });
-  }
-
-  /* ---- row 12 · the ending: the same water, calm and bright, the route cleared ---- */
+  /* ---- the ending: the same water, calm and bright, the route cleared (no words) ---- */
   async function storyEnd() {
     const K = storyKit(true);
     $('#skipStory').style.display = 'none';
@@ -320,86 +208,53 @@
       const COL = ['#ffd66b', '#7ff2ff', '#ff8fb1', '#9dff9a', '#ffffff', '#ffb070'];
       for (let i = 0; i < 40; i++) { const c = K.mk('div', 'sx-conf', { left: 200 + Math.random() * 1520 + 'px', top: '-30px', background: COL[i % COL.length] });
         gsap.to(c, { y: 700 + Math.random() * 400, x: (Math.random() - .5) * 240, rotation: (Math.random() - .5) * 900, opacity: 0, duration: 2.4 + Math.random() * 1.6, delay: .4 + Math.random() * .8, ease: 'power1.in', onComplete: () => c.remove() }); }
-      K.who('riya', 'cheering'); K.who('meera', 'proud');
-      await K.say(S.finEnd);
-      await wait(.8);
+      await wait(3.6);
     } catch (e) { if (e !== K.SKIP) throw e; }
     await gsap.to(K.st, { opacity: 0, duration: .4 });
     K.close(); K.st.classList.add('hidden'); K.cast.innerHTML = K.sfx.innerHTML = ''; gsap.set([K.st, K.bg, K.cast, K.sfx], { clearProps: 'all' }); $('#skipStory').style.display = '';
   }
 
-
-
-  /* ---------- how to play (story sheet): a live demo round, played for the child ----------
-     Two real submarines come up; the helper glow shows the mission, the number, then the submarine;
-     the cannon slides over and fires, the torpedo hits. A step chip names each step as Meera says it. */
-  async function howTo() {
-    const chip = document.createElement('div'); chip.id = 'howchip'; $('#stage').appendChild(chip); gsap.set(chip, { xPercent: -50 });
-    const step = (n, t) => { chip.innerHTML = `<span class="k">HOW TO PLAY</span><b>${n}</b><span class="t">${t}</span>`; gsap.fromTo(chip, { y: -16, opacity: 0, scale: .9 }, { y: 0, opacity: 1, scale: 1, duration: .35, ease: 'back.out(2.4)' }); SFX.pop(); };
-    const T = -4;   // Level 2's rule: the smaller number is closer to our border
-    // 1 · read the mission + check the scale
-    step(1, 'READ THE MISSION');
-    const intro = W.scaleIntro();
-    await W.spawn([T, 3], { stagger: .25 });
-    W.strip(D.L2[0].ost);   // the mission box: Level 2's mission (−4 is smaller than +3, so it is closer to our border)
-    const p1 = say(S.hp1);
-    await intro; await W.handTo(960, 72, .3); await W.handTap(960, 72);   // the glow pulses on the mission text…
-    await W.handTo(W.X(0), W.LBL_Y + W.CONFIG.SCALE_DY, .7);                 // …then on 0 in the middle of the scale
-    await p1;
-    // 2 · find the submarine at the correct position: the glow runs along the scale to −4, then up its sonar line
-    step(2, 'FIND THE TARGET');
-    const sub = W.subAt(T), lx = W.X(T), ly = W.LBL_Y + W.CONFIG.SCALE_DY;   // the −4 label
-    const p2 = say(S.hp2);
-    await W.handTo(lx, ly, 1); W.labelsOn([T]); await W.handTap(lx, ly);
-    await W.handTo(lx, sub.cy, .8); W.glow(sub, true, 'rgba(255,214,107,.6)');
-    await p2;
-    // 3 · aim: tap it, the target locks and the cannon slides under it
-    step(3, 'AIM & FIRE!');
-    const p3 = say(S.hp3);
-    await W.handTap(lx, sub.cy); W.tapFx(lx, sub.cy); SFX.tap(); W.hand(null);
-    const ret = await W.lock(sub); SFX.right();
-    await p3;
-    // 4 · fire: the torpedo runs out and hits
-    step(4, 'TARGET HIT!');
-    const p4 = say(S.hp4);
-    W.glow(sub, false); await W.fire(sub, ret);
-    W.sparkle(lx, sub.cy - 40); await p4; await wait(.8);
-    gsap.to(chip, { opacity: 0, duration: .3, onComplete: () => chip.remove() });
-    await W.clearSubs(); W.stripOff(); W.labelsOn([]);   // the scale stays on: Level 2 follows
-  }
-
   /* =====================================================================
      LEVEL 1 · launch as many opposite missiles (sheet L1 V3)
      The enemy submarine's missiles are positive (red), the defence system's negative (blue); they come into the top row.
-     The bow cannon is the launcher of the other sign: each tap launches one missile into the row below (tap a launched one
-     to take it back), then FIRE. The same number: each pair meets and disappears, 0 left. Any other number is a mistake:
-     the launched missiles fall away and Incorrect Feedback 1, 2, 3 play in turn; after the third the launcher stops at the
-     right number. Row 1 is the teaching (the missiles come, the launcher activates), row 2 the tutorial (a guiding glow).
+     The bow cannon is the launcher of the other sign: each tap launches one missile into the launch bay above it (tap one in
+     the bay to take it back), then FIRE. The same number: each one streaks to a missile that came and both are absorbed, 0 left.
+     Any other number is a mistake, and it still fires: the pairs are absorbed; too few, and the missiles left over get through
+     and hit the window (it cracks); too many, and ours are wasted. Each mistake costs one of the shield's three bars, the enemy
+     launches again and Incorrect Feedback 1, 2, 3 play in turn. Shield down (the third): SHIELD DOWN!, the glass is repaired,
+     the shield recharges and the guiding glow shows the way; the launcher also stops at the right number. Row 1 is the teaching (the missiles come, the launcher activates), row 2 the tutorial (a guiding glow).
      ===================================================================== */
   async function launchRound(R, teach) {
     const n = Math.abs(R.give), given = Math.sign(R.give), mine = -given, room = 2;
     W.launcher(0); W.fireBtn('');
-    await W.missiles(n, given, room);   // the missiles come towards the defence area
-    if (teach) { await wait(.3); W.launcher(mine); await wait(.6); await say(D.L1_TEACH.voL); await wait(.4); }   // the launcher activates
-    W.launcher(mine); W.fireBtn('dim');
-    W.strip(R.ost); await wait(.3); await say(R.voL);
-    let strikes = 0, busy = false;
+    await W.missiles(n, given);   // the missiles come towards the defence area
+    if (teach) { await wait(.3); W.launcher(mine); await wait(.6); await say(S.l1a); await say(S.l1b); await wait(.2); }   // the launcher activates; Meera's two lines
+    W.launcher(mine); W.bay(true); W.fireBtn('dim'); W.shield(3, true);
+    W.strip(R.ost); await wait(.6);
+    let strikes = 0, busy = false, hull = 3, tut = !!R.tutorial;   // hull: the shield's bars · tut: the guiding glow is on
     const count = () => W.mslRow(1).length;
     const ANIM = {   // no incorrect animations in the sheet for Level 1: point at the count
       given: () => W.mslPulse(W.mslRow(0), 0, .18),                               // the missiles that came pulse one by one
-      launcher: () => { W.handTo(...pt('#launchHit')); if (!R.tutorial) gsap.delayedCall(2.6, () => W.hand(null)); },   // the launcher glows
+      launcher: () => { W.handTo(...pt('#launchHit')); if (!tut) gsap.delayedCall(2.6, () => W.hand(null)); },   // the launcher glows
       both: () => { ANIM.given(); ANIM.launcher(); },
     };
     const pt = sel => { const c = W.centreOf($(sel)); return [c.x, c.y]; };
     const guide = () => {   // the tutorial's glow: the launcher until there are enough, then FIRE (too many: the last one, to take back)
-      if (!R.tutorial || busy) return;
+      if (!tut || busy) return;
       const k = count();
       if (k < n) W.handTo(...pt('#launchHit')); else if (k === n) W.handTo(...pt('#l1fire')); else { const m = W.mslRow(1)[k - 1]; W.handTo(m.x, m.y); }
     };
+    // FIRE: every launched missile leaves the bay, meets one missile that came and both are absorbed
+    const volley = async () => {
+      SFX.launch(); const pairs = W.mslPairs().map(([p, q]) => p.row === 0 ? [p, q] : [q, p]), each = pairs.length > 6 ? .16 : .32;
+      pairs.forEach(([g, m], i) => gsap.delayedCall(i * each, () => W.mslDefuse(g, m, pairs.length > 6)));
+      await wait(pairs.length * each + 1.1);
+    };
+    const hitAt = i => ({ x: 600 + (i * 263) % 640, y: 480 + (i % 3) * 65 });   // where missiles that get through hit the window (clear of FIRE)
     const ok = await new Promise(resolve => {
       let calls = [];
       const nudge = () => { W.mslPulse(W.mslRow(0), 0, .18); gsap.fromTo('#cannon', { scale: 1 }, { scale: 1.06, duration: .3, yoyo: true, repeat: 3, transformOrigin: '50% 100%' }); };
-      const arm = () => { calls.forEach(c => c.kill()); calls = [gsap.delayedCall(6, nudge), gsap.delayedCall(12, () => { nudge(); say(R.voL); }), gsap.delayedCall(22, () => { nudge(); say(R.voL); })]; };
+      const arm = () => { calls.forEach(c => c.kill()); calls = [gsap.delayedCall(6, nudge), gsap.delayedCall(12, () => { nudge(); W.strip(R.ost); }), gsap.delayedCall(22, () => { nudge(); W.strip(R.ost); })]; };   // (the panel's text flickers back on)
       const stop = () => { calls.forEach(c => c.kill()); W.onLaunch(null); W.onMissile(null); W.onFire(null); };
       const fireState = () => W.fireBtn(count() ? 'lit' : 'dim');
       W.matching = true;
@@ -411,23 +266,27 @@
       W.onMissile(m => { if (m.row !== 1 || busy) return; arm(); SD.skip(); W.mslTakeBack(m, W.muzzle()); fireState(); guide(); });
       W.onFire(async () => {
         if (busy || !count()) return; arm(); SD.skip(); W.hand(null);
-        if (count() === n) { stop(); return resolve(true); }
+        if (count() === n) { stop(); noteEnd(); return resolve(true); }
         busy = true; strikes++; W.fireBtn('dim');
-        W.mslLinks(); await wait(.35); W.mslBad(W.mslRemain()); W.alarm(); await wait(1.1);   // the pairs link up; the missiles with no partner flash red
-        await W.mslDrop();
-        busy = false; const fb = R.fbL[Math.min(strikes, 3) - 1]; ANIM[fb.kind](); guide(); say(fb.line);
+        // a wrong count still fires: the pairs are absorbed, and what is left over is the consequence
+        const left = W.mslRemain(), through = left[0].row === 0;
+        await volley(); W.mslBad(left); await wait(.7);
+        if (through) await Promise.all(left.map((m, i) => wait(i * .2).then(() => W.mslHitUs(m, hitAt(i))).then(() => W.impact(hitAt(i).x, hitAt(i).y, i < 3))));   // too few: they get through and hit us
+        else { await Promise.all(left.map((m, i) => wait(i * .12).then(() => W.mslFizzle(m)))); W.alarm(); }   // too many: ours are wasted
+        hull--; W.shield(hull); await wait(.6);
+        if (!hull) { await W.shieldDown(); await W.repair(); hull = 3; W.shield(3); tut = true; await wait(.8); }   // shield down: repair, and the glow guides from now on
+        await W.missiles(n, given, true);   // the enemy launches again
+        busy = false; arm(); const fb = R.fbL[Math.min(strikes, 3) - 1]; ANIM[fb.kind](); guide(); note(fb.line, R.ost);
       });
       arm(); guide();
     });
     W.matching = false; W.hand(null); W.fireBtn(''); W.launcher(0);
-    // Correct Animation: each missile meets the one facing it, and all the pairs disappear
-    SFX.launch(); const pairs = W.mslPairs(), quick = pairs.length > 6;
-    pairs.forEach(([p, q], i) => gsap.delayedCall(i * (quick ? .12 : .3), () => W.mslCancel(p, q, quick)));
-    await wait(pairs.length * (quick ? .12 : .3) + 1.2);
+    // Correct Animation: each launched missile leaves the bay, meets one missile that came and both are absorbed: all the pairs disappear
+    await volley(); await wait(.4); W.bay(false); W.shield(hull, false); W.repair();   // (any cracks from this round seal up)
     mark(strikes === 0);
     W.reward({ big: strikes === 0, confetti: true, pip: W.pipDone, at: { x: 960, y: (W.CONFIG.SIG_Y1 + W.CONFIG.SIG_Y2) / 2 } });
-    await wait(.4); await say(R.okL);
-    await wait(1.2); W.clearMissiles(); W.stripOff();
+    await wait(.4); note(R.ok); await wait(readFor(R.ok));
+    await wait(.8); W.clearMissiles(); W.stripOff();
   }
   async function level1(start = 0) {
     LV = 'l1'; W.dragRope(false); gsap.set('#scale', { opacity: 0 });   // Level 1 has no scale: it comes in the L2 transition
@@ -448,11 +307,13 @@
   async function level2(start = 0) {
     LV = 'l2'; await W.banner('', 'LEVEL 2', '');
     W.pips(D.L2.length, start);
-    if (start === 0) {   // Teaching: "The smaller number closer to 0."
+    if (start === 0) {   // the intro: Meera's two lines; light sweeps left (smaller, closer to our border), then right (bigger, farther)
       SD.where = { at: 'l2', round: 1 };
-      await W.panTo(-5);   // a light sweeps from the bigger numbers towards the smaller ones: towards our border
-      const line = say(D.L2_TEACH.voL); await wait(1.4);
-      const off = await W.scan(-11, ''); await line; await wait(.8); off();
+      await W.panTo(0);
+      const line = say(S.l2a); await wait(3.2);
+      let off = await W.scan(-8, 'smaller · closer'); await wait(1.6); off();
+      off = await W.scan(8, 'bigger · farther'); await line; await wait(.6); off();
+      await say(S.l2b);
     }
     for (let r = start; r < D.L2.length; r++) {
       SD.where = { at: 'l2', round: r + 1 };
@@ -460,15 +321,15 @@
       await W.panFor(R.subs);   // (0 joins the view when it fits)
       W.strip(R.ost); await W.spawn(R.subs, { stagger: .45 });
       const tut = r === 0;   // the first round is the tutorial: no dragging, the glow shows the smaller number, then its submarine
-      W.dragRope(!tut); await wait(.4); await say(R.voL); await wait(.3);
+      W.dragRope(!tut); await wait(.6);
       const guide = tut && (async first => { const s = W.subAt(R.target); if (!s) return;
         if (first) { await W.handTo(W.X(R.target), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseLbl(R.target); await wait(1.2); }
         if (W.waiting) W.handTo(s.x, s.cy, .8); });
       const first = await strike(R, R.target, { guide }); W.dragRope(false);
       mark(first);
       W.reward({ big: first, pip: W.pipDone });
-      await wait(.5); W.strip(R.show, { big: true });   // Correct Animation: show +8 < +10
-      await say(R.okL);
+      await wait(.5); W.strip(R.show, { big: true }); await wait(1.4);   // Correct Animation: show +8 < +10
+      note(R.ok); await wait(readFor(R.ok));
       W.pips(D.L2.length, r + 1); await wait(1.4); await W.clearSubs(); W.stripOff();
       if (r < D.L2.length - 1) await W.sail();
     }
@@ -491,8 +352,8 @@
   }
   async function orderRound(R, tut) {   // tut: the level's first round, the glow shows the submarine to fire next
     const seq = [...R.subs].sort((a, b) => a - b);
-    W.strip(R.ost, { big: true });
-    await wait(.4); await say(R.voL); await wait(.3);
+    W.strip(R.ost, { big: true }); W.orderRow(seq.length);   // the empty places the numbers will fill
+    await wait(.6);
     let allFirst = true;
     for (let i = 0; i < seq.length; i++) {
       const next = seq[i], pulseNext = () => { W.pulseSub(W.subAt(next)); W.pulseTag(W.subAt(next)); };
@@ -503,13 +364,14 @@
         idleAnim: pulseNext, idleLine: R.idleL.line,   // the smallest number left pulses
         guide: tut && (() => { const s = W.subAt(next); if (s) W.handTo(s.x, s.cy, .6); }) });
       allFirst = allFirst && first;
-      W.badge(next, i + 1, W.lastHit); await wait(.9);
+      await W.orderChip(next, W.lastHit);   // its number pops up and flies into the next place in the row
     }
+    await W.orderDone();   // the row is in order: −12 < −9 < −6 < −3
     mark(allFirst);
     if (R.cheer) W.strip(R.cheer, { big: true });   // ROUTE CLEARED! / ALL TARGETS CLEARED!
     W.reward({ big: !!R.cheer, confetti: true, pip: W.pipDone, at: { x: 960, y: 300 } });
-    await wait(.5); await say(R.okL);
-    await wait(1.4); W.clearBadges(); await W.clearSubs(); W.stripOff();
+    await wait(.5); note(R.ok); await wait(readFor(R.ok));
+    await wait(1.4); W.clearOrder(); await W.clearSubs(); W.stripOff();
   }
   async function level3(start = 0) {
     LV = 'l3'; W.dragRope(false); await W.panTo(0, .4); gsap.to('#scale', { autoAlpha: 0, duration: .5 });
@@ -519,14 +381,13 @@
       SD.where = { at: 'l3', round: r + 1 };
       const R = D.L3[r];
       await W.spawn(R.subs, { at: scatter(R.subs.length), stagger: .5 });   // the submarines appear at random places
-      if (r === 0) { W.strip(D.L3_TEACH.ost, { big: true }); await wait(.4); await say(D.L3_TEACH.voL); await wait(.8); }
+      if (r === 0) { W.strip(D.L3_TEACH.ost, { big: true }); await wait(.4); await say(S.l3a); await wait(.6); }   // Meera's intro
       await orderRound(R, r === 0);
       W.pips(D.L3.length, r + 1);
       if (r < D.L3.length - 1) await W.sail();
     }
     // Level Completion: the sea calms, large confetti and the completion badge
-    W.reward({ big: true, confetti: true, at: { x: 960, y: 320 } });
-    await say(D.L3_END.voL); await say(D.L3_END.okL);
+    W.reward({ big: true, confetti: true, at: { x: 960, y: 320 } }); await wait(1.2);
     await complete('l3', D.L3_END.ost);
     gsap.set('#scale', { autoAlpha: 1, opacity: 0 });
     await storyEnd();   // the story's ending (storyboard row 12)
@@ -548,20 +409,18 @@
     await W.sail();
   }
 
-  /* ---------- run (the story sheet's order): story part 1 → Level 1 → story part 2 (L2 transition) → How to play → Level 2
-     → Level 3 (→ the story's ending) → back to the title. ?at=hook&scene=2 is part 2 ('nav'), scene=3 How to play. ---------- */
+  /* ---------- run: the hook → Level 1 → Level 2 → Level 3 (→ the ending) → back to the title ---------- */
   async function run() {
-    const scene = +(Q.get('scene') || 1), r = parseInt(Q.get('round') || '1', 10) - 1;
-    let at = Q.get('at') || 'hook'; if (at === 'hook' && scene > 1) at = 'nav';
-    const order = ['hook', 'l1', 'nav', 'l2', 'l3'];
+    const r = parseInt(Q.get('round') || '1', 10) - 1;
+    const at = Q.get('at') || 'hook';
+    const order = ['hook', 'l1', 'l2', 'l3'];
     for (let i = Math.max(0, order.indexOf(at)); i < order.length; i++) {
       const k = order[i], st = k === at ? r : 0;
       SD.where = { at: k, round: st + 1 };
-      if (k !== 'hook' && k !== 'nav' && k === at) { SD.music('play'); SD.ambience('waves'); }
-      if (k === 'hook') await hook(1);
+      if (k !== 'hook' && k === at) { SD.music('play'); SD.ambience('waves'); }
+      if (k === 'hook') await hook();
       if (k === 'l1') await level1(st);
-      if (k === 'nav') await hook(2, k === at ? Math.max(2, scene) : 2);
-      if (k === 'l2') { if (k === at) await W.scaleIntro(); await level2(st); }
+      if (k === 'l2') { await W.scaleIntro(); await level2(st); }   // the number line switches on for Level 2
       if (k === 'l3') await level3(st);
     }
     location.search = Q.get('qa') === '1' ? '?qa=1' : '';
