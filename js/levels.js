@@ -28,17 +28,20 @@
   /* ---------- fire at one submarine with the 3-strike rule ----------
      A wrong tap gets Incorrect Feedback 1, 2, 3 (with their animations); after the third only the right submarine answers.
      Idle: 6 s → the inactivity animation · 12 s → the inactivity line too (as text) · 22 s → both again.
-     o.guide (a level's first round, the tutorial): the helper glow shows what to tap, again after every miss. */
+     o.guide (a level's first round, the tutorial): the helper glow shows what to tap, again after every miss.
+     o.replay (Level 2): on the second wrong tap the guided replay runs instead of Incorrect Feedback 2; after it only the right
+     submarine answers (o.didReplay is set). */
   async function strike(R, target, o = {}) {
-    let wrong = 0; W.expect = target;
+    let wrong = 0, guided = false; W.expect = target;
     const idleAnim = o.idleAnim || (() => ANIM[R.idleL.kind](R)), idleLine = o.idleLine || R.idleL.line;
     for (let k = 0; ; k++) {
       if (o.guide) o.guide(k === 0);
-      const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); note(idleLine, R.ost); }, onIdle2: () => { idleAnim(); note(idleLine, R.ost); }, only: wrong >= 3 ? W.subAt(target) : null });
+      const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); note(idleLine, R.ost); }, onIdle2: () => { idleAnim(); note(idleLine, R.ost); }, only: wrong >= 3 || guided ? W.subAt(target) : null });
       SD.skip();
       if (s.v === target) { noteEnd(); W.clearHints(); const r = await W.lock(s); SFX.right(); await W.fire(s, r); return wrong === 0; }
       wrong++;
       const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); W.clearHints();
+      if (o.replay && wrong === 2) { await o.replay(); guided = o.didReplay = true; continue; }
       const fb = o.fb ? o.fb(wrong) : R.fbL[Math.min(wrong, 3) - 1];
       if (fb.anim) fb.anim(); else ANIM[fb.kind](R);
       note(fb.line, R.ost); await wait(.5);
@@ -324,25 +327,52 @@
       off = await W.scan(8, 'bigger · farther'); await line; await wait(.6); off();
       await say(S.l2b);
     }
+    const kind = R => R.subs.every(v => v > 0) ? 'pos' : R.subs.every(v => v < 0) ? 'neg' : 'mix', extraDone = {};
     for (let r = start; r < D.L2.length; r++) {
       SD.where = { at: 'l2', round: r + 1 };
-      const R = D.L2[r];
-      await W.panFor(R.subs);   // (0 joins the view when it fits)
-      W.strip(R.ost); await W.spawn(R.subs, { stagger: .45 });
-      const tut = r === 0;   // the first round is the tutorial: no dragging, the glow shows the smaller number, then its submarine
-      W.dragRope(!tut); await wait(.6);
-      const guide = tut && (async first => { const s = W.subAt(R.target); if (!s) return;
-        if (first) { await W.handTo(W.X(R.target), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseLbl(R.target); await wait(1.2); }
-        if (W.waiting) W.handTo(s.x, s.cy, .8); });
-      const first = await strike(R, R.target, { guide }); W.dragRope(false);
-      mark(first);
-      W.reward({ big: first, pip: W.pipDone });
-      await wait(.5); W.strip(R.show, { big: true }); await wait(1.4);   // Correct Animation: show +8 < +10
-      note(R.ok); await wait(readFor(R.ok));
-      W.pips(D.L2.length, r + 1); await wait(1.4); await W.clearSubs(); W.stripOff();
+      const R = D.L2[r], guided = await l2round(R, { tut: r === 0 });
+      W.pips(D.L2.length, r + 1);
+      if (guided && !extraDone[kind(R)]) { extraDone[kind(R)] = true; await W.sail(); await l2round(D.L2_EXTRA[kind(R)], { extra: true }); }   // one more like it, alone
       if (r < D.L2.length - 1) await W.sail();
     }
     await complete('l2', 'LEVEL 2 COMPLETE!');
+  }
+
+  /* one Level 2 round. tut = the tutorial (the guiding glow); extra = the item after a guided replay (not scored, no replay).
+     Mistake 1: Incorrect Feedback 1 + the "◀ our border" tag. Mistake 2: the guided replay. Returns true when it was guided. */
+  async function l2round(R, { tut, extra } = {}) {
+    await W.panFor(R.subs);   // (0 joins the view when it fits)
+    if (extra) { W.strip('One more like this!', { big: true }); await wait(1.4); }
+    W.strip(R.ost); await W.spawn(R.subs, { stagger: .45 });
+    W.dragRope(!tut); await wait(.6);
+    const o = {
+      guide: tut && (async first => { const s = W.subAt(R.target); if (!s) return;   // the tutorial: the glow shows the smaller number, then its submarine
+        if (first) { await W.handTo(W.X(R.target), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseLbl(R.target); await wait(1.2); }
+        if (W.waiting) W.handTo(s.x, s.cy, .8); }),
+      fb: k => { const fb = R.fbL[Math.min(k, 3) - 1]; return { line: fb.line, anim: () => { ANIM[fb.kind](R); if (k === 1) W.borderTag(true); } }; },
+      replay: !tut && !extra && (() => replay(R)),
+    };
+    const first = await strike(R, R.target, o); W.dragRope(false);
+    if (!extra) mark(first);
+    W.reward({ big: first, pip: extra ? null : W.pipDone });
+    await wait(.5); W.strip(R.show, { big: true }); await wait(1.4);   // Correct Animation: show −12 < −10
+    note(R.ok); await wait(readFor(R.ok));
+    await wait(1.4); W.borderTag(false); await W.clearSubs(); W.stripOff();
+    return !!o.didReplay;
+  }
+  /* the guided replay (Level 2, the second wrong tap): the question in the two steps the child does, wrong options blocked.
+     A · compare: both submarines grey out, only the two numbers answer ("Check which is smaller: −10 or −12?"); a wrong number
+         → a light runs from it to the other, towards our border's side, and the question again.
+     B · connect: "The smaller number is −12…", then only the submarine above −12 comes back, its sonar line lit; the other
+         stays grey and does not answer ("Check which submarine is close to our border."). */
+  async function replay(R) {
+    const t = R.target, u = R.subs.find(v => v !== t);
+    W.dragRope(false); W.borderTag(true); W.subs().forEach(s => s.d.classList.add('dim'));
+    note(R.fbL[1].line);
+    while (await W.waitLabel(R.subs) !== t) { SFX.wrong(); W.sweepTo(u, t); await wait(1.4); W.clearHints(); W.subs().forEach(s => s.d.classList.add('dim')); }
+    SFX.ding(); W.pulseLbl(t); note(R.fbL[2].line); await wait(readFor(R.fbL[2].line));
+    const s = W.subAt(t); s.d.classList.remove('dim'); W.lineLit(t, true); W.pulseSub(s); SFX.ping();
+    note(R.fbL[0].line);
   }
 
   /* =====================================================================

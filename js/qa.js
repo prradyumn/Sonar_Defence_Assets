@@ -74,6 +74,7 @@
         for (let i = mine.length; i < need; i++) setTimeout(() => tap(document.getElementById('launchHit')), (i - mine.length) * 120);
         setTimeout(() => tap(document.getElementById('l1fire')), Math.max(0, need - mine.length) * 120 + 600);
       }
+      else if (W.picking && W.lbl(W.expect)) tap(W.lbl(W.expect));   // Level 2's guided replay: the right number
       else if (W.waiting && W.subAt(W.expect)) tap(W.subAt(W.expect).d);
     }
   });

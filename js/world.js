@@ -335,6 +335,27 @@
     const b = el('dist ' + (v < 0 ? 'neg' : 'pos'), sc, { left: a + 'px', width: w + 'px' }); b.innerHTML = `<span>${Math.abs(v)}</span>`;
     gsap.fromTo(b, { scaleX: 0, transformOrigin: v < 0 ? '100% 50%' : '0% 50%', opacity: 1 }, { scaleX: 1, duration: .6, delay, ease: 'power2.inOut' }); SFX.ping(); hintEls.push(b);
   };
+  /* Level 2's guided replay: the numbers on the rope become the choice (the submarines are out of play meanwhile), a light
+     runs from one number to another, a submarine's sonar line lights up, and the "◀ our border" tag at the left end of the line */
+  W.waitLabel = vals => new Promise(res => {
+    play.style.pointerEvents = 'none'; W.picking = true;
+    const ls = vals.filter(v => LBL[v]);
+    ls.forEach(v => { LBL[v].classList.add('pick'); LBL[v].onpointerdown = e => {
+      e.stopPropagation(); ls.forEach(q => { if (!LBL[q]) return; LBL[q].classList.remove('pick'); LBL[q].onpointerdown = null; });
+      play.style.pointerEvents = 'auto'; W.picking = false; SFX.tap(); W.tapFx(X(v), W.LBL_Y + CONFIG.SCALE_DY); res(v); }; });
+  });
+  W.sweepTo = (from, to) => {   // (stays until the hints clear)
+    const lo = Math.min(from, to), hi = Math.max(from, to), a = el('sweep' + (to < from ? ' left' : ''), sc, { left: XR(lo) + 'px', width: (XR(hi) - XR(lo)) + 'px', top: '478px' });
+    gsap.fromTo(a, { opacity: 0 }, { opacity: .95, duration: .4 }); SFX.ping(); hintEls.push(a);
+    if (LBL[to]) gsap.fromTo(LBL[to], { scale: 1 }, { scale: 1.45, duration: .35, yoyo: true, repeat: 3, delay: .4 });
+  };
+  W.lineLit = (v, on) => { const s = W.subAt(v); if (s) s.line.classList.toggle('lit', on); };
+  let btag = null;
+  W.borderTag = on => {
+    if (on && !btag) { btag = el('', fx); btag.id = 'bordertag'; btag.innerHTML = '<b>◀</b> our border'; gsap.fromTo(btag, { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: .4, ease: 'back.out(2)' }); }
+    if (on) gsap.fromTo(btag.querySelector('b'), { x: 0 }, { x: -10, duration: .3, yoyo: true, repeat: 5 });
+    if (!on && btag) { const b = btag; btag = null; gsap.to(b, { opacity: 0, duration: .3, onComplete: () => b.remove() }); }
+  };
   // the border: a glowing upright line at 0, from the rope up into the water (Level 2 talks about it)
   let defl = null;
   W.defLine = on => {

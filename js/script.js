@@ -80,6 +80,13 @@
     cmp(-9, 5, 'Yes! −9 is closer to our border. −9 is smaller than +5.', FIND, { vo: FIRE, f3: '−9 is closer to our border.' }),
   ];
   L2.forEach((R, r) => reg('v3l2_r' + (r + 1), R));
+  // after a guided replay: one more of the same kind, fresh numbers, no hints (not in the sheet; once per kind per level)
+  const L2_EXTRA = {
+    pos: cmp(14, 12, 'Yes! +12 is smaller, and the submarine at +12 is closer to our border.', FIND),
+    neg: cmp(-11, -13, 'Yes! −13 is smaller, and the submarine at −13 is closer to our border.', FIND),
+    mix: cmp(-7, 2, 'Yes! −7 is closer to our border. −7 is smaller than +2.', FIND, { f3: '−7 is closer to our border.' }),
+  };
+  Object.keys(L2_EXTRA).forEach(k => reg('v3l2_extra_' + k, L2_EXTRA[k]));
 
   /* ---------- Level 3 · fire in order, smaller number first (sheet L3 V3) ----------
      ost = the numbers shown on screen, in the sheet's order; the child fires them from the smallest up.
@@ -111,5 +118,5 @@
       .replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b) => a + b.toUpperCase());
   }
 
-  window.SCRIPT = { WHO, LINES, S, D: { L1, L2, L3, L3_TEACH, L3_END, startWith }, f, spoken, find: t => BY[t] || null };
+  window.SCRIPT = { WHO, LINES, S, D: { L1, L2, L2_EXTRA, L3, L3_TEACH, L3_END, startWith }, f, spoken, find: t => BY[t] || null };
 })();
