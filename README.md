@@ -29,7 +29,7 @@ The original art pack (PNG sources, concepts, briefs) is not needed by the game;
 It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
 
 ## Voices (Indian English, open source: Chatterbox + MeloTTS)
-Every line (Meera's 7 + the narrator's 102) is being re-recorded with **Chatterbox** (Resemble AI, MIT license): natural delivery in the voice of `tools/ref_meera_en_india.wav` (our own MeloTTS EN_INDIA clip, so the accent stays Indian English). Each take is checked word by word with Whisper and goes into the game as soon as it passes; lines without a clean Chatterbox take keep their MeloTTS recording. Done so far: `assets/vo/takes/chatter/done.json`.
+Every line (Meera's 7 + the narrator's 102) is recorded with **Chatterbox** (Resemble AI, MIT license): natural delivery in the voice of `tools/ref_meera_en_india.wav` (our own MeloTTS EN_INDIA clip, so the accent stays Indian English). Each take is checked word by word with Whisper and goes into the game as soon as it passes (all 109 passed; `--seed0 3 --tries 6` found clean takes for the last two); a line without a clean Chatterbox take keeps its MeloTTS recording. Done: `assets/vo/takes/chatter/done.json`.
 
 ```sh
 ~/chatter/bin/python tools/make_voices_chatter.py            # the lines not made with Chatterbox yet (slow: ~2 min a line; resumable)

@@ -29,6 +29,7 @@ def main():
     ap.add_argument('--force', action='store_true', help='remake lines already made with Chatterbox')
     ap.add_argument('--tries', type=int, default=3, help='takes per line until the words match [3]')
     ap.add_argument('--exaggeration', type=float, default=.6, help='emotion 0.25-1 [0.6]')
+    ap.add_argument('--seed0', type=int, default=0, help='first seed offset (to try new takes) [0]')
     ap.add_argument('--cfg', type=float, default=.4, help='pace / adherence to the reference, lower = slower [0.4]')
     args = ap.parse_args()
 
@@ -58,7 +59,7 @@ def main():
     for i, l in enumerate(todo, 1):
         best = None
         for k in range(1, args.tries + 1):
-            torch.manual_seed(k)
+            torch.manual_seed(k + args.seed0)
             w = tts.generate(tts_text(l['spoken']), audio_prompt_path=REF, exaggeration=args.exaggeration, cfg_weight=args.cfg)
             a = w.squeeze().cpu().numpy().astype('float32')
             a = a / max(1e-6, float(np.abs(a).max())) * .9
