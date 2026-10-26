@@ -277,8 +277,8 @@
     'star_gold', 'star_silver', 'marker', 'card', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']
     .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
   // the story art too (characters, sprites, the water) — decoded in the background so no scene hitches when they first appear
-  ['../door_left', '../door_right', 'bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'launcher_base', 'launcher_barrel', 'fire_off', 'fire_lit',
-    'meera_shocked', 'meera_determined', 'meera_pointing', 'meera_proud', 'riya_alert', 'riya_focused', 'riya_cheering']
+  ['../door_left', '../door_right', 'bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'fire_off', 'fire_lit',
+    'meera_shocked', 'meera_determined']
     .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/story/' + n + '.webp'; i.decode().catch(() => {}); });
   function talker(who) {
     const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');
