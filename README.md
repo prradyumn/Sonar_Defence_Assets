@@ -6,9 +6,11 @@ The game is played from inside the submarine cockpit (see *The cockpit* below).
 
 Flow: the hook (one short scene: enemy submarines slip in, they fire, ALERT) → **Level 1** launch as many opposite missiles (intro + tutorial + 6 practice rounds) → **Level 2** fire at the submarine close to our border (the smaller number) → **Level 3** fire from the smaller number up → the ending (ROUTE CLEARED!).
 
-**Level 2 guided replay:** the first wrong tap shows Incorrect Feedback 1 and a "◀ our border" tag at the left end of the number line. The second wrong tap (rounds 2–10) starts a guided replay in two steps the child does, with wrong options blocked: A · both submarines grey out and only the two numbers on the rope can be tapped ("Check which is smaller: −10 or −12?"; a wrong number → a light runs towards the smaller one); B · "The smaller number is −12…", then only the submarine above −12 comes back, its sonar line lit, and the child fires. A guided round is followed by one more item of the same kind with no hints ("One more like this!"; +14/+12, −11/−13 or −7/+2, once per kind per level, not scored; `D.L2_EXTRA` in `js/script.js`).
+**Level 2 number line:** only the first example (the tutorial, after the intro) shows the number line, with each submarine above its number. From round 2 on the line is put away: the two submarines float at random places high in the water with their numbers on them, and the child compares the numbers themselves (hints pulse the numbers on the submarines). If the guided replay starts, the number line comes back to help for the rest of that round.
 
-**Dialogue:** only 7 lines are spoken, all Meera (the dialogue list for the game, `SCRIPT.S` in `js/script.js`): the hook (2), Level 1's intro (2), Level 2's intro (2, over the number line while light sweeps left, "smaller · closer", then right, "bigger · farther") and Level 3's intro (1). Everything else from the L1–L3 sheets — each round's instruction, the correct lines, the wrong-answer hints and the inactivity lines — is on-screen text in the mission panel (a hint shows for a few seconds, then the round's text comes back), with the same visual hints as before.
+**Level 2 guided replay:** the first wrong tap shows Incorrect Feedback 1 (and, while the number line is out, a "◀ our border" tag at its left end). The second wrong tap (rounds 2–10) starts a guided replay in two steps the child does, with wrong options blocked: A · both submarines grey out and only the two numbers on the rope can be tapped ("Check which is smaller: −10 or −12?"; a wrong number → a light runs towards the smaller one); B · "The smaller number is −12…", then only the submarine above −12 comes back, its sonar line lit, and the child fires. A guided round is followed by one more item of the same kind with no hints ("One more like this!"; +14/+12, −11/−13 or −7/+2, once per kind per level, not scored; `D.L2_EXTRA` in `js/script.js`).
+
+**Dialogue:** only 7 lines are spoken, all Meera (the dialogue list for the game, `SCRIPT.S` in `js/script.js`): the hook (2), Level 1's intro (2), Level 2's intro (2, over the number line while light sweeps left, "smaller · closer", then right, "bigger · farther") and Level 3's intro (1). Everything else from the L1–L3 sheets — each round's instruction, the comparison after a hit (−12 < −10), the correct lines, the wrong-answer hints and the inactivity lines — shows in the mission panel and the **narrator reads it aloud** (102 lines, the same Indian-English voice, `n_<hash>.ogg`; `SD.narrate`: voice only, no speech box; a tap cuts it; the panel's hear-again knob repeats it). A hint shows until it has been said, then the round's text comes back. Not read: Level 3's list of numbers and the big banners.
 
 Level 1: the missiles that come sit in a row in the window (the enemy submarine's positive ones are red, the defence system's negative ones blue). The bow cannon becomes the launcher of the other sign (a − or + badge): each tap launches one missile into the launch bay above it, where they collect in rows of 5 (tap one in the bay to take it back). FIRE: each missile leaves the bay, streaks to one missile that came and both are absorbed into a bright core (a small 0 is left for a moment). If the numbers don't match it still fires: the pairs are absorbed; too few, and the missiles left over get through and hit the window (the cockpit shakes, the glass cracks); too many, and ours shoot past and fizzle out. Each mistake costs a bar of the 3-bar hull SHIELD beside the cannon, the enemy launches again and the sheet's Incorrect Feedback 1 → 2 → 3 plays. Shield empty: SHIELD DOWN!, then we sink (the whole cockpit rolls and lurches, the hull groans, the lamps flash red, cracks spread across the glass, bubbles rush up, the sea goes dark and the depth races down, SINKING!), the screen goes black with TRY AGAIN!, and the mission restarts from the beginning: glass mended, shield recharged, the guiding glow on, Incorrect Feedback 3 in the panel, and the launcher stops at the right number (`W.sink` / `W.resurface` in `js/cockpit.js`; the roll is `W.tilt`). The shield refills every round. The sheet gives no animations or inactivity lines for Level 1: hints pulse the missiles that came / glow the launcher, and inactivity repeats the round's instruction.
 
@@ -26,8 +28,27 @@ The original art pack (PNG sources, concepts, briefs) is not needed by the game;
 ## Deploy (Vercel)
 It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
 
-## Voices (Indian English, Gemini TTS)
-Every spoken line lives in `js/script.js`. `tools/make_voices.py` records them (Python 3 standard library + `node` to read the script):
+## Voices (Indian English, open source: Chatterbox + MeloTTS)
+Every line (Meera's 7 + the narrator's 102) is being re-recorded with **Chatterbox** (Resemble AI, MIT license): natural delivery in the voice of `tools/ref_meera_en_india.wav` (our own MeloTTS EN_INDIA clip, so the accent stays Indian English). Each take is checked word by word with Whisper and goes into the game as soon as it passes; lines without a clean Chatterbox take keep their MeloTTS recording. Done so far: `assets/vo/takes/chatter/done.json`.
+
+```sh
+~/chatter/bin/python tools/make_voices_chatter.py            # the lines not made with Chatterbox yet (slow: ~2 min a line; resumable)
+~/chatter/bin/python tools/make_voices_chatter.py --only h1 --force --exaggeration .7
+```
+
+### MeloTTS (the first pass, and the fallback)
+Before Chatterbox, the recorded lines were **MeloTTS `EN_INDIA`** in the `expressive` style (`--style`) (MIT license, free for commercial use; runs on this Mac, no API key). `tools/make_voices_parler.py` makes them:
+
+```sh
+source ~/melo/bin/activate
+python tools/make_voices_parler.py --model melo --speaker EN_INDIA --force   # every line, 3 takes each; take 1 goes into the game
+python tools/make_voices_parler.py --model melo --speaker EN_INDIA --pick h2=2,l2b=4   # swap in another take
+```
+- Takes are kept in `assets/vo/takes/melo/<speaker>/<id>_<n>.wav` (not committed, not deployed); listen with `afplay`. In the game now: h1 1 · h2 2 · l1a 1 · l1b 1 · l2a 2 · l2b 4 · l3a 1, each checked word by word with Whisper. `EN-US` takes are there too as an alternative (`--keep-only` makes takes without touching the game).
+- `--model large` uses Parler-TTS Large (Apache 2.0, no Indian accent, CPU only: the Apple GPU gives noise). `--model indic` uses AI4Bharat Indic Parler-TTS (Apache 2.0, Indian voices incl. "Meera") once the terms are accepted at huggingface.co/ai4bharat/indic-parler-tts; run those two from `~/parler`.
+
+### Older: Gemini TTS
+`tools/make_voices.py` records them (Python 3 standard library + `node` to read the script):
 
 ```sh
 export GEMINI_API_KEY=…            # from https://aistudio.google.com/apikey — never put it in a file
@@ -102,7 +123,7 @@ open http://localhost:8000/?edit=1
 - fish → inline SVG in `world.js`
 
 ## HUD
-The mission panel (`#hudbar`) is part of the ship: a slim navy steel plate with a brass rim and rivets, hanging from two brass ceiling mounts on thin struts. It comes down when a mission starts (servo whirr, latch clunk, the screen flickers on), refreshes its screen when the text changes, and goes back up into the ceiling between missions (`W.strip` / `W.stripOff`, cockpit.js). The hear-again button is a brass knob on the left; progress lamps sit on the right.
+The mission panel (`#hudbar`) is part of the ship: a slim navy steel plate with a brass rim and rivets, hanging from two brass ceiling mounts on thin struts. It comes down when a mission starts (servo whirr, latch clunk, the screen flickers on), refreshes its screen when the text changes, and goes back up into the ceiling between missions (`W.strip` / `W.stripOff`, cockpit.js). The hear-again button is a brass knob on the left; progress lamps sit on the right. The panel is 1400 px wide with 36 px text; a long line wraps onto two lines at 32 px (it never shrinks below that).
 During play, what Meera or Riya says appears in a speech bubble beside her (Meera bottom-left, Riya bottom-right) with its tail pointing at the speaker.
 One bar on the ceiling holds the hear-again button, the mission text and the progress pips (`#hudbar`). The ceiling lamps are toned down (`#lampDim`), the crew are 15 % smaller and dim until they speak, the console shows the sonar trace + depth only between missions, fish swim below the scale (never behind the submarine row), and number labels not in play are faded to 50 %.
 

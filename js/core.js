@@ -337,10 +337,22 @@
     if (!o.keep && !o.bubble) captionOff(.25);
     await wait(.3);
   }
+  /* the narrator reads the mission panel's text aloud: the recorded line only (no speech box, no browser voice); a tap or the
+     next line cuts it. Resolves when it has been said (at once when there is no recording). */
+  async function narrate(text) {
+    const L = window.SCRIPT && SCRIPT.find(text);
+    if (!L) { SD_MISSING.push(text); return; }
+    lastLine = { x: text, o: { narr: true } };
+    if (!VO_OK(L.id)) return;
+    const my = ++sayN, skipP = new Promise(r => { skipFn = r; });
+    duck(true);
+    if (await Promise.race([playVO(L.id), skipP.then(() => 'skip')]) === 'skip') hush();
+    if (my === sayN) { skipFn = null; duck(false); }
+  }
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, stageScale, toStage, MUTE, wait, fmt, readTime, audioOn, SFX, say, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, stageScale, toStage, MUTE, wait, fmt, readTime, audioOn, SFX, say, narrate, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

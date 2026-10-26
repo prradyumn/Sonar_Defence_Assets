@@ -43,10 +43,10 @@
 .cockpit #scaleBack{left:98px!important;width:1724px!important}
 /* one HUD bar on the ceiling: hear-again button · mission text · progress pips */
 /* the mission panel: a slim navy steel plate with a brass rim, hung from two ceiling mounts on thin struts (cockpit.js drops / raises it) */
-#hudbar{position:absolute;left:460px;top:44px;width:1000px;height:80px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:0 18px 0 12px;border-radius:16px;pointer-events:none;
+#hudbar{position:absolute;left:260px;top:40px;width:1400px;height:100px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:0 18px 0 12px;border-radius:16px;pointer-events:none;
   background:linear-gradient(#34507a,#1d3357 55%,#14264a);border:3px solid #c4914a;
   box-shadow:0 0 0 2px #2a1a08,0 10px 18px rgba(0,8,24,.55),inset 0 2px 0 rgba(255,230,180,.35),inset 0 -3px 0 rgba(0,0,0,.35);will-change:transform;transform:translateY(-160px)}
-#hudbar::before,#hudbar::after{content:"";position:absolute;top:8px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe2a0,#a86f22 70%);box-shadow:0 62px 0 #b57a2a}   /* rivets */
+#hudbar::before,#hudbar::after{content:"";position:absolute;top:8px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe2a0,#a86f22 70%);box-shadow:0 82px 0 #b57a2a}   /* rivets */
 #hudbar::before{left:7px}#hudbar::after{right:7px}
 #hudbar .strut{position:absolute;bottom:100%;width:12px;height:150px;margin-left:-6px;border-radius:3px;
   background:linear-gradient(90deg,#5b6f8f,#c9d6ea 40%,#6f83a3 65%,#3a4a66);box-shadow:inset 0 -6px 0 #c4914a}
@@ -55,13 +55,13 @@
   background:linear-gradient(#e2b363,#a8742c);border:2px solid #4a2c0a;border-top:none;box-shadow:0 4px 6px rgba(0,8,24,.5)}
 #mounts i::after{content:"";position:absolute;left:50%;top:5px;width:18px;height:10px;margin-left:-9px;border-radius:3px;background:#2a1a08}   /* the slot the strut slides into */
 #hudbar #btnSpeak{position:relative;left:auto;top:auto;flex:none;width:54px;height:54px;pointer-events:auto;border-radius:50%;box-shadow:0 0 0 3px #c4914a,0 0 0 5px #2a1a08}
-#screen2{position:relative;flex:1;height:56px;border-radius:10px;overflow:hidden;display:flex;align-items:center;padding:0 18px;
+#screen2{position:relative;flex:1;height:80px;border-radius:10px;overflow:hidden;display:flex;align-items:center;padding:0 18px;
   background:repeating-linear-gradient(rgba(127,242,255,.04) 0 2px,transparent 2px 5px),linear-gradient(#071d38,#0a2a50);box-shadow:inset 0 3px 8px rgba(0,0,0,.65),inset 0 0 0 2px rgba(73,220,255,.35)}
-#hudbar #strip{position:relative;left:auto;top:auto;width:auto;min-height:0;padding:0;background:none;border:none;box-shadow:none;font-size:31px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#hudbar #strip .big{font-size:38px}
+#hudbar #strip{position:relative;left:auto;top:auto;width:auto;min-height:0;padding:0;background:none;border:none;box-shadow:none;font-size:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hudbar #strip .big{font-size:44px}
 #hudbar #strip::before,#hudbar #strip::after{display:none}
 #hudbar #pips{position:relative;right:auto;top:auto;flex:none;gap:6px;padding:0;background:none;border:none;box-shadow:none}
-#hudbar #pips img{width:24px;height:24px}
+#hudbar #pips img{width:28px;height:28px}
 #lampDim{display:none;position:absolute;inset:0;pointer-events:none;   /* baked into cockpit.webp */
 
   background:radial-gradient(circle 150px at 81px 99px,rgba(28,38,72,.42),rgba(28,38,72,0)),radial-gradient(circle 150px at 1839px 98px,rgba(28,38,72,.42),rgba(28,38,72,0))}
@@ -149,7 +149,7 @@ background:radial-gradient(120% 95% at 50% 46%,rgba(10,70,110,0) 58%,rgba(10,70,
 #l1fire.dim,#l1fire.lit{display:block}
 #l1fire.dim{filter:saturate(.3) brightness(.7)}
 #l1fire.lit .lit{opacity:1}
-#hudbar #strip.two{white-space:normal;line-height:1.1;text-overflow:clip}
+#hudbar #strip.two{white-space:normal;line-height:1.08;text-overflow:clip}
 
 /* Level 1's hull shield (beside the cannon), cracks in the glass, SHIELD DOWN */
 #shield{position:absolute;left:390px;top:768px;width:256px;height:100px;box-sizing:border-box;display:none;border-radius:22px;

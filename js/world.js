@@ -254,7 +254,8 @@
   W.pulseSub = (s, delay = 0) => { if (!s) return;   // a gold halo + ring while it pulses
     gsap.delayedCall(delay, () => s.d.classList.add('cue')); gsap.delayedCall(delay + 2.8, () => s.d.classList.remove('cue'));
     gsap.fromTo(s.d, { scale: 1 }, { scale: 1.15, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut' }); };
-  W.pulseLbl = (v, delay = 0) => { const l = LBL[v]; if (!l) return; l.classList.add('on'); gsap.fromTo(l, { scale: 1 }, { scale: 1.45, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut', onComplete: () => { if (!W.subs().some(s => s.v === v && !s.free)) l.classList.remove('on'); } }); };
+  W.pulseLbl = (v, delay = 0) => { const fs = SUBS.find(s => s.alive && s.v === v && s.free); if (fs && gsap.getProperty('#scale', 'autoAlpha') < .5) return W.pulseTag(fs, delay);   // no number line: the number on the submarine
+    const l = LBL[v]; if (!l) return; l.classList.add('on'); gsap.fromTo(l, { scale: 1 }, { scale: 1.45, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut', onComplete: () => { if (!W.subs().some(s => s.v === v && !s.free)) l.classList.remove('on'); } }); };
   W.pulseZero = (delay = 0) => { gsap.fromTo([TICK[0], LBL[0]].filter(Boolean), { scale: 1 }, { scale: 1.45, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut' }); if (defl) gsap.fromTo(defl, { opacity: 1 }, { opacity: .35, duration: .4, yoyo: true, repeat: 5, delay }); };
   W.pulseTag = (s, delay = 0) => s && s.tag && gsap.fromTo(s.tag, { scale: 1 }, { scale: 1.4, duration: .4, yoyo: true, repeat: 5, delay, ease: 'sine.inOut' });
   // the target ring: a cyan ring locks round a submarine and stays until the hints clear
@@ -393,8 +394,8 @@
   /* ================= HUD ================= */
   W.strip = (html, o = {}) => { const s = $('#strip'); s.innerHTML = o.big ? `<span class="big">${html}</span>` : html; s.style.fontSize = ''; s.classList.remove('two');
     const t = s.firstElementChild && o.big ? s.firstElementChild : s; let fs = parseFloat(getComputedStyle(t).fontSize);   // a long line shrinks to fit the panel…
-    while (s.scrollWidth > s.clientWidth + 1 && fs > 24) { fs -= 1; t.style.fontSize = fs + 'px'; }
-    if (s.scrollWidth > s.clientWidth + 1) { s.classList.add('two'); t.style.fontSize = '24px'; }   // …and a very long one takes two lines
+    while (s.scrollWidth > s.clientWidth + 1 && fs > 32) { fs -= 1; t.style.fontSize = fs + 'px'; }
+    if (s.scrollWidth > s.clientWidth + 1) { s.classList.add('two'); t.style.fontSize = '32px'; }   // …and a very long one takes two lines (still big enough to read)
     s.classList.remove('glint'); void s.offsetWidth; s.classList.add('glint'); gsap.fromTo(s, { opacity: 0, y: -24, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .45, ease: 'back.out(2)' }); };
   W.stripOff = () => gsap.to('#strip', { opacity: 0, duration: .3 });
   W.pips = (n, done) => { const p = $('#pips'); p.innerHTML = ''; W.pipDone = done; for (let i = 0; i < n; i++) { const im = new Image(); im.src = 'assets/img/' + (i < done ? 'pip_on' : 'pip_off') + '.webp'; p.appendChild(im); } if (done > 0) gsap.fromTo(p.children[done - 1], { scale: 1.8 }, { scale: 1, duration: .4, ease: 'back.out(3)' }); if (p.children[done]) p.children[done].classList.add('now'); };

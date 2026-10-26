@@ -1,6 +1,6 @@
 /* script: every spoken line in the game (one source for the game AND tools/make_voices.py).
    Each line = { id, who, text }. Voice files live at assets/vo/<id>.wav.
-   who: 'meera' (Commander Meera) | 'riya' (Cadet Riya). Only Meera speaks now (the 7 lines in S). */
+   who: 'meera' (Commander Meera: the 7 lines in S) | 'narrator' (reads the mission panel: N() below) | 'riya' (not used now). */
 (function () {
   const f = v => v > 0 ? '+' + v : v < 0 ? '−' + Math.abs(v) : '0';     // true minus sign
   const WHO = { meera: { name: 'Commander Meera', short: 'Meera' }, riya: { name: 'Cadet Riya', short: 'Riya' },
@@ -27,7 +27,7 @@
   };
 
   /* ======== the three game levels: the learning designer's sheets "Integers- Submarine - L1/L2/L3 V3".
-     These lines are not spoken: they show as text in the mission panel. Each row: ost = On-Screen Text, ok = Correct Feedback,
+     These lines show as text in the mission panel, and the narrator reads them aloud (N() below). Each row: ost = On-Screen Text, ok = Correct Feedback,
      fb = Incorrect Feedback 1–3 with their animation, idle = Inactivity line with its animation (played by js/levels.js).
      (vo = the sheet's old Game Instruction / VO, kept for reference only.) ======== */
   const reg = (id, R) => {
@@ -109,6 +109,15 @@
   // (the sheet's OST says "LEVEL 2 COMPLETE!", a copy slip: this is the end of Level 3)
   const L3_END = { ost: 'LEVEL 3 COMPLETE!' };
 
+  /* ---------- the narrator reads the mission panel aloud: every round's instruction, the comparison shown after a hit, the correct
+     line and the wrong-answer / inactivity hints (assets/vo/n_<hash>.ogg; Level 3's list of numbers and the banners are not read) ---------- */
+  const hash = t => { let h = 5381; for (const c of t) h = (h * 33 + c.codePointAt(0)) >>> 0; return h.toString(36); };
+  const N = t => t && add('n_' + hash(t), 'narrator', t);
+  const MORE = 'One more like this!';
+  [...L1, ...L2, ...Object.values(L2_EXTRA)].forEach(R => { N(R.ost); R.fbL.forEach(x => N(x.line)); if (R.idleL) N(R.idleL.line); N(R.show); N(R.ok); });
+  L3.forEach(R => { R.fbL.forEach(x => N(x.line)); N(R.idleL.line); R.subs.forEach(v => N(startWith(v))); N(R.ok); });
+  N(MORE);
+
   /* how a line should be READ aloud (signs → words) — used by the browser voice and tools/make_voices.py */
   function spoken(t) {
     return t.replace(/\((.[^)]*)\)\s*\+\s*\((.[^)]*)\)/g, '$1 plus $2')
@@ -118,5 +127,5 @@
       .replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b) => a + b.toUpperCase());
   }
 
-  window.SCRIPT = { WHO, LINES, S, D: { L1, L2, L2_EXTRA, L3, L3_TEACH, L3_END, startWith }, f, spoken, find: t => BY[t] || null };
+  window.SCRIPT = { WHO, LINES, S, D: { L1, L2, L2_EXTRA, L3, L3_TEACH, L3_END, startWith, MORE }, f, spoken, find: t => BY[t] || null };
 })();

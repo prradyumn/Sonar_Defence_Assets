@@ -8,10 +8,13 @@
   const SCORE = {};                      // level → [true/false first-try per mission]
   let LV = 'l1';
   const mark = ok => (SCORE[LV] = SCORE[LV] || []).push(ok);
-  /* feedback is on-screen text: it shows in the mission panel; back = the round's text, shown again after a while.
+  /* feedback shows in the mission panel and the narrator reads it aloud; back = the round's text, shown again after a while
+     (once it has been said). Resolves when the line has been said and had time to be read.
      noteEnd() cancels a pending return (call it when the round moves on). */
   let noteN = 0;
-  const note = (text, back, hold = 4) => { const n = ++noteN; W.strip(text); if (back) gsap.delayedCall(hold, () => { if (n === noteN) W.strip(back); }); };
+  const note = (text, back, hold = 4) => { const n = ++noteN; W.strip(text); const said = SD.narrate(text);
+    if (back) Promise.all([said, wait(hold)]).then(() => { if (n === noteN) W.strip(back); });
+    return Promise.all([said, wait(readFor(text))]); };
   const noteEnd = () => { noteN++; };
   const readFor = t => Math.min(3.2, Math.max(1.6, t.split(' ').length * .32));   // time to read a line in the panel
 
@@ -234,7 +237,7 @@
     await W.missiles(n, given);   // the missiles come towards the defence area
     if (teach) { await wait(.3); W.launcher(mine); await wait(.6); await say(S.l1a); await say(S.l1b); await wait(.2); }   // the launcher activates; Meera's two lines
     W.launcher(mine); W.bay(true); W.fireBtn('dim'); W.shield(3, true);
-    W.strip(R.ost); await wait(.6);
+    W.strip(R.ost); if (!retry) SD.narrate(R.ost); await wait(.6);
     if (retry) note(R.fbL[2].line, R.ost);   // "Launch 5 negative missiles."
     let strikes = retry ? 3 : 0, busy = false, hull = 3, tut = !!R.tutorial || !!retry;   // hull: the shield's bars · tut: the guiding glow is on
     const count = () => W.mslRow(1).length;
@@ -295,7 +298,7 @@
     await volley(); await wait(.4); W.bay(false); W.shield(hull, false); W.repair();   // (any cracks from this round seal up)
     mark(strikes === 0);
     W.reward({ big: strikes === 0, confetti: true, pip: W.pipDone, at: { x: 960, y: (W.CONFIG.SIG_Y1 + W.CONFIG.SIG_Y2) / 2 } });
-    await wait(.4); note(R.ok); await wait(readFor(R.ok));
+    await wait(.4); await note(R.ok);
     await wait(.8); W.clearMissiles(); W.stripOff();
   }
   async function level1(start = 0) {
@@ -330,33 +333,37 @@
     const kind = R => R.subs.every(v => v > 0) ? 'pos' : R.subs.every(v => v < 0) ? 'neg' : 'mix', extraDone = {};
     for (let r = start; r < D.L2.length; r++) {
       SD.where = { at: 'l2', round: r + 1 };
-      const R = D.L2[r], guided = await l2round(R, { tut: r === 0 });
+      const R = D.L2[r], guided = await l2round(R, { tut: r === 0, line: r === 0 });   // the number line: the first example only
       W.pips(D.L2.length, r + 1);
       if (guided && !extraDone[kind(R)]) { extraDone[kind(R)] = true; await W.sail(); await l2round(D.L2_EXTRA[kind(R)], { extra: true }); }   // one more like it, alone
       if (r < D.L2.length - 1) await W.sail();
     }
+    gsap.set('#zchip', { visibility: '' });
     await complete('l2', 'LEVEL 2 COMPLETE!');
   }
 
   /* one Level 2 round. tut = the tutorial (the guiding glow); extra = the item after a guided replay (not scored, no replay).
-     Mistake 1: Incorrect Feedback 1 + the "◀ our border" tag. Mistake 2: the guided replay. Returns true when it was guided. */
-  async function l2round(R, { tut, extra } = {}) {
-    await W.panFor(R.subs);   // (0 joins the view when it fits)
-    if (extra) { W.strip('One more like this!', { big: true }); await wait(1.4); }
-    W.strip(R.ost); await W.spawn(R.subs, { stagger: .45 });
-    W.dragRope(!tut); await wait(.6);
+     line = the number line is out (the first example only): the submarines sit above their numbers on it. Without it they float at
+     random places with their numbers on them, and the child compares the numbers themselves; the guided replay brings the line back.
+     Mistake 1: Incorrect Feedback 1 (+ the "◀ our border" tag with the line). Mistake 2: the guided replay. Returns true when guided. */
+  async function l2round(R, { tut, extra, line } = {}) {
+    gsap.to('#scale', { autoAlpha: line ? 1 : 0, duration: .5 }); gsap.set('#zchip', { visibility: line ? '' : 'hidden' });
+    await W.panFor(R.subs);   // (0 joins the view when it fits; without the line it is ready for the replay)
+    if (extra) { W.strip(D.MORE, { big: true }); await Promise.all([SD.narrate(D.MORE), wait(1.4)]); }
+    W.strip(R.ost); SD.narrate(R.ost); await W.spawn(R.subs, { stagger: .45, at: line ? null : skySpots(R.subs.length) });
+    W.dragRope(!tut && line); await wait(.6);
     const o = {
       guide: tut && (async first => { const s = W.subAt(R.target); if (!s) return;   // the tutorial: the glow shows the smaller number, then its submarine
         if (first) { await W.handTo(W.X(R.target), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseLbl(R.target); await wait(1.2); }
         if (W.waiting) W.handTo(s.x, s.cy, .8); }),
-      fb: k => { const fb = R.fbL[Math.min(k, 3) - 1]; return { line: fb.line, anim: () => { ANIM[fb.kind](R); if (k === 1) W.borderTag(true); } }; },
+      fb: k => { const fb = R.fbL[Math.min(k, 3) - 1]; return { line: fb.line, anim: () => { ANIM[fb.kind](R); if (k === 1 && line) W.borderTag(true); } }; },
       replay: !tut && !extra && (() => replay(R)),
     };
     const first = await strike(R, R.target, o); W.dragRope(false);
     if (!extra) mark(first);
     W.reward({ big: first, pip: extra ? null : W.pipDone });
-    await wait(.5); W.strip(R.show, { big: true }); await wait(1.4);   // Correct Animation: show −12 < −10
-    note(R.ok); await wait(readFor(R.ok));
+    await wait(.5); W.strip(R.show, { big: true }); await Promise.all([SD.narrate(R.show), wait(1.4)]);   // Correct Animation: show −12 < −10
+    await note(R.ok);
     await wait(1.4); W.borderTag(false); await W.clearSubs(); W.stripOff();
     return !!o.didReplay;
   }
@@ -367,11 +374,12 @@
          stays grey and does not answer ("Check which submarine is close to our border."). */
   async function replay(R) {
     const t = R.target, u = R.subs.find(v => v !== t);
+    if (W.subs().some(s => s.free)) { gsap.to('#scale', { autoAlpha: 1, duration: .5 }); gsap.set('#zchip', { visibility: '' }); await wait(.5); }   // the number line comes back to help
     W.dragRope(false); W.borderTag(true); W.subs().forEach(s => s.d.classList.add('dim'));
     note(R.fbL[1].line);
     while (await W.waitLabel(R.subs) !== t) { SFX.wrong(); W.sweepTo(u, t); await wait(1.4); W.clearHints(); W.subs().forEach(s => s.d.classList.add('dim')); }
-    SFX.ding(); W.pulseLbl(t); note(R.fbL[2].line); await wait(readFor(R.fbL[2].line));
-    const s = W.subAt(t); s.d.classList.remove('dim'); W.lineLit(t, true); W.pulseSub(s); SFX.ping();
+    SFX.ding(); W.pulseLbl(t); await note(R.fbL[2].line);
+    const s = W.subAt(t); s.d.classList.remove('dim'); W.lineLit(t, true); W.pulseSub(s); W.pulseTag(s); SFX.ping();
     note(R.fbL[0].line);
   }
 
@@ -379,6 +387,13 @@
      LEVEL 3 · fire from the smaller number to the bigger (sheet L3 V3). The submarines float at random places in the water
      with their numbers on them (the rope is put away); each hit gets its firing number 1, 2, 3, 4.
      ===================================================================== */
+  // Level 2 without the number line: random spots high in the water, apart, clear of the line when the replay brings it back
+  function skySpots(n) {
+    const out = [];
+    for (let k = 0; k < 500 && out.length < n; k++) { const x = 380 + Math.random() * 1160, y = 250 + Math.random() * 100; if (out.every(p => Math.abs(p.x - x) > 420)) out.push({ x, y }); }
+    while (out.length < n) out.push({ x: 560 + out.length * 600, y: 290 });
+    return out;
+  }
   function scatter(n) {   // random spots in the open water, apart from each other and clear of the cannon
     const out = [];
     for (let k = 0; k < 2000 && out.length < n; k++) {
@@ -409,7 +424,7 @@
     mark(allFirst);
     if (R.cheer) W.strip(R.cheer, { big: true });   // ROUTE CLEARED! / ALL TARGETS CLEARED!
     W.reward({ big: !!R.cheer, confetti: true, pip: W.pipDone, at: { x: 960, y: 300 } });
-    await wait(.5); note(R.ok); await wait(readFor(R.ok));
+    await wait(.5); await note(R.ok);
     await wait(1.4); W.clearOrder(); await W.clearSubs(); W.stripOff();
   }
   async function level3(start = 0) {
@@ -464,7 +479,7 @@
     }
     location.search = Q.get('qa') === '1' ? '?qa=1' : '';
   }
-  $('#btnSpeak').onclick = () => { const l = SD.lastLine; if (l) say(l.x, l.o.bubble ? {} : l.o); };
+  $('#btnSpeak').onclick = () => { const l = SD.lastLine; if (l) l.o.narr ? SD.narrate(l.x) : say(l.x, l.o.bubble ? {} : l.o); };
   $('#start').onclick = async () => {
     if ($('#start')._go) return; $('#start')._go = true;
     SD.audioOn(); SFX.ping();
