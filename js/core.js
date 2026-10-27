@@ -183,7 +183,8 @@
   };
 
   /* ================= voice: recorded VO (assets/vo/<id>.wav) → browser voice → reading time ================= */
-  const VO_OK = id => !MUTE && Array.isArray(window.VO_HAVE) && window.VO_HAVE.includes(id);
+  const HIN = window.SCRIPT && SCRIPT.lang === 'hi', VO_DIR = HIN ? 'assets/vo/hi/' : 'assets/vo/', HAVE = () => HIN ? window.VO_HAVE_HI : window.VO_HAVE;   // Hindi: assets/vo/hi/
+  const VO_OK = id => !MUTE && Array.isArray(HAVE()) && HAVE().includes(id);
   let curAudio = null, skipFn = null, held = false;
   const onResume = [];   // voice that was due to start while the editor had the game paused
   const VO_EXT = ['ogg', 'wav'];   // recorded lines are Ogg Opus; a .wav still works
@@ -207,7 +208,7 @@
       };
       for (const k in on) a.addEventListener(k, on[k]);
       endPrev = stop; a._held = false;
-      a.src = 'assets/vo/' + id + '.' + VO_EXT[ext]; a._id = id; a.playbackRate = Math.min(SPEED, 2); curAudio = a;
+      a.src = VO_DIR + id + '.' + VO_EXT[ext]; a._id = id; a.playbackRate = Math.min(SPEED, 2); curAudio = a;
       const go = () => { if (vTok === my) a.play().catch(e => { if (vTok === my && (!e || (e.name !== 'NotSupportedError' && e.name !== 'AbortError'))) fin(false); }); };
       held ? onResume.push(go) : go();
     });
@@ -227,7 +228,7 @@
   let voices = { meera: null, riya: null };
   function pickVoice() {
     if (!('speechSynthesis' in window)) return; const vs = speechSynthesis.getVoices();
-    const inF = vs.find(v => /en-IN/i.test(v.lang) && /female|heera|veena|neerja|raveena|kajal|aditi|swara/i.test(v.name));
+    const inF = (HIN && vs.find(v => /hi-IN/i.test(v.lang))) || vs.find(v => /en-IN/i.test(v.lang) && /female|heera|veena|neerja|raveena|kajal|aditi|swara/i.test(v.name));
     const any = inF || vs.find(v => /en-IN/i.test(v.lang)) || vs.find(v => /hi-IN/i.test(v.lang) && /google/i.test(v.name)) || vs.find(v => /en-GB|en-US/i.test(v.lang)) || null;
     voices = { meera: any, riya: any };
   }

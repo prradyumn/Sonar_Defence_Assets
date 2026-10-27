@@ -3,6 +3,12 @@
 @font-face{font-family:Fredoka;font-weight:500;src:url(../assets/fonts/fredoka-latin-500-normal.woff2)}
 @font-face{font-family:Fredoka;font-weight:700;src:url(../assets/fonts/fredoka-latin-700-normal.woff2)}
 @font-face{font-family:Poppins;font-weight:600;src:url(../assets/fonts/poppins-latin-600-normal.woff2)}   /* dialogue text */
+/* Hindi (?lang=hi): Devanagari letters in every family come from Baloo 2 Devanagari (OFL); only loaded when Hindi text is on screen */
+@font-face{font-family:Baloo;font-weight:600;src:url(../assets/fonts/baloo-2-devanagari-600-normal.woff2);unicode-range:U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF}
+@font-face{font-family:Baloo;font-weight:800;src:url(../assets/fonts/baloo-2-devanagari-800-normal.woff2);unicode-range:U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF}
+@font-face{font-family:Fredoka;font-weight:500;src:url(../assets/fonts/baloo-2-devanagari-500-normal.woff2);unicode-range:U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF}
+@font-face{font-family:Fredoka;font-weight:700;src:url(../assets/fonts/baloo-2-devanagari-800-normal.woff2);unicode-range:U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF}
+@font-face{font-family:Poppins;font-weight:600;src:url(../assets/fonts/baloo-2-devanagari-600-normal.woff2);unicode-range:U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:#04121f;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 #shake{position:absolute;left:0;top:0;width:1920px;height:1080px;transform:translate3d(0,0,0);will-change:transform}

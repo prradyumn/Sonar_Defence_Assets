@@ -36,7 +36,14 @@ Every line (Meera's 7 + the narrator's 102) is recorded with **Chatterbox** (Res
 ~/chatter/bin/python tools/make_voices_chatter.py --only h1 --force --exaggeration .7
 ```
 
-### MeloTTS (the first pass, and the fallback)
+### Hindi (`?lang=hi`)
+Add `?lang=hi` to the link for the whole game in pure Hindi (धनात्मक / ऋणात्मक; numbers read "ऋण बारह", "धन आठ"; "−12 < −10" read "ऋण बारह, ऋण दस से छोटा है"). `js/lang_hi.js` holds every translation (for the learning designer to review), how Hindi is read aloud, and the screen's other words (banners, buttons, labels: swapped in on screen). `js/script.js` builds the lines in English first, so the Hindi voice files keep the same ids: `assets/vo/hi/<id>.ogg` + `assets/vo/hi/vo_manifest.js`. Devanagari letters use Baloo 2 Devanagari (OFL, `assets/fonts/baloo-2-devanagari-*`), downloaded only when Hindi is on screen. The title logo and the FIRE button are artwork and stay in English.
+
+```sh
+~/chatter/bin/python tools/make_voices_chatter.py --lang hi   # Chatterbox multilingual, the same Meera voice; checked with Whisper large-v3-turbo
+```
+Whisper's Hindi spelling varies, so a Hindi take passes at 80 % similarity; lines that never pass are kept and listed (`? kept take …, please listen`). A Hindi speaker should listen through once.
+
 Before Chatterbox, the recorded lines were **MeloTTS `EN_INDIA`** in the `expressive` style (`--style`) (MIT license, free for commercial use; runs on this Mac, no API key). `tools/make_voices_parler.py` makes them:
 
 ```sh

@@ -127,5 +127,21 @@
       .replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b) => a + b.toUpperCase());
   }
 
-  window.SCRIPT = { WHO, LINES, S, D: { L1, L2, L2_EXTRA, L3, L3_TEACH, L3_END, startWith, MORE }, f, spoken, find: t => BY[t] || null };
+  /* ---------- Hindi (?lang=hi, js/lang_hi.js): every line and every round's text is swapped for its Hindi; the voice ids stay
+     the English ones (assets/vo/hi/<id>.ogg) ---------- */
+  const HI = window.HI, HIN = !!(HI && HI.on);
+  let D = { L1, L2, L2_EXTRA, L3, L3_TEACH, L3_END, startWith, MORE };
+  if (HIN) {
+    const T = t => (t && (HI.ui[t] || HI.tr(t))) || t;
+    LINES.forEach(l => { l.en = l.text; l.text = T(l.text); });
+    for (const k in BY) delete BY[k];
+    LINES.forEach(l => { BY[l.text] = l; });
+    [...L1, ...L2, ...Object.values(L2_EXTRA), ...L3, L3_TEACH, L3_END].forEach(R => {
+      ['ost', 'ok', 'show', 'vo', 'cheer'].forEach(k => { if (R[k]) R[k] = T(R[k]); });
+      (R.fbL || []).forEach(x => { x.line = T(x.line); });
+      if (R.idleL) R.idleL.line = T(R.idleL.line);
+    });
+    D = { ...D, startWith: v => T(startWith(v)), MORE: T(MORE) };
+  }
+  window.SCRIPT = { WHO, LINES, S, D, f, lang: HIN ? 'hi' : 'en', spoken: HIN ? HI.spoken : spoken, find: t => BY[t] || null };
 })();
