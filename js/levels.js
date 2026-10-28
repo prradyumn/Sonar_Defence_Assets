@@ -394,7 +394,7 @@
   // Level 2 without the number line: random spots high in the water, apart, clear of the line when the replay brings it back
   function skySpots(n) {
     const out = [];
-    for (let k = 0; k < 500 && out.length < n; k++) { const x = 380 + Math.random() * 1160, y = 272 + Math.random() * 90;   // (clear of the mission panel above) if (out.every(p => Math.abs(p.x - x) > 420)) out.push({ x, y }); }
+    for (let k = 0; k < 500 && out.length < n; k++) { const x = 380 + Math.random() * 1160, y = 272 + Math.random() * 90; if (out.every(p => Math.abs(p.x - x) > 420)) out.push({ x, y }); }   // (y: clear of the mission panel above)
     while (out.length < n) out.push({ x: 560 + out.length * 600, y: 310 });
     return out;
   }
