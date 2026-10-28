@@ -273,14 +273,16 @@
     new Promise(r => setTimeout(r, 5000)),
   ]);
   const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
-  // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action
+  // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action; the images
+  // are kept (KEEP) so the browser does not throw the decoded pixels away and decode them again at the first hit
+  const KEEP = [];
   ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'pop', 'pip_on', 'pip_off',
     'star_gold', 'star_silver', 'marker', 'card', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']
-    .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); });
+    .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); KEEP.push(i); });
   // the story art too (characters, sprites, the water) — decoded in the background so no scene hitches when they first appear
   ['../door_left', '../door_right', 'bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'fire_off', 'fire_lit',
     'meera_shocked', 'meera_determined']
-    .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/story/' + n + '.webp'; i.decode().catch(() => {}); });
+    .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/story/' + n + '.webp'; i.decode().catch(() => {}); KEEP.push(i); });
   function talker(who) {
     const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');
     c.width = s.w; c.height = s.h;

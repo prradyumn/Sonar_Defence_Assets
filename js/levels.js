@@ -114,7 +114,8 @@
         await wait(1.5); gsap.delayedCall(.25, () => { SFX.clunk(); d.remove(); });
       } catch (e) { d.remove(); throw e; }
     };
-    K.close = () => { if (WATER) WATER.stop(); const cv = $('#waterCv'); if (cv) cv.style.display = 'none'; };
+    K.close = () => { if (WATER) WATER.stop(); const cv = $('#waterCv'); if (cv) cv.style.display = 'none';
+      gsap.killTweensOf([...sfx.querySelectorAll('*'), ...cast.querySelectorAll('*')]); if (K.cam) K.cam.kill(); };   // the story's looping bubbles and bobbing subs stop with it
     K.tint = (r, g, b, d = .6) => WATER && gsap.to(WATER.state, { r, g, b, duration: d });
     K.trail = (m, every = .08, n = 14) => { for (let i = 0; i < n; i++) gsap.delayedCall(i * every, () => { if (!m.isConnected) return; const p = K.px(m);
       const b = mk('div', 'sx-bub small', { left: p.x - p.w * .3 + 'px', top: p.y + 'px' }); gsap.to(b, { y: -30 - Math.random() * 30, scale: 1.8, opacity: 0, duration: .9, onComplete: () => b.remove() }); }); };
@@ -490,7 +491,7 @@
     const boot = $('#boot');
     if ((Q.get('at') || 'hook') === 'hook') { $('#story').classList.remove('hidden'); gsap.set('#story', { opacity: 1 }); }   // the story's solid backdrop goes up under the title first: the game never shows through
     await Promise.all([gsap.to('#title', { opacity: 0, duration: .5 }), SD.ready]);   // never start mid-load: that is where jumps used to hitch
-    $('#title').classList.add('hidden');
+    $('#title').classList.add('hidden'); gsap.killTweensOf(['#start', '#title .logo span', '#title .art']);   // the title's loops stop with it
     if (boot) await gsap.to(boot, { opacity: 0, duration: .45, onComplete: () => boot.remove() });
     window.SD_RUN = run();
   };

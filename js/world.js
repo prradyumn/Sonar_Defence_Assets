@@ -151,6 +151,8 @@
   syncBuoys();
   W.X = X; W.XR = XR; W.CONFIG = CONFIG; W.CONFIG_DEFAULTS = DEFAULTS; W.el = el; W.shake = shake; W.tilt = TILT; W.spawnBubble = big => spawnBubble(big);
   // 0 (the border) out of view: a chip at that edge points to it (tap it to glide back)
+  // the number line is hidden in Levels 1 and 3: its buoys stop swinging meanwhile (no style work every frame for nothing)
+  new MutationObserver(() => { const cs = sc.style; sc.classList.toggle('idle', cs.visibility === 'hidden' || cs.opacity === '0'); }).observe(sc, { attributes: true, attributeFilter: ['style'] });
   const zchip = el('', $('#fx')); zchip.id = 'zchip'; zchip.innerHTML = '<b>0</b>';
   zchip.onpointerdown = e => { e.stopPropagation(); W.panTo(0); };
   function applyPan() {
@@ -322,9 +324,10 @@
   /* ================= hints ================= */
   let hintEls = [];
   // the helper: a pulsing gold glow right on the thing to tap, and a hand that taps it (the hand is in index.html)
-  W.hand = s => { const h = $('#hand'); if (!s) return gsap.to(h, { opacity: 0, duration: .2 }); gsap.killTweensOf(h); gsap.set(h, { left: s.x, top: s.cy, scale: 1.25 }); gsap.to(h, { opacity: 1, duration: .25 }); };
+  // (#hand.on: its glow and tap loops run only while it shows)
+  W.hand = s => { const h = $('#hand'); if (!s) return gsap.to(h, { opacity: 0, duration: .2, onComplete: () => h.classList.remove('on') }); h.classList.add('on'); gsap.killTweensOf(h); gsap.set(h, { left: s.x, top: s.cy, scale: 1.25 }); gsap.to(h, { opacity: 1, duration: .25 }); };
   // guided glow: appears on (or glides to) a point, then pulses as if tapped (used for demos)
-  W.handTo = async (x, y, dur = .7) => { const h = $('#hand'); gsap.killTweensOf(h); const off = +getComputedStyle(h).opacity < .1; if (off) gsap.set(h, { left: x, top: y, scale: .4 }); gsap.to(h, { opacity: 1, scale: 1, duration: .3, ease: 'back.out(2)' }); if (!off) await gsap.to(h, { left: x, top: y, duration: dur, ease: 'power2.inOut' }); else await wait(Math.min(dur, .45)); };
+  W.handTo = async (x, y, dur = .7) => { const h = $('#hand'); gsap.killTweensOf(h); h.classList.add('on'); const off = +getComputedStyle(h).opacity < .1; if (off) gsap.set(h, { left: x, top: y, scale: .4 }); gsap.to(h, { opacity: 1, scale: 1, duration: .3, ease: 'back.out(2)' }); if (!off) await gsap.to(h, { left: x, top: y, duration: dur, ease: 'power2.inOut' }); else await wait(Math.min(dur, .45)); };
   W.handTap = async (x, y) => { const h = $('#hand'); await gsap.to(h, { scale: 1.35, duration: .14, yoyo: true, repeat: 1, ease: 'power2.out' }); W.tapFx(x, y); SFX.tap(); };
   W.clearHints = () => {
     hintEls.forEach(a => { if (a.ring) return gsap.to(a.ring, { opacity: 0, duration: .25 }); gsap.killTweensOf(a); gsap.to(a, { opacity: 0, duration: .25, onComplete: () => a.remove() }); });
@@ -396,9 +399,9 @@
 
   /* ================= HUD ================= */
   W.strip = (html, o = {}) => { const s = $('#strip'); s.innerHTML = o.big ? `<span class="big">${html}</span>` : html; s.style.fontSize = ''; s.classList.remove('two');
-    const t = s.firstElementChild && o.big ? s.firstElementChild : s; let fs = parseFloat(getComputedStyle(t).fontSize);   // a long line shrinks to fit the panel…
-    while (s.scrollWidth > s.clientWidth + 1 && fs > 32) { fs -= 1; t.style.fontSize = fs + 'px'; }
-    if (s.scrollWidth > s.clientWidth + 1) { s.classList.add('two'); t.style.fontSize = '32px'; }   // …and a very long one takes two lines (still big enough to read)
+    const t = s.firstElementChild && o.big ? s.firstElementChild : s, fs = parseFloat(getComputedStyle(t).fontSize), sw = s.scrollWidth, cw = s.clientWidth;   // one measurement:
+    if (sw > cw + 1) { const fit = Math.floor(fs * cw / sw);   // a long line shrinks to fit the panel…
+      if (fit >= 32) { t.style.fontSize = fit + 'px'; if (s.scrollWidth > s.clientWidth + 1) t.style.fontSize = Math.max(32, fit - 2) + 'px'; } else { s.classList.add('two'); t.style.fontSize = '32px'; } }   // …and a very long one takes two lines (still big enough to read)
     s.classList.remove('glint'); void s.offsetWidth; s.classList.add('glint'); gsap.fromTo(s, { opacity: 0, y: -24, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .45, ease: 'back.out(2)' }); };
   W.stripOff = () => gsap.to('#strip', { opacity: 0, duration: .3 });
   W.pips = (n, done) => { const p = $('#pips'); p.innerHTML = ''; W.pipDone = done; for (let i = 0; i < n; i++) { const im = new Image(); im.src = 'assets/img/' + (i < done ? 'pip_on' : 'pip_off') + '.webp'; p.appendChild(im); } if (done > 0) gsap.fromTo(p.children[done - 1], { scale: 1.8 }, { scale: 1, duration: .4, ease: 'back.out(3)' }); if (p.children[done]) p.children[done].classList.add('now'); };
