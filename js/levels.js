@@ -394,18 +394,18 @@
   // Level 2 without the number line: random spots high in the water, apart, clear of the line when the replay brings it back
   function skySpots(n) {
     const out = [];
-    for (let k = 0; k < 500 && out.length < n; k++) { const x = 380 + Math.random() * 1160, y = 250 + Math.random() * 100; if (out.every(p => Math.abs(p.x - x) > 420)) out.push({ x, y }); }
-    while (out.length < n) out.push({ x: 560 + out.length * 600, y: 290 });
+    for (let k = 0; k < 500 && out.length < n; k++) { const x = 380 + Math.random() * 1160, y = 272 + Math.random() * 90;   // (clear of the mission panel above) if (out.every(p => Math.abs(p.x - x) > 420)) out.push({ x, y }); }
+    while (out.length < n) out.push({ x: 560 + out.length * 600, y: 310 });
     return out;
   }
   function scatter(n) {   // random spots in the open water, apart from each other and clear of the cannon
     const out = [];
     for (let k = 0; k < 2000 && out.length < n; k++) {
-      const x = 340 + Math.random() * 1240, y = 235 + Math.random() * 290;
+      const x = 340 + Math.random() * 1240, y = 262 + Math.random() * 270;   // (clear of the mission panel above)
       if (y > 420 && Math.abs(x - 960) < 280) continue;
       if (out.every(p => Math.abs(p.x - x) > 270 || Math.abs(p.y - y) > 175)) out.push({ x, y });
     }
-    while (out.length < n) out.push({ x: 360 + out.length * 400, y: 300 });
+    while (out.length < n) out.push({ x: 360 + out.length * 400, y: 320 });
     return out;
   }
   async function orderRound(R, tut) {   // tut: the level's first round, the glow shows the submarine to fire next
