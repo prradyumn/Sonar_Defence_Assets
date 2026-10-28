@@ -46,8 +46,8 @@
       const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); W.clearHints();
       if (o.replay && wrong === 2) { await o.replay(); guided = o.didReplay = true; continue; }
       const fb = o.fb ? o.fb(wrong) : R.fbL[Math.min(wrong, 3) - 1];
-      if (fb.anim) fb.anim(); else ANIM[fb.kind](R);
-      note(fb.line, R.ost); await wait(.5);
+      const shown = fb.anim ? fb.anim() : ANIM[fb.kind](R);   // (a promise when it takes time: Level 2's number line)
+      note(fb.line, R.ost); await Promise.all([shown, wait(.5)]);
     }
   }
 
@@ -226,23 +226,21 @@
      The bow cannon is the launcher of the other sign: each tap launches one missile into the launch bay above it (tap one in
      the bay to take it back), then FIRE. The same number: each one streaks to a missile that came and both are absorbed, 0 left.
      Any other number is a mistake, and it still fires: the pairs are absorbed; too few, and the missiles left over get through
-     and hit the window (it cracks); too many, and ours are wasted. Each mistake costs one of the shield's three bars, the enemy
-     launches again and Incorrect Feedback 1, 2, 3 play in turn. Shield down (the third): SHIELD DOWN!, we sink (the cockpit
-     rolls, the cracks spread, the sea goes dark), TRY AGAIN!, and the mission restarts with the glass mended, the shield
-     recharged, the guiding glow on and Incorrect Feedback 3 in the panel; the launcher stops at the right number. Row 1 is the teaching (the missiles come, the launcher activates), row 2 the tutorial (a guiding glow).
+     and hit the window (it cracks); too many, and ours are wasted. The enemy launches again and Incorrect Feedback 1, 2, 3 play
+     in turn (the missiles that came are counted out loud on screen, 1, 2, 3 …); from the third on, the launcher stops at the
+     right number. No sinking. Row 1 is the teaching (the missiles come, the launcher activates) and the tutorial (the hand).
      ===================================================================== */
-  async function launchRound(R, teach, retry) {   // retry: the mission again after the shield went down (guided from the start)
+  async function launchRound(R, teach) {
     const n = Math.abs(R.give), given = Math.sign(R.give), mine = -given, room = 2;
     W.launcher(0); W.fireBtn('');
     await W.missiles(n, given);   // the missiles come towards the defence area
     if (teach) { await wait(.3); W.launcher(mine); await wait(.6); await say(S.l1a); await say(S.l1b); await wait(.2); }   // the launcher activates; Meera's two lines
-    W.launcher(mine); W.bay(true); W.fireBtn('dim'); W.shield(3, true);
-    W.strip(R.ost); if (!retry) SD.narrate(R.ost); await wait(.6);
-    if (retry) note(R.fbL[2].line, R.ost);   // "Launch 5 negative missiles."
-    let strikes = retry ? 3 : 0, busy = false, hull = 3, tut = !!R.tutorial || !!retry;   // hull: the shield's bars · tut: the guiding glow is on
+    W.launcher(mine); W.bay(true); W.fireBtn('dim');
+    W.strip(R.ost); SD.narrate(R.ost); await wait(.6);
+    let strikes = 0, busy = false, tut = !!R.tutorial;   // tut: the hand shows what to tap
     const count = () => W.mslRow(1).length;
     const ANIM = {   // no incorrect animations in the sheet for Level 1: point at the count
-      given: () => W.mslPulse(W.mslRow(0), 0, .18),                               // the missiles that came pulse one by one
+      given: () => { W.mslPulse(W.mslRow(0), 0, .4); W.mslCount(W.mslRow(0), 0, .4); },   // the missiles that came pulse one by one, counted 1, 2, 3 …
       launcher: () => { W.handTo(...pt('#launchHit')); if (!tut) gsap.delayedCall(2.6, () => W.hand(null)); },   // the launcher glows
       both: () => { ANIM.given(); ANIM.launcher(); },
     };
@@ -273,29 +271,23 @@
       });
       W.onMissile(m => { if (m.row !== 1 || busy) return; arm(); SD.skip(); W.mslTakeBack(m, W.muzzle()); fireState(); guide(); });
       W.onFire(async () => {
-        if (busy || !count()) return; arm(); SD.skip(); W.hand(null);
+        if (busy || !count()) return; arm(); SD.skip(); W.hand(null); W.mslCountOff();
         if (count() === n) { stop(); noteEnd(); return resolve(true); }
         busy = true; strikes++; W.fireBtn('dim');
         // a wrong count still fires: the pairs are absorbed, and what is left over is the consequence
         const left = W.mslRemain(), through = left[0].row === 0;
         await volley(); W.mslBad(left); await wait(.7);
-        if (through) await Promise.all(left.map((m, i) => wait(i * .2).then(() => W.mslHitUs(m, hitAt(i))).then(() => W.impact(hitAt(i).x, hitAt(i).y, i < 3))));   // too few: they get through and hit us
+        if (through) await Promise.all(left.map((m, i) => wait(i * .2).then(() => W.mslHitUs(m, hitAt(i))).then(() => W.impact(hitAt(i).x, hitAt(i).y, i === 0))));   // too few: they get through and hit us
         else { await Promise.all(left.map((m, i) => wait(i * .12).then(() => W.mslFizzle(m)))); W.alarm(); }   // too many: ours are wasted
-        hull--; W.shield(hull); await wait(.6);
-        if (!hull) {   // shield down: we sink, and the mission starts again
-          await W.shieldDown(); await W.sink();
-          stop(); W.matching = false; W.hand(null); noteEnd(); W.clearMissiles(); W.fireBtn(''); W.launcher(0); W.stripOff();
-          return resolve('restart');
-        }
+        await wait(.6);
         await W.missiles(n, given, true);   // the enemy launches again
         busy = false; arm(); const fb = R.fbL[Math.min(strikes, 3) - 1]; ANIM[fb.kind](); guide(); note(fb.line, R.ost);
       });
       arm(); guide();
     });
-    if (ok === 'restart') { await W.resurface(); return 'restart'; }
     W.matching = false; W.hand(null); W.fireBtn(''); W.launcher(0);
     // Correct Animation: each launched missile leaves the bay, meets one missile that came and both are absorbed: all the pairs disappear
-    await volley(); await wait(.4); W.bay(false); W.shield(hull, false); W.repair();   // (any cracks from this round seal up)
+    W.mslCountOff(); await volley(); await wait(.4); W.bay(false); W.repair();   // (any cracks from this round seal up)
     mark(strikes === 0);
     W.reward({ big: strikes === 0, confetti: true, pip: W.pipDone, at: { x: 960, y: (W.CONFIG.SIG_Y1 + W.CONFIG.SIG_Y2) / 2 } });
     await wait(.4); await note(R.ok);
@@ -307,8 +299,7 @@
     W.pips(D.L1.length, start);
     for (let r = start; r < D.L1.length; r++) {
       SD.where = { at: 'l1', round: r + 1 };
-      let retry = false;
-      while (await launchRound(D.L1[r], r === 0 && !retry, retry) === 'restart') retry = true;   // after a sinking, the same mission again
+      await launchRound(D.L1[r], r === 0);
       W.pips(D.L1.length, r + 1);
       if (r < D.L1.length - 1) await W.sail();
     }
@@ -316,7 +307,7 @@
   }
 
   /* =====================================================================
-     LEVEL 2 · fire at the submarine close to our border (sheet L2 V3): our territory is the negative side, so the smaller
+     LEVEL 2 · fire at the submarine with the smaller number (sheet L2 V3): our territory is the negative side, so the smaller
      number is closer to our border. The rope glides to each pair of positions (a 0 chip at the window's edge when 0 is out of view).
      ===================================================================== */
   async function level2(start = 0) {
@@ -344,10 +335,12 @@
 
   /* one Level 2 round. tut = the tutorial (the guiding glow); extra = the item after a guided replay (not scored, no replay).
      line = the number line is out (the first example only): the submarines sit above their numbers on it. Without it they float at
-     random places with their numbers on them, and the child compares the numbers themselves; the guided replay brings the line back.
-     Mistake 1: Incorrect Feedback 1 (+ the "◀ our border" tag with the line). Mistake 2: the guided replay. Returns true when guided. */
+     random places with their numbers on them, and the child compares the numbers themselves; after a wrong tap the line comes in
+     to show which number is smaller, then goes again for the shot (explain()); the guided replay brings it back the same way.
+     Mistake 1: Incorrect Feedback 1 (+ the "◀ smaller · bigger ▶" tags). Mistake 2: the guided replay. Returns true when guided. */
+  const lineOn = on => { gsap.to('#scale', { autoAlpha: on ? 1 : 0, duration: .5 }); gsap.set('#zchip', { visibility: on ? '' : 'hidden' }); };
   async function l2round(R, { tut, extra, line } = {}) {
-    gsap.to('#scale', { autoAlpha: line ? 1 : 0, duration: .5 }); gsap.set('#zchip', { visibility: line ? '' : 'hidden' });
+    lineOn(line);
     await W.panFor(R.subs);   // (0 joins the view when it fits; without the line it is ready for the replay)
     if (extra) { W.strip(D.MORE, { big: true }); await Promise.all([SD.narrate(D.MORE), wait(1.4)]); }
     W.strip(R.ost); SD.narrate(R.ost); await W.spawn(R.subs, { stagger: .45, at: line ? null : skySpots(R.subs.length) });
@@ -356,7 +349,7 @@
       guide: tut && (async first => { const s = W.subAt(R.target); if (!s) return;   // the tutorial: the glow shows the smaller number, then its submarine
         if (first) { await W.handTo(W.X(R.target), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseLbl(R.target); await wait(1.2); }
         if (W.waiting) W.handTo(s.x, s.cy, .8); }),
-      fb: k => { const fb = R.fbL[Math.min(k, 3) - 1]; return { line: fb.line, anim: () => { ANIM[fb.kind](R); if (k === 1 && line) W.borderTag(true); } }; },
+      fb: k => { const fb = R.fbL[Math.min(k, 3) - 1]; return { line: fb.line, anim: async () => { if (!line) await explain(R); ANIM[fb.kind](R); if (k === 1 && line) W.borderTag(true); } }; },
       replay: !tut && !extra && (() => replay(R)),
     };
     const first = await strike(R, R.target, o); W.dragRope(false);
@@ -367,18 +360,29 @@
     await wait(1.4); W.borderTag(false); await W.clearSubs(); W.stripOff();
     return !!o.didReplay;
   }
+  /* a wrong tap without the number line: the line comes in, the two numbers glow (the bigger, then the smaller) and a light runs
+     from the bigger to the smaller, towards "◀ smaller"; then the line goes again and the child fires at the submarine */
+  async function explain(R) {
+    const t = R.target, u = R.subs.find(v => v !== t);
+    lineOn(true); await wait(.6);
+    W.borderTag(true); W.pulseLbl(u); await wait(.9);
+    W.pulseLbl(t); W.sweepTo(u, t); await wait(2.6);
+    W.clearHints(); W.borderTag(false); lineOn(false); await wait(.5);
+  }
   /* the guided replay (Level 2, the second wrong tap): the question in the two steps the child does, wrong options blocked.
      A · compare: both submarines grey out, only the two numbers answer ("Check which is smaller: −10 or −12?"); a wrong number
          → a light runs from it to the other, towards our border's side, and the question again.
      B · connect: "The smaller number is −12…", then only the submarine above −12 comes back, its sonar line lit; the other
-         stays grey and does not answer ("Check which submarine is close to our border."). */
+         stays grey and does not answer ("Check which submarine is close to our border."). Without the line (after the first
+         example) the line comes in for A and goes again for B: the child fires at the submarine itself. */
   async function replay(R) {
-    const t = R.target, u = R.subs.find(v => v !== t);
-    if (W.subs().some(s => s.free)) { gsap.to('#scale', { autoAlpha: 1, duration: .5 }); gsap.set('#zchip', { visibility: '' }); await wait(.5); }   // the number line comes back to help
+    const t = R.target, u = R.subs.find(v => v !== t), free = W.subs().some(s => s.free);
+    if (free) { lineOn(true); await wait(.5); }   // the number line comes back to help
     W.dragRope(false); W.borderTag(true); W.subs().forEach(s => s.d.classList.add('dim'));
     note(R.fbL[1].line);
     while (await W.waitLabel(R.subs) !== t) { SFX.wrong(); W.sweepTo(u, t); await wait(1.4); W.clearHints(); W.subs().forEach(s => s.d.classList.add('dim')); }
     SFX.ding(); W.pulseLbl(t); await note(R.fbL[2].line);
+    if (free) { W.clearHints(); W.borderTag(false); lineOn(false); await wait(.5); }   // the line goes: now the shot
     const s = W.subAt(t); s.d.classList.remove('dim'); W.lineLit(t, true); W.pulseSub(s); W.pulseTag(s); SFX.ping();
     note(R.fbL[0].line);
   }
@@ -414,7 +418,7 @@
       const first = await strike(R, next, {
         fb: k => k === 1 ? { line: R.fbL[0].line, anim: () => {} }   // the wrong submarine shakes (W.wrong)
           : k === 2 ? { line: R.fbL[1].line, anim: () => W.subs().forEach((s, j) => W.pulseTag(s, j * .08)) }   // the numbers left pulse
-          : { line: D.startWith(next), anim: pulseNext },   // "Start with the submarine with −12." and it pulses
+          : { line: D.startWith(next), anim: pulseNext },   // "Select the submarine with −12." and it pulses
         idleAnim: pulseNext, idleLine: R.idleL.line,   // the smallest number left pulses
         guide: tut && (() => { const s = W.subAt(next); if (s) W.handTo(s.x, s.cy, .6); }) });
       allFirst = allFirst && first;

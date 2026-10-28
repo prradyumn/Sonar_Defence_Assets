@@ -52,7 +52,7 @@
       ost: '4 positive missiles are coming towards us. Launch 4 negative missiles to cancel them.' },
     pos(5), pos(9), neg(10), neg(13), pos(7), neg(12),
   ];
-  L1.forEach((R, r) => reg('v3l1_r' + (r + 1), R));
+  L1.forEach((R, r) => { R.ok = (r % 2 ? 'Good job! ' : 'Well done! ') + R.ok; reg('v3l1_r' + (r + 1), R); });   // the correct line opens with praise
 
   /* ---------- Level 2 · fire at the submarine close to our border (sheet L2 V3) ----------
      Our territory is the negative side: the smaller (more negative) number is closer to our border, so it is the one to fire,
@@ -60,7 +60,7 @@
      picked the greater number; there the answer is the smaller one and the lines follow rows 1–2 ("… is smaller, and the
      submarine at … is closer to our border"). The sheet's "border 0" reads "our border" (0 is not the border).
      show = the comparison the Correct Animation shows after the lock. */
-  const CHECK = 'Check which submarine is close to our border.', FIRE = 'Fire at the submarine close to our border.', FIRE1 = 'Fire the submarine closer to our border.';
+  const CHECK = 'Check which submarine is close to our border.', FIRE = 'Fire at the submarine with the smaller number.', FIRE1 = 'Fire the submarine closer to our border.';
   const FIND = 'Find the submarine close to our border.', WHICH = 'Which submarine is close to our border?';
   // a, b = the two positions as the sheet lists them; the answer is always the smaller
   const cmp = (a, b, ok, idle, o = {}) => { const t = Math.min(a, b), u = Math.max(a, b);
@@ -90,10 +90,10 @@
 
   /* ---------- Level 3 · fire in order, smaller number first (sheet L3 V3) ----------
      ost = the numbers shown on screen, in the sheet's order; the child fires them from the smallest up.
-     Incorrect Feedback 3 names the submarine to fire next ("Start with the submarine with −12."). */
+     Incorrect Feedback 3 names the submarine to fire next ("Select the submarine with −12."). */
   const L3_TEACH = { ost: 'Smaller → Bigger' };
   const ORD_FB1 = 'Check which submarine is closer to our border.', ORD_FB2 = 'Check which submarine has the smaller number and is closer to our border.';
-  const ORD_IDLE = 'Start with the submarine with the smaller number.', ORD_OK = 'Great! You fired from closer to farther.', ORD_VO = 'Fire submarines that are closer and then farthest.';
+  const ORD_IDLE = 'Select the submarine with the smaller number.', ORD_OK = 'Great! You fired from closer to farther.', ORD_VO = 'Fire submarines that are closer and then farthest.';
   const ord = (subs, cheer) => ({ subs, vo: ORD_VO, ost: subs.map(f).join(', '), ok: ORD_OK, cheer, fb: [[ORD_FB1, 'shake'], [ORD_FB2, 'numbers']], idle: [ORD_IDLE, 'smallest'] });
   const L3 = [
     ord([-3, -6, -9, -12], 'ROUTE CLEARED!'),
@@ -104,7 +104,7 @@
     ord([4, -7, 10, -13]),
     ord([9, 11, 6, 17], 'ALL TARGETS CLEARED!'),
   ];
-  const startWith = v => `Start with the submarine with ${f(v)}.`;
+  const startWith = v => `Select the submarine with ${f(v)}.`;   // ("select", not "start": it is said for every pick, not only the first)
   L3.forEach((R, r) => reg('v3l3_r' + (r + 1), R));
   // (the sheet's OST says "LEVEL 2 COMPLETE!", a copy slip: this is the end of Level 3)
   const L3_END = { ost: 'LEVEL 3 COMPLETE!' };

@@ -31,13 +31,13 @@
     'Check how many negative missiles are launched.': 'देखो, कितनी ऋणात्मक मिसाइलें छोड़ी गई हैं।',
     'Launch the same number of negative missiles.': 'उतनी ही ऋणात्मक मिसाइलें छोड़ो।',
     'Launch the same number of positive missiles.': 'उतनी ही धनात्मक मिसाइलें छोड़ो।',
-    'Fire at the submarine close to our border.': 'हमारी सीमा के पास वाली पनडुब्बी पर दागो।',
+    'Fire at the submarine with the smaller number.': 'छोटी संख्या वाली पनडुब्बी पर दागो।',
     'Check which submarine is closer to our border.': 'देखो, कौन-सी पनडुब्बी हमारी सीमा के ज़्यादा पास है।',
     'Check which submarine is close to our border.': 'देखो, कौन-सी पनडुब्बी हमारी सीमा के पास है।',
     'Which submarine is close to our border?': 'कौन-सी पनडुब्बी हमारी सीमा के पास है?',
     'Find the submarine close to our border.': 'हमारी सीमा के पास वाली पनडुब्बी ढूँढो।',
     'Check which submarine has the smaller number and is closer to our border.': 'देखो, किस पनडुब्बी की संख्या छोटी है और वह हमारी सीमा के ज़्यादा पास है।',
-    'Start with the submarine with the smaller number.': 'छोटी संख्या वाली पनडुब्बी से शुरू करो।',
+    'Select the submarine with the smaller number.': 'छोटी संख्या वाली पनडुब्बी चुनो।',
     'Great! You fired from closer to farther.': 'शाबाश! तुमने पास से दूर की ओर दागा।',
     'One more like this!': 'ऐसा एक और!',
   };
@@ -57,14 +57,16 @@
     [`^Yes! ${N} is closer to our border\\. But ${N} is greater than ${N}\\.$`, 'हाँ! $1 हमारी सीमा के ज़्यादा पास है। लेकिन $2, $3 से बड़ा है।'],
     [`^Yes! ${N} is closer to our border\\. ${N} is smaller than ${N}\\.$`, 'हाँ! $1 हमारी सीमा के ज़्यादा पास है। $2, $3 से छोटा है।'],
     [`^${N} is closer to our border\\.$`, '$1 हमारी सीमा के ज़्यादा पास है।'],
-    [`^Start with the submarine with ${N}\\.$`, '$1 वाली पनडुब्बी से शुरू करो।'],
+    [`^Select the submarine with ${N}\\.$`, '$1 वाली पनडुब्बी चुनो।'],
     [`^${N} < ${N}$`, '$1 < $2'],   // (the screen keeps the symbols; spoken() reads them)
     [`^${N} > ${N}$`, '$1 > $2'],
   ].map(([re, out]) => [new RegExp(re), out]);
 
+  const PRAISE = { 'Well done! ': 'शाबाश! ', 'Good job! ': 'बहुत बढ़िया! ' };   // Level 1's correct lines open with praise
   function tr(t) {
     if (t == null) return t;
     if (FIXED[t]) return FIXED[t];
+    for (const p in PRAISE) if (t.startsWith(p)) return PRAISE[p] + tr(t.slice(p.length));
     for (const [re, out] of PAT) if (re.test(t)) return t.replace(re, out);
     return t;   // not translated (shown in English): listed by HI.missing
   }
@@ -80,9 +82,9 @@
     'LEVEL 1': 'स्तर 1', 'LEVEL 2': 'स्तर 2', 'LEVEL 3': 'स्तर 3',
     'LEVEL 1 COMPLETE!': 'स्तर 1 पूरा!', 'LEVEL 2 COMPLETE!': 'स्तर 2 पूरा!', 'LEVEL 3 COMPLETE!': 'स्तर 3 पूरा!',
     'ROUTE CLEARED!': 'रास्ता साफ़!', 'ALL TARGETS CLEARED!': 'सभी निशाने साफ़!', 'Smaller → Bigger': 'छोटी → बड़ी',
-    'smaller · closer': 'छोटी · पास', 'bigger · farther': 'बड़ी · दूर', 'our border': 'हमारी सीमा',
-    'Next': 'आगे', 'Commander Meera': 'कमांडर मीरा', 'Narrator': 'सूत्रधार', 'SHIELD': 'कवच', 'SHIELD DOWN!': 'कवच टूट गया!',
-    'SINKING!': 'डूब रहे हैं!', 'TRY AGAIN!': 'फिर से कोशिश करो!', 'ALERT! ALERT!': 'चेतावनी! चेतावनी!',
+    'smaller · closer': 'छोटी · पास', 'bigger · farther': 'बड़ी · दूर', 'smaller': 'छोटी', 'bigger': 'बड़ी',
+    'Next': 'आगे', 'Commander Meera': 'कमांडर मीरा', 'Narrator': 'सूत्रधार',
+    'ALERT! ALERT!': 'चेतावनी! चेतावनी!',
     'Guard the sea route · Integers on the navigation scale': 'समुद्री रास्ते की रक्षा करो · नौवहन पैमाने पर पूर्णांक',
     'Skip story ▸▸': 'कहानी छोड़ो ▸▸', 'Next mission': 'अगला मिशन', 'tap to continue ▸': 'आगे बढ़ने के लिए छुओ ▸',
   };

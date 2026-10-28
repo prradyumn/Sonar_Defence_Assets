@@ -321,7 +321,7 @@
 
   /* ================= hints ================= */
   let hintEls = [];
-  // the helper is a pulsing gold glow (no hand): it sits right on the thing to tap (#hand keeps its id for the levels + editor)
+  // the helper: a pulsing gold glow right on the thing to tap, and a hand that taps it (the hand is in index.html)
   W.hand = s => { const h = $('#hand'); if (!s) return gsap.to(h, { opacity: 0, duration: .2 }); gsap.killTweensOf(h); gsap.set(h, { left: s.x, top: s.cy, scale: 1.25 }); gsap.to(h, { opacity: 1, duration: .25 }); };
   // guided glow: appears on (or glides to) a point, then pulses as if tapped (used for demos)
   W.handTo = async (x, y, dur = .7) => { const h = $('#hand'); gsap.killTweensOf(h); const off = +getComputedStyle(h).opacity < .1; if (off) gsap.set(h, { left: x, top: y, scale: .4 }); gsap.to(h, { opacity: 1, scale: 1, duration: .3, ease: 'back.out(2)' }); if (!off) await gsap.to(h, { left: x, top: y, duration: dur, ease: 'power2.inOut' }); else await wait(Math.min(dur, .45)); };
@@ -337,7 +337,7 @@
     gsap.fromTo(b, { scaleX: 0, transformOrigin: v < 0 ? '100% 50%' : '0% 50%', opacity: 1 }, { scaleX: 1, duration: .6, delay, ease: 'power2.inOut' }); SFX.ping(); hintEls.push(b);
   };
   /* Level 2's guided replay: the numbers on the rope become the choice (the submarines are out of play meanwhile), a light
-     runs from one number to another, a submarine's sonar line lights up, and the "◀ our border" tag at the left end of the line */
+     runs from one number to another, a submarine's sonar line lights up, and the "◀ smaller" / "bigger ▶" tags at the line's ends */
   W.waitLabel = vals => new Promise(res => {
     play.style.pointerEvents = 'none'; W.picking = true;
     const ls = vals.filter(v => LBL[v]);
@@ -352,10 +352,13 @@
   };
   W.lineLit = (v, on) => { const s = W.subAt(v); if (s) s.line.classList.toggle('lit', on); };
   let btag = null;
-  W.borderTag = on => {
-    if (on && !btag) { btag = el('', fx); btag.id = 'bordertag'; btag.innerHTML = '<b>◀</b> our border'; gsap.fromTo(btag, { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: .4, ease: 'back.out(2)' }); }
-    if (on) gsap.fromTo(btag.querySelector('b'), { x: 0 }, { x: -10, duration: .3, yoyo: true, repeat: 5 });
-    if (!on && btag) { const b = btag; btag = null; gsap.to(b, { opacity: 0, duration: .3, onComplete: () => b.remove() }); }
+  W.borderTag = on => {   // (the name is from when the left tag said "our border")
+    if (on && !btag) {
+      btag = [el('btag l', fx), el('btag r', fx)]; btag[0].innerHTML = '<b>◀</b> smaller'; btag[1].innerHTML = 'bigger <b>▶</b>';
+      btag.forEach((t, i) => gsap.fromTo(t, { x: i ? -40 : 40, opacity: 0 }, { x: 0, opacity: 1, duration: .4, ease: 'back.out(2)' }));
+    }
+    if (on) btag.forEach((t, i) => gsap.fromTo(t.querySelector('b'), { x: 0 }, { x: i ? 10 : -10, duration: .3, yoyo: true, repeat: 5 }));
+    if (!on && btag) { const b = btag; btag = null; gsap.to(b, { opacity: 0, duration: .3, onComplete: () => b.forEach(t => t.remove()) }); }
   };
   // the border: a glowing upright line at 0, from the rope up into the water (Level 2 talks about it)
   let defl = null;
@@ -468,6 +471,16 @@
   W.mslRemain = () => { const p = W.mslAlive().filter(m => m.sign > 0), n = W.mslAlive().filter(m => m.sign < 0); return p.length > n.length ? p.slice(n.length) : n.slice(p.length); };
   W.mslHintsOff = () => MS.list.forEach(m => { if (!m.d.classList.contains('hint')) return; m.d.classList.remove('hint'); gsap.killTweensOf(m.d, 'scale'); gsap.set(m.d, { scale: 1 }); });
   W.mslRow = r => W.mslAlive().filter(m => m.row === r);
+  // counting the missiles that came: 1, 2, 3 … pops up over each as it glows; the numbers fade away a few seconds after the last
+  let counts = [];
+  W.mslCount = (list, delay = 0, each = .4) => {
+    W.mslCountOff();
+    list.forEach((m, i) => { const c = el('mcount' + (i === list.length - 1 ? ' last' : ''), sg, { left: m.x + 'px', top: m.y - 62 + 'px' }); c.textContent = i + 1; counts.push(c);
+      gsap.fromTo(c, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: .3, delay: delay + i * each, ease: 'back.out(3)', onStart: () => SFX.blip() }); });
+    const end = delay + list.length * each + 2.6;
+    counts.forEach(c => gsap.to(c, { opacity: 0, y: -14, duration: .5, delay: end, onComplete: () => c.remove() }));
+  };
+  W.mslCountOff = () => { counts.forEach(c => { gsap.killTweensOf(c); gsap.to(c, { opacity: 0, duration: .2, onComplete: () => c.remove() }); }); counts = []; };
   W.mslPulse = (list, delay = 0, each = .04) => list.forEach((m, i) => { gsap.delayedCall(delay + i * each, () => m.d.classList.add('hint')); gsap.fromTo(m.d, { scale: 1 }, { scale: 1.25, duration: .4, yoyo: true, repeat: 5, delay: delay + i * each, ease: 'sine.inOut', onComplete: () => m.d.classList.remove('hint') }); });
   // a missile that came with no partner gets through: it dives at the window, growing as it comes at us (resolves on impact)
   W.mslHitUs = (m, to) => { m.alive = false; gsap.killTweensOf([m.d, m.im]); m.d.classList.remove('hint', 'bad');
@@ -506,7 +519,7 @@
     gsap.timeline({ onComplete: () => z.remove() }).fromTo(z, { scale: .2, opacity: 0 }, { scale: 1, opacity: 1, duration: .3, ease: 'back.out(3)' })
       .to(z, { y: -30, opacity: 0, duration: .4, ease: 'power2.in' }, '+=.35');
   };
-  W.clearMissiles = () => { MS.list.forEach(m => { gsap.killTweensOf([m.d, m.im]); m.d.remove(); }); MS.list = []; W.onMissile(null); W.bay(false); };
+  W.clearMissiles = () => { W.mslCountOff(); MS.list.forEach(m => { gsap.killTweensOf([m.d, m.im]); m.d.remove(); }); MS.list = []; W.onMissile(null); W.bay(false); };
 
   /* ================= reward: a burst of confetti, the praise word, a sonar contact (glowing blip with pulsing rings) that flies up and lights the next progress lamp ================= */
   const top = $('#fxTop'), COL = ['#ffd66b', '#ffb070', '#7ff2ff', '#ffffff', '#ff8fb1', '#9dff9a'];
