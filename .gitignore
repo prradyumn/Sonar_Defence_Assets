@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .env
 assets/vo/takes/
+
+# cover art sources (the game uses the .webp copies)
+assets/img/cover/*.png

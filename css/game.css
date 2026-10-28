@@ -127,10 +127,10 @@ img{-webkit-user-drag:none;user-select:none}
 
 /* overlays */
 .overlay{position:absolute;inset:0;pointer-events:auto}
-/* cover: the title lives in the art (assets/img/cover.webp); sonar pings pulse out of its glow */
+/* cover: the title screen is a live scene (css/cover.css); sonar pings pulse out from behind the logo */
 #title{background:#0b3d66;overflow:hidden}
-#title .art{position:absolute;inset:0;background:url(../assets/img/cover.webp) center/cover no-repeat;transform-origin:50% 32%}
-#title .pings{position:absolute;left:970px;top:322px;pointer-events:none}
+#title .art{position:absolute;inset:0}
+#title .pings{position:absolute;pointer-events:none}
 #title .pings i{position:absolute;left:-260px;top:-260px;width:520px;height:520px;border-radius:50%;border:4px solid rgba(150,245,255,.75);box-shadow:0 0 34px rgba(80,220,255,.55),inset 0 0 24px rgba(80,220,255,.35);mix-blend-mode:screen;opacity:0;animation:titlePing 3.6s ease-out infinite}
 #title .pings i:nth-child(2){animation-delay:1.2s}#title .pings i:nth-child(3){animation-delay:2.4s}
 @keyframes titlePing{0%{transform:scale(.45);opacity:0}12%{opacity:.55}100%{transform:scale(1.9);opacity:0}}
@@ -149,12 +149,6 @@ img{-webkit-user-drag:none;user-select:none}
 @keyframes playRing{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.75);opacity:0}}
 @keyframes playGlow{50%{box-shadow:0 10px 0 #9a4a05,0 18px 36px rgba(0,0,0,.4),0 0 0 12px rgba(255,214,120,.18),0 0 70px rgba(255,200,80,.95)}}
 @keyframes playShine{0%,55%{left:-60%}85%,100%{left:130%}}
-#title .bubbles i{position:absolute;bottom:-40px;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.95) 0 14%,rgba(200,245,255,.35) 24%,rgba(255,255,255,.12) 62%,rgba(255,255,255,.55) 74%,rgba(255,255,255,0) 78%);animation:coverBub 9s linear infinite;pointer-events:none}
-#title .bubbles i:nth-child(1){left:12%;animation-delay:0s}#title .bubbles i:nth-child(2){left:23%;width:22px;height:22px;animation-delay:-2.2s;animation-duration:11s}
-#title .bubbles i:nth-child(3){left:38%;width:10px;height:10px;animation-delay:-5s}#title .bubbles i:nth-child(4){left:57%;width:18px;height:18px;animation-delay:-1.4s;animation-duration:10s}
-#title .bubbles i:nth-child(5){left:68%;animation-delay:-6.5s}#title .bubbles i:nth-child(6){left:79%;width:26px;height:26px;animation-delay:-3.6s;animation-duration:12s}
-#title .bubbles i:nth-child(7){left:88%;width:12px;height:12px;animation-delay:-7.8s}#title .bubbles i:nth-child(8){left:47%;width:16px;height:16px;animation-delay:-4.4s;animation-duration:13s}
-@keyframes coverBub{0%{transform:translate(0,0);opacity:0}8%{opacity:.9}50%{transform:translate(18px,-300px)}92%{opacity:.7}100%{transform:translate(-10px,-560px);opacity:0}}
 #title .logo{position:absolute;left:960px;top:250px;transform:translateX(-50%);font:800 132px/1 Baloo;color:#fff;letter-spacing:2px;
   text-shadow:0 6px 0 #0a3c6e,0 10px 26px rgba(0,30,70,.6),0 0 40px rgba(90,220,255,.6);white-space:nowrap}
 #title .sub2{position:absolute;left:960px;top:400px;transform:translateX(-50%);font:600 40px/1 Baloo;color:#eaffff;text-shadow:0 3px 10px rgba(0,30,60,.8);white-space:nowrap}

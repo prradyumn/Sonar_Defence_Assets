@@ -1,0 +1,91 @@
+/* cover: the title screen is a live scene (assets/img/cover/): the Coast Guard ship comes towards us through the sea.
+   Layers back to front: sky · clouds · gulls · islands · sea · sun glints · far / mid waves · ship (+ radar) · bow spray ·
+   near waves · foam streaming past · the logo. Everything moves with transform / opacity only (GPU), and the tiled
+   strips scroll as wide layers moved by transform (never background-position). The horizon is at y 520. */
+#title .art{background:#5cc0f5;transform-origin:50% 40%;overflow:hidden}
+#title .art > *{position:absolute;pointer-events:none}
+#title .art img{display:block;-webkit-user-drag:none;user-select:none}
+.cv-sky{left:0;top:0;width:1920px;height:1080px;background:url(../assets/img/cover/sky.webp) 0 0/1920px 1080px}
+
+/* clouds drift left across the sky, each at its own speed and height (a cloud leaves on the left and comes back on the right) */
+.cv-cloud{left:1920px;will-change:transform;animation:cvCloud linear infinite}
+.cv-cloud.c1{top:40px;width:560px;animation-duration:150s;animation-delay:-20s}
+.cv-cloud.c2{top:150px;width:470px;animation-duration:120s;animation-delay:-75s}
+.cv-cloud.c3{top:250px;width:380px;animation-duration:95s;animation-delay:-50s;opacity:.92}
+.cv-cloud.c4{top:70px;width:520px;animation-duration:170s;animation-delay:-130s}
+@keyframes cvCloud{to{transform:translateX(-2560px)}}
+
+/* gulls: a 2-frame sprite (wings up / down) flapping as it glides across */
+.cv-gull{width:84px;height:42px;overflow:hidden;left:-120px;will-change:transform;animation:cvGull linear infinite}
+.cv-gull img{width:168px;height:42px;animation:cvFlap .36s steps(2) infinite}
+.cv-gull.g1{top:230px;animation-duration:26s;animation-delay:-6s}
+.cv-gull.g2{top:300px;width:60px;height:30px;animation-duration:34s;animation-delay:-21s}
+.cv-gull.g2 img{width:120px;height:30px;animation-duration:.42s}
+@keyframes cvGull{0%{transform:translate(0,0)}25%{transform:translate(560px,-30px)}50%{transform:translate(1080px,10px)}75%{transform:translate(1600px,-24px)}100%{transform:translate(2160px,0)}}
+@keyframes cvFlap{to{transform:translateX(-100%)}}
+
+/* the islands on the horizon (static: they are far away) */
+.cv-islands{left:0;top:410px;width:1920px;height:118px;background:url(../assets/img/cover/islands.webp) 0 0/1745px 118px repeat-x;opacity:.95}
+.cv-sea{left:0;top:520px;width:1920px;height:560px;background:url(../assets/img/cover/sea_base.webp) 0 0/1920px 560px}
+
+/* sun glints on the water under the sun: little four-point stars that twinkle */
+.cv-glint{width:34px;height:34px;margin:-17px 0 0 -17px;opacity:0;will-change:transform,opacity;animation:cvGlint 2.6s ease-in-out infinite;
+  background:radial-gradient(circle,#fff 0 9%,rgba(255,255,255,0) 30%),linear-gradient(transparent 46%,#fff 50%,transparent 54%),linear-gradient(90deg,transparent 46%,#fff 50%,transparent 54%)}
+@keyframes cvGlint{0%,100%{transform:scale(.2) rotate(0);opacity:0}50%{transform:scale(1) rotate(45deg);opacity:.95}}
+
+/* the wave bands: each is two tiles wide and slides one tile along, so it loops seamlessly; the outer layer bobs */
+.cv-band{left:0;will-change:transform;animation:cvBob ease-in-out infinite alternate}
+.cv-band i{display:block;will-change:transform;animation:cvScroll linear infinite}
+.cv-band.far{top:514px;animation-duration:2.6s;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+.cv-band.far i{width:4608px;height:84px;background:url(../assets/img/cover/waves_far.webp) 0 0/2304px 84px repeat-x;animation-duration:60s}
+.cv-band.mid{top:585px;animation-duration:3.2s;animation-delay:-1s;-webkit-mask-image:linear-gradient(#000 50%,transparent);mask-image:linear-gradient(#000 50%,transparent)}   /* (the bands' bottoms fade into the sea: no edge) */
+.cv-band.mid i{width:6144px;height:176px;background:url(../assets/img/cover/waves_mid.webp) 0 0/3072px 176px repeat-x;animation-duration:44s;animation-direction:reverse}
+.cv-band.near{top:850px;animation-duration:2.4s;animation-delay:-.6s}
+.cv-band.near i{width:7680px;height:320px;background:url(../assets/img/cover/waves_near.webp) 0 0/3840px 320px repeat-x;animation-duration:30s}
+.cv-band.far i{--tile:-2304px}.cv-band.mid i{--tile:-3072px}.cv-band.near i{--tile:-3840px}
+@keyframes cvScroll{to{transform:translateX(var(--tile))}}
+@keyframes cvBob{from{transform:translateY(-5px)}to{transform:translateY(7px)}}
+
+/* the ship: it bobs, rolls about its waterline and slowly surges towards us; the radar on its mast turns */
+.cv-ship{left:1062px;top:330px;width:612px;height:680px;transform-origin:52.7% 85.8%;will-change:transform;animation:cvShip 3s ease-in-out infinite}
+.cv-ship > img{width:612px;height:680px}
+.cv-ship .radar{position:absolute;left:274px;top:37px;width:96px;height:36px;animation:cvRadar 2.4s linear infinite}
+@keyframes cvShip{
+  0%{transform:translateY(0) rotate(-1.6deg) scale(1)}
+  25%{transform:translateY(-9px) rotate(0) scale(1.012)}
+  50%{transform:translateY(-2px) rotate(1.6deg) scale(1.02)}
+  75%{transform:translateY(8px) rotate(0) scale(1.01)}
+  100%{transform:translateY(0) rotate(-1.6deg) scale(1)}}
+@keyframes cvRadar{0%{transform:scaleX(1)}50%{transform:scaleX(-1)}100%{transform:scaleX(1)}}
+
+/* the bow spray: the water the bow pushes aside, bigger as the ship dips (same 3 s beat as the ship) */
+.cv-spray{left:1007px;top:676px;width:770px;height:266px;transform-origin:50% 92%;will-change:transform,opacity;animation:cvSpray 3s ease-in-out infinite}
+@keyframes cvSpray{
+  0%{transform:translateY(2px) scale(.92,.86);opacity:.9}
+  25%{transform:translateY(-6px) scale(.86,.78);opacity:.8}
+  50%{transform:translateY(0) scale(.95,.9);opacity:.92}
+  75%{transform:translateY(10px) scale(1.06,1.08);opacity:1}
+  100%{transform:translateY(2px) scale(.92,.86);opacity:.9}}
+
+/* foam streaming past both sides of the bow towards us, growing as it comes closer (that is what says "moving forward") */
+.cv-foam{width:250px;height:90px;margin:-45px 0 0 -125px;opacity:0;will-change:transform,opacity;animation:cvFoam 3.4s cubic-bezier(.45,0,.9,.6) infinite}
+.cv-foam img{width:250px;height:90px}
+.cv-foam.l{left:1300px;top:905px;--dx:-640px}
+.cv-foam.r{left:1490px;top:905px;--dx:520px}
+.cv-foam.r img{transform:scaleX(-1)}
+@keyframes cvFoam{0%{transform:translate(0,0) scale(.35);opacity:0}15%{opacity:1}75%{opacity:.95}100%{transform:translate(var(--dx),250px) scale(1.55);opacity:0}}
+
+/* the logo: drops in, then floats; the sonar pings pulse out from behind it */
+.cv-logo{left:262px;top:36px;width:858px;height:406px;will-change:transform;animation:cvLogoIn 1s cubic-bezier(.3,1.4,.5,1) .2s both,cvLogo 4s ease-in-out 1.2s infinite alternate}
+.cv-logo img{width:858px;height:406px;filter:drop-shadow(0 12px 18px rgba(0,30,70,.35))}
+@keyframes cvLogoIn{from{transform:translateY(-480px) scale(.8)}to{transform:translateY(0) scale(1)}}
+@keyframes cvLogo{from{transform:translateY(0) rotate(-.6deg)}to{transform:translateY(-12px) rotate(.6deg)}}
+#title .pings{left:691px;top:240px}
+
+/* calm the scene for people who ask for less motion: everything holds still except a slow bob */
+@media (prefers-reduced-motion: reduce){
+  #title .art *{animation-play-state:paused!important}
+  #title .art .cv-ship{animation-play-state:running!important;animation-duration:6s}
+}
+/* the title is gone: its loops stop (no work while the game runs) */
+#title.hidden .art *{animation-play-state:paused}
