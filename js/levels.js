@@ -229,7 +229,7 @@
      Any other number is a mistake, and it still fires: the pairs are absorbed; too few, and the missiles left over get through
      and hit the window (it cracks); too many, and ours are wasted. The enemy launches again and Incorrect Feedback 1, 2, 3 play
      in turn (the missiles that came are counted out loud on screen, 1, 2, 3 …); from the third on, the launcher stops at the
-     right number. No sinking. Row 1 is the teaching (the missiles come, the launcher activates) and the tutorial (the hand).
+     right number, and from the fourth on FIRE stays off until the bay holds exactly that many (no loop of wrong volleys). No sinking. Row 1 is the teaching (the missiles come, the launcher activates) and the tutorial (the hand).
      ===================================================================== */
   async function launchRound(R, teach) {
     const n = Math.abs(R.give), given = Math.sign(R.give), mine = -given, room = 2;
@@ -263,7 +263,8 @@
       const nudge = () => { W.mslPulse(W.mslRow(0), 0, .18); gsap.fromTo('#cannon', { scale: 1 }, { scale: 1.06, duration: .3, yoyo: true, repeat: 3, transformOrigin: '50% 100%' }); };
       const arm = () => { calls.forEach(c => c.kill()); calls = [gsap.delayedCall(6, nudge), gsap.delayedCall(12, () => { nudge(); W.strip(R.ost); }), gsap.delayedCall(22, () => { nudge(); W.strip(R.ost); })]; };   // (the panel's text flickers back on)
       const stop = () => { calls.forEach(c => c.kill()); W.onLaunch(null); W.onMissile(null); W.onFire(null); };
-      const fireState = () => W.fireBtn(count() ? 'lit' : 'dim');
+      const locked = () => strikes >= 4 && count() !== n;   // after four mistakes FIRE works only with the right number
+      const fireState = () => W.fireBtn(count() && !locked() ? 'lit' : 'dim');
       W.matching = true;
       W.onLaunch(() => {
         arm(); SD.skip(); if (busy) return; W.mslHintsOff();
@@ -272,7 +273,9 @@
       });
       W.onMissile(m => { if (m.row !== 1 || busy) return; arm(); SD.skip(); W.mslTakeBack(m, W.muzzle()); fireState(); guide(); });
       W.onFire(async () => {
-        if (busy || !count()) return; arm(); SD.skip(); W.hand(null); W.mslCountOff();
+        if (busy || !count()) return;
+        if (locked()) { arm(); W.launcherNo(); ANIM.both(); return; }   // (it clunks and points at the count and the launcher)
+        arm(); SD.skip(); W.hand(null); W.mslCountOff();
         if (count() === n) { stop(); noteEnd(); return resolve(true); }
         busy = true; strikes++; W.fireBtn('dim');
         // a wrong count still fires: the pairs are absorbed, and what is left over is the consequence
@@ -282,7 +285,7 @@
         else { await Promise.all(left.map((m, i) => wait(i * .12).then(() => W.mslFizzle(m)))); W.alarm(); }   // too many: ours are wasted
         await wait(.6);
         await W.missiles(n, given, true);   // the enemy launches again
-        busy = false; arm(); const fb = R.fbL[Math.min(strikes, 3) - 1]; ANIM[fb.kind](); guide(); note(fb.line, R.ost);
+        busy = false; fireState(); arm(); const fb = R.fbL[Math.min(strikes, 3) - 1]; ANIM[fb.kind](); guide(); note(fb.line, R.ost);
       });
       arm(); guide();
     });

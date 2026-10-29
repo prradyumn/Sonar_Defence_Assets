@@ -51,12 +51,7 @@
     [`^${N} negative and ${N} positive missiles cancel each other\\. ${N} missiles left\\.$`, '$1 ऋणात्मक और $2 धनात्मक मिसाइलें एक-दूसरे को निरस्त कर देती हैं। अब $3 मिसाइलें बचीं।'],
     [`^Check which is smaller: ${N} or ${N}\\?$`, 'देखो, कौन-सी संख्या छोटी है: $1 या $2?'],
     [`^The smaller number is ${N}, and that submarine is close to our border\\.$`, 'छोटी संख्या $1 है, और वही पनडुब्बी हमारी सीमा के पास है।'],
-    [`^Yes! Nice\\. ${N} is smaller than ${N}, and the submarine at ${N} is closer to our border\\.$`, 'हाँ! बहुत बढ़िया। $1, $2 से छोटा है, और $3 वाली पनडुब्बी हमारी सीमा के ज़्यादा पास है।'],
-    [`^Yes! Nice\\. ${N} is smaller, and the submarine at ${N} is closer to our border\\.$`, 'हाँ! बहुत बढ़िया। $1 छोटा है, और $2 वाली पनडुब्बी हमारी सीमा के ज़्यादा पास है।'],
-    [`^Yes! ${N} is smaller, and the submarine at ${N} is closer to our border\\.$`, 'हाँ! $1 छोटा है, और $2 वाली पनडुब्बी हमारी सीमा के ज़्यादा पास है।'],
-    [`^Yes! Nice\\. ${N} is closer to our border\\. ${N} is also smaller than ${N}\\.$`, 'हाँ! बहुत बढ़िया। $1 हमारी सीमा के ज़्यादा पास है। $2, $3 से छोटा भी है।'],
-    [`^Yes! ${N} is closer to our border\\. But ${N} is greater than ${N}\\.$`, 'हाँ! $1 हमारी सीमा के ज़्यादा पास है। लेकिन $2, $3 से बड़ा है।'],
-    [`^Yes! ${N} is closer to our border\\. ${N} is smaller than ${N}\\.$`, 'हाँ! $1 हमारी सीमा के ज़्यादा पास है। $2, $3 से छोटा है।'],
+    [`^Correct! ${N} is smaller than ${N}\\. Good job\\.$`, 'सही! $1, $2 से छोटा है। शाबाश!'],
     [`^${N} is closer to our border\\.$`, '$1 हमारी सीमा के ज़्यादा पास है।'],
     [`^Select the submarine with ${N}\\.$`, '$1 वाली पनडुब्बी चुनो।'],
     [`^${N} < ${N}$`, '$1 < $2'],   // (the screen keeps the symbols; spoken() reads them)

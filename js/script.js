@@ -58,35 +58,35 @@
 
   /* ---------- Level 2 · fire at the submarine close to our border (sheet L2 V3) ----------
      Our territory is the negative side: the smaller (more negative) number is closer to our border, so it is the one to fire,
-     as the sheet's teaching line and Level 3 say. Rows 1, 2 and 9 are the sheet's own lines. In rows 3–8 and 10 the sheet
-     picked the greater number; there the answer is the smaller one and the lines follow rows 1–2 ("… is smaller, and the
-     submarine at … is closer to our border"). The sheet's "border 0" reads "our border" (0 is not the border).
+     as the sheet's teaching line and Level 3 say. In rows 3–8 and 10 the sheet picked the greater number; there the answer is
+     the smaller one. Every correct tap gets the same short line (review). The sheet's "border 0" reads "our border".
      show = the comparison the Correct Animation shows after the lock. */
   const CHECK = 'Check which submarine is close to our border.', FIRE = 'Fire at the submarine with the smaller number.', FIRE1 = 'Fire the submarine closer to our border.';
   const FIND = 'Find the submarine with the smaller number.', WHICH = 'Which submarine has the smaller number?';   // (inactivity: they take the instruction's place)
   // a, b = the two positions as the sheet lists them; the answer is always the smaller
-  const cmp = (a, b, ok, idle, o = {}) => { const t = Math.min(a, b), u = Math.max(a, b);
-    return { subs: [a, b], target: t, vo: o.vo || FIRE1, ost: FIRE, ok, show: o.show || `${f(t)} < ${f(u)}`,
+  // ok: one Correct Feedback for every row (the reviewer's line): "Correct! −12 is smaller than −10. Good job."
+  const cmp = (a, b, idle, o = {}) => { const t = Math.min(a, b), u = Math.max(a, b);
+    return { subs: [a, b], target: t, vo: o.vo || FIRE1, ost: FIRE, ok: `Correct! ${f(t)} is smaller than ${f(u)}. Good job.`, show: `${f(t)} < ${f(u)}`,
       fb: [[o.f1 || CHECK, o.k1 || 'both'], [`Check which is smaller: ${f(a)} or ${f(b)}?`, o.k2 || 'labels'], [o.f3 || `The smaller number is ${f(t)}, and that submarine is close to our border.`, o.k3 || 'target']],
       idle: [idle, 'target'] }; };
   const L2 = [
-    cmp(8, 10, 'Yes! Nice. +8 is smaller, and the submarine at +8 is closer to our border.', WHICH, { f1: 'Check which submarine is closer to our border.', k2: 'labelsSeq', k3: 'targetRing' }),
-    cmp(15, 17, 'Yes! Nice. +15 is smaller, and the submarine at +15 is closer to our border.', FIND),
-    cmp(-10, -12, 'Yes! Nice. −12 is smaller than −10, and the submarine at −12 is closer to our border.', WHICH),
-    cmp(-5, -8, 'Yes! −8 is smaller, and the submarine at −8 is closer to our border.', FIND),
-    cmp(-14, -9, 'Yes! −14 is smaller, and the submarine at −14 is closer to our border.', FIND),
-    cmp(-3, -7, 'Yes! −7 is smaller, and the submarine at −7 is closer to our border.', FIND),
-    cmp(-8, 4, 'Yes! Nice. −8 is closer to our border. −8 is also smaller than +4.', FIND, { vo: 'Submarines are at −8 and +4. Fire at the submarine with the smaller number.', f3: '−8 is closer to our border.' }),
-    cmp(-6, 3, 'Yes! −6 is closer to our border. −6 is smaller than +3.', FIND, { vo: FIRE, f3: '−6 is closer to our border.' }),
-    cmp(-2, 7, 'Yes! −2 is closer to our border. But +7 is greater than −2.', FIND, { vo: FIRE, f3: '−2 is closer to our border.', show: '+7 > −2' }),
-    cmp(-9, 5, 'Yes! −9 is closer to our border. −9 is smaller than +5.', FIND, { vo: FIRE, f3: '−9 is closer to our border.' }),
+    cmp(8, 10, WHICH, { f1: 'Check which submarine is closer to our border.', k2: 'labelsSeq', k3: 'targetRing' }),
+    cmp(15, 17, FIND),
+    cmp(-10, -12, WHICH),
+    cmp(-5, -8, FIND),
+    cmp(-14, -9, FIND),
+    cmp(-3, -7, FIND),
+    cmp(-8, 4, FIND, { vo: 'Submarines are at −8 and +4. Fire at the submarine with the smaller number.', f3: '−8 is closer to our border.' }),
+    cmp(-6, 3, FIND, { vo: FIRE, f3: '−6 is closer to our border.' }),
+    cmp(-2, 7, FIND, { vo: FIRE, f3: '−2 is closer to our border.' }),
+    cmp(-9, 5, FIND, { vo: FIRE, f3: '−9 is closer to our border.' }),
   ];
   L2.forEach((R, r) => reg('v3l2_r' + (r + 1), R));
   // after a guided replay: one more of the same kind, fresh numbers, no hints (not in the sheet; once per kind per level)
   const L2_EXTRA = {
-    pos: cmp(14, 12, 'Yes! +12 is smaller, and the submarine at +12 is closer to our border.', FIND),
-    neg: cmp(-11, -13, 'Yes! −13 is smaller, and the submarine at −13 is closer to our border.', FIND),
-    mix: cmp(-7, 2, 'Yes! −7 is closer to our border. −7 is smaller than +2.', FIND, { f3: '−7 is closer to our border.' }),
+    pos: cmp(14, 12, FIND),
+    neg: cmp(-11, -13, FIND),
+    mix: cmp(-7, 2, FIND, { f3: '−7 is closer to our border.' }),
   };
   Object.keys(L2_EXTRA).forEach(k => reg('v3l2_extra_' + k, L2_EXTRA[k]));
 
