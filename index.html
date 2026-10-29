@@ -9,8 +9,19 @@
 <link rel="stylesheet" href="css/cockpit.css">
 <link rel="stylesheet" href="css/cover.css">
 <link rel="stylesheet" href="css/editor.css">
+<!-- the title's art first: the game's art waits until the title and the story's art are in (js/core.js) -->
+<link rel="preload" as="image" href="assets/img/cover/sky.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/sea_base.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/ship_front.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/logo.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/play_button.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/waves_near.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/waves_mid.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/waves_far.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/islands.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/cover/bow_spray.webp" fetchpriority="high">
 </head>
-<body class="cockpit">
+<body class="cockpit booting">
 <div id="stage">
   <!-- WORLD: back → front -->
   <div id="water">
@@ -28,7 +39,7 @@
   <div id="bubbles"></div>
   <div id="sunk"></div>
   <!-- the bow cannon, outside the glass (behind the scale on the glass): it rides the console rail, js/cockpit.js -->
-  <div id="cannon"><img src="assets/img/cannon.webp" alt=""><i class="ring"></i><i class="flash"></i></div>
+  <div id="cannon"><img src="assets/img/cannon.webp" fetchpriority="low" alt=""><i class="ring"></i><i class="flash"></i></div>
 
   <div id="scale"></div>
   <div id="play" class="abs" style="width:1920px;height:1080px"></div>
@@ -41,7 +52,7 @@
   <div id="vignette"></div>
   <div id="glass"></div>
   <div id="glassFx"></div>   <!-- bubbles stuck on the glass, knock ripples -->
-  <img id="cockpit" src="assets/img/cockpit.webp" alt="">
+  <img id="cockpit" src="assets/img/cockpit.webp" fetchpriority="low" alt="">
   <div id="lampDim"></div>   <!-- tones the two ceiling lamps down so the eye stays on the scale -->
   <div id="lamps"><div class="edge"></div><i class="l"></i><i class="r"></i></div>
   <div id="screen"></div>

@@ -125,6 +125,9 @@ img{-webkit-user-drag:none;user-select:none}
 @keyframes helpRing{from{transform:scale(.45);opacity:1}to{transform:scale(1.7);opacity:0}}
 @keyframes helpCore{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
 
+/* while the title loads, the game world behind it does not fetch its pictures yet (js/core.js takes .booting off once the
+   title's and the story's art are in) */
+.booting #water .grad,.booting #rays,.booting #caustics,.booting #current .surf i,.booting #rail,.booting #done .card,.booting #marker{background-image:none!important}
 /* overlays */
 .overlay{position:absolute;inset:0;pointer-events:auto}
 /* cover: the title screen is a live scene (css/cover.css); sonar pings pulse out from behind the logo */

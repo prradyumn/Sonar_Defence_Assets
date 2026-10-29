@@ -96,9 +96,9 @@
   const BED = { music_calm: 'music', music_play: 'music', waves: 'amb' };
   const viaWA = /^https?:$/.test(location.protocol), BUF = {}, EL = {}, beds = {};
   let want = { music: null, amb: null }, ducked = false;
-  function loadSounds() {   // runs at boot: an offline context decodes without needing the player's first tap
+  function loadSounds(names) {   // an offline context decodes without needing the player's first tap
     const DEC = viaWA && window.OfflineAudioContext ? new OfflineAudioContext(2, 1, 48000) : null;
-    for (const n of Object.keys(ONE).concat(Object.keys(BED))) {
+    for (const n of names) {
       const url = 'assets/sfx/' + n + '.ogg';
       if (DEC) fetch(url).then(r => r.arrayBuffer()).then(b => DEC.decodeAudioData(b)).then(buf => { BUF[n] = buf; if (want[BED[n]] === n) bed(BED[n], n, 2); }).catch(() => {});
       else { const el = new Audio(); el.preload = 'auto'; el.src = url; el.loop = !!BED[n]; EL[n] = el; }
@@ -138,7 +138,7 @@
     ramp(musicBus, on ? .18 : .55); ramp(ambBus, on ? .4 : .55);
     for (const k of ['music', 'amb']) { const c = beds[k]; if (c && c.el) fadeEl(c.el, elVol(k), on ? .25 : 1.2); }
   }
-  if (!MUTE) loadSounds();
+  // (loadSounds runs once the title and the story's art are in: see LATER below)
   let lastSonar = 0;
 
   const SFX = {
@@ -260,29 +260,36 @@
   };
   /* Each sheet is ~48 MB once decoded. Drawing a not-yet-decoded image on a canvas makes the browser decode it right there on the
      main thread (a 1–3 s freeze, e.g. just after a QA jump), so the sheets are decoded in the background (createImageBitmap)
-     and a character only draws once its bitmap is ready. */
-  for (const k in SHEET) {
-    const s = SHEET[k]; s.img = new Image(); s.img.src = s.src; s.wait = [];
+     and a character only draws once its bitmap is ready. Riya never speaks, and in calm mode (the default) only the speaker
+     is on screen, so her sheet (1.2 MB) loads only with the full effects. */
+  const loadSheet = s => {
+    s.img = new Image(); s.img.src = s.src;
     s.ready = s.img.decode().then(() => window.createImageBitmap ? createImageBitmap(s.img) : s.img).catch(() => s.img)
       .then(bm => { s.bm = bm; if (bm !== s.img) s.img = null; s.wait.splice(0).forEach(f => f()); });   // keep one decoded copy, not two
-  }
-  // ready: the sheets are decoded, the fonts are in and the page has finished loading (capped at 5 s) — the game starts after this
+  };
+  for (const k in SHEET) SHEET[k].wait = [];
+  const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
+  /* Loading in order of need, so the first screens are not slowed by art they don't show:
+     1 · the title's art (in the page itself, highest priority: index.html)
+     2 · the story's art (the hook comes right after Play), decoded in the background — READY waits for it
+     3 · LATER, once that is in: Meera's sheet (first needed at Level 1's intro), the rest of the game art, the sounds (the
+         story's first, the missions' music last). Decoded images are kept (KEEP) so the browser does not throw the pixels away
+         and decode them again at the first hit. */
+  const KEEP = [], art = (dir, n) => { const i = new Image(); i.src = 'assets/img/' + dir + n + '.webp'; KEEP.push(i); return i.decode().catch(() => {}); };
+  const STORY = LOW ? Promise.resolve() : Promise.all(['../door_left', '../door_right', 'bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'meera_shocked', 'meera_determined'].map(n => art('story/', n)));
+  // ready: the fonts and the story's art are in (capped at 5 s) — the game starts after this
   const READY = Promise.race([
-    Promise.all([...Object.values(SHEET).map(s => s.ready), document.fonts ? document.fonts.ready : 0, new Promise(r => document.readyState === 'complete' ? r() : addEventListener('load', r, { once: true }))])
-      .then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))),
+    Promise.all([STORY, document.fonts ? document.fonts.ready : 0]).then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))),
     new Promise(r => setTimeout(r, 5000)),
   ]);
-  const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
-  // the other game art is decoded at boot too (img.decode() runs off the main thread), so nothing decodes mid-action; the images
-  // are kept (KEEP) so the browser does not throw the decoded pixels away and decode them again at the first hit
-  const KEEP = [];
-  ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'pop', 'pip_on', 'pip_off',
-    'star_gold', 'star_silver', 'marker', 'card', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']
-    .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/' + n + '.webp'; i.decode().catch(() => {}); KEEP.push(i); });
-  // the story art too (characters, sprites, the water) — decoded in the background so no scene hitches when they first appear
-  ['../door_left', '../door_right', 'bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'fire_off', 'fire_lit',
-    'meera_shocked', 'meera_determined']
-    .forEach(n => { if (LOW) return; const i = new Image(); i.src = 'assets/img/story/' + n + '.webp'; i.decode().catch(() => {}); KEEP.push(i); });
+  READY.then(() => {   // LATER
+    document.body.classList.remove('booting');   // the game world's pictures (css/game.css)
+    loadSheet(SHEET.meera); if (!CALM) loadSheet(SHEET.riya);
+    if (!MUTE) loadSounds(['door_open', 'door_slide', 'music_calm', 'waves', 'sonar', 'bubbles', 'rush', 'splash', 'torpedo', 'explosion']);
+    if (!LOW) ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'pop', 'pip_on', 'pip_off',
+      'star_gold', 'star_silver', 'marker', 'card', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water'].forEach(n => art('', n));
+    setTimeout(() => { if (!MUTE) loadSounds(['music_play']); }, 2500);   // the missions' music last (not needed before Level 1)
+  });
   function talker(who) {
     const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');
     c.width = s.w; c.height = s.h;

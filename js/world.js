@@ -50,7 +50,7 @@
   // Each strip is mirrored (A | flipped A) so the joins always match; the track wraps every 2 widths.
   const LAYERS = [];
   function strip(id, src, h, w, speed, par) {
-    const t = $('#' + id); for (let i = 0; i < 4; i++) { const im = new Image(); im.src = 'assets/img/' + src; im.style.width = w + 'px'; if (i % 2) im.className = 'flip'; t.appendChild(im); }
+    const t = $('#' + id); for (let i = 0; i < 4; i++) { const im = new Image(); im.fetchPriority = 'low'; im.src = 'assets/img/' + src; im.style.width = w + 'px'; if (i % 2) im.className = 'flip'; t.appendChild(im); }
     t.style.width = (4 * w) + 'px'; LAYERS.push({ t, w, speed, par, x: 0 });
   }
   strip('far', 'far.webp', 440, 2414, 18, .12);      // par: how much a strip follows a pan of the rope
