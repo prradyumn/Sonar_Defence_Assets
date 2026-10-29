@@ -1,0 +1,89 @@
+{
+  "method": "Built-in image generation, followed by PNG sizing, alpha cleanup and horizontal edge matching.",
+  "prompts": [
+    {
+      "asset": "ship_front",
+      "prompt": "Create a single isolated game asset: the EXACT same Coast Guard patrol ship shown at lower left in reference, reinterpreted straight bow-on coming toward viewer, slightly elevated camera so foredeck visible. White hull, orange and navy bands, anchor and orange-wave badge, blue bridge windows, orange lifebuoys, navy mast, railing and equipment. Keep cartoon proportions/design of reference. Near symmetric front view, not side or three-quarter. Bright painted cartoon mobile game style as reference. Sun top left. Full mast, with radar support but OMIT horizontal radar bar (separate sprite). Hull ends at perfectly horizontal flat waterline near bottom with no underwater hull and NO water or spray. Transparent background. Tall canvas ~900x1000. One ship only, no text or scenery."
+    },
+    {
+      "asset": "logo",
+      "prompt": "Extract ONLY the SONAR DEFENCE logo from this cover, preserve its exact letter shapes, typography, two-line layout, white to icy cyan faces, gold thin bevels, thick navy extruded outline. Exact spelling SONAR on first line, DEFENCE on second. Clean isolated transparent cutout, no sky, no ship, no sea, no radar circles or rings, no glow backdrop. Do not redesign. Wide canvas ratio 1100:520, tight clean framing with margin."
+    },
+    {
+      "asset": "sky",
+      "prompt": "Create sky-only background matching painted cartoon cover reference exactly in palette and softness. 16:9 1920x1080 composition, blue sky, warm soft sun glow in TOP LEFT corner. Blue gradually pales into light cyan haze around y=520 and below, bottom continues pale sky. Absolutely no sea, ground, logo, clouds, ship, circles, objects, text. Fully opaque."
+    },
+    {
+      "asset": "sea_base",
+      "prompt": "Create a calm sea-only game background matching turquoise ocean in reference painted cartoon cover. Very wide shallow composition 1920x560. Horizon at TOP EDGE: pale light cyan haze top, calm small ripples, gradually deep turquoise at bottom. Ocean seen from just above surface looking outward, NOT underwater cross-section. Soft painterly gently flowing turquoise tonal streaks, light top left, no large white foam or crests (those are separate layers). No sky, ships, islands, objects, logo, circles or text. Fully opaque."
+    },
+    {
+      "asset": "cloud_1",
+      "prompt": "One fluffy broad cumulus cloud, low wide profile with a tall rounded puff on left, cream white sunny top left and pale cyan soft shaded underside. Single isolated cloud with clear margin. 600:250 aspect."
+    },
+    {
+      "asset": "cloud_2",
+      "prompt": "One fluffy cloud, asymmetric three rounded tall puffs clustered on right and thin wispy trailing left. Cream-white sunlit top left, blue-cyan shade beneath. Single isolated cloud, clear margins. 600:250 aspect."
+    },
+    {
+      "asset": "cloud_3",
+      "prompt": "One elongated flat-bottom fluffy cloud with a low row of many small puffs, and one medium rounded central bump. Warm white top-left highlights pale blue underside. Single isolated cloud, clear margins. 600:250 aspect."
+    },
+    {
+      "asset": "cloud_4",
+      "prompt": "One fluffy billowy cloud with two dominant rounded lobes in middle-left, wisps spreading right. Cream white and icy blue shading. Single isolated cloud, clear margins. 600:250 aspect."
+    },
+    {
+      "asset": "islands",
+      "prompt": "Single very wide shallow horizontal strip of distant tropical green hills, palm silhouettes and narrow pale sand shoreline at bottom. Matching hills at right of cover reference. Small distant scale; no water or sky. All hilltops entirely inside canvas; transparent above. Seamlessly repeat left to right: identical shoreline height at ends and matching low green terrain at both sides. Target ratio 3840:260, long panoramic strip. No text."
+    },
+    {
+      "asset": "waves_far",
+      "prompt": "Single horizontal very wide shallow seamless repeating parallax ocean wave crest strip. Tiny dense distant ripples, fine white foam caps and cyan translucent painted wavelets. No opaque sea rectangle. Transparent above AND below crests. Sparse near-horizon gentle shallow waves in one connected horizontal band. Left and right edges match perfectly for horizontal tiling. Target 3840:140 ratio."
+    },
+    {
+      "asset": "waves_mid",
+      "prompt": "Single horizontal very wide shallow seamless repeating parallax ocean wave crest strip. Medium rounded turquoise wave crests with broken cream-white foam caps, reference cover surface style. Transparent above AND below wave band. No opaque background rectangle. Several undulating scalloped crests at medium scale. Left and right edges match perfectly. Target 3840:220 ratio."
+    },
+    {
+      "asset": "waves_near",
+      "prompt": "Single horizontal very wide shallow seamless repeating parallax ocean wave crest strip. Big chunky rolling turquoise crests with bright white foam caps and painterly cyan gradients, cover surface style. Transparent above AND below wave band. No opaque background rectangle. One flowing horizontal band with several big crests. Left and right edges match for tiling. Target 3840:320 ratio."
+    },
+    {
+      "asset": "sky_fixed",
+      "prompt": "Edit this sky to REMOVE ALL CLOUDS and their wisps entirely. Empty smooth painted blue sky only, no clouds anywhere. Move soft warm sun glow to upper left CORNER. Pale hazy cyan lower half, intended horizon y=520 on 1080 canvas. No objects or text. Preserve painterly cartoon palette. Opaque background."
+    },
+    {
+      "asset": "ship_fixed",
+      "prompt": "Keep this ship design exactly, same front bow-on angle and all details. Change ONLY bottom hull: cut hull at horizontal straight waterline about 85% down the existing ship, removing pointed lower tip. Bottom edge must be perfectly FLAT HORIZONTAL across whole remaining hull width. No water, no spray. Fully transparent background. Preserve full mast top."
+    },
+    {
+      "asset": "radar",
+      "prompt": "One isolated horizontal marine radar scanner bar matching ship mast radar from cover: orange rounded bar with cream face, small navy central rotating hub beneath. Straight-on front view, centered. Width:height about 160:60. Top-left light. No mast, ship, or text. Actual transparent background."
+    },
+    {
+      "asset": "bow_spray",
+      "prompt": "Single isolated white bow spray sprite for reference ship seen front-on: a low central bow impact dividing into two arms splashing strongly outward LEFT and RIGHT, symmetrical V-shaped wake viewed a little from above. White foam, soft icy cyan shadows and scattered droplets. Wide 1100:380 composition. Transparent gaps and background. NO ship or sea rectangle. Matches painted cartoon cover, top-left sun."
+    },
+    {
+      "asset": "foam_1",
+      "prompt": "One small isolated white sea foam patch: elongated broken patch with small bubbles. Low wide 250:90 composition. Painted cartoon cover matching, white highlights and faint pale cyan shading, top-left light. No water background or objects. Actual transparent background."
+    },
+    {
+      "asset": "foam_2",
+      "prompt": "One small isolated white sea foam patch: loose curved crescent foam patch. Low wide 250:90 composition. Painted cartoon cover matching, white highlights and faint pale cyan shading, top-left light. No water background or objects. Actual transparent background."
+    },
+    {
+      "asset": "foam_3",
+      "prompt": "One small isolated white sea foam patch: two small irregular connected foam clusters. Low wide 250:90 composition. Painted cartoon cover matching, white highlights and faint pale cyan shading, top-left light. No water background or objects. Actual transparent background."
+    },
+    {
+      "asset": "foam_4",
+      "prompt": "One small isolated white sea foam patch: short chunky foamy wake patch with wispy tail. Low wide 250:90 composition. Painted cartoon cover matching, white highlights and faint pale cyan shading, top-left light. No water background or objects. Actual transparent background."
+    },
+    {
+      "asset": "gull",
+      "prompt": "Two-frame sprite sheet: SAME small cartoon seagull in side view facing right, first frame wings raised, second frame wings lowered. Two equal cells side by side, identical body size and position within cells. White body, pale blue shade, dark navy wing tips and tiny orange beak. Match painted cartoon cover. Actual transparent background. Total canvas 240x60 (each frame 120x60). No text or scenery."
+    }
+  ]
+}

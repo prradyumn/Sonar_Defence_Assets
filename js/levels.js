@@ -413,7 +413,6 @@
     const seq = [...R.subs].sort((a, b) => a - b);
     W.strip(R.ost, { big: true }); W.orderRow(seq.length);   // the empty places the numbers will fill
     await wait(.6);
-    let allFirst = true;
     for (let i = 0; i < seq.length; i++) {
       const next = seq[i], pulseNext = () => { W.pulseSub(W.subAt(next)); W.pulseTag(W.subAt(next)); };
       const first = await strike(R, next, {
@@ -422,11 +421,10 @@
           : { line: D.startWith(next), anim: pulseNext },   // "Select the submarine with −12." and it pulses
         idleAnim: pulseNext, idleLine: R.idleL.line,   // the smallest number left pulses
         guide: tut && (() => { const s = W.subAt(next); if (s) W.handTo(s.x, s.cy, .6); }) });
-      allFirst = allFirst && first;
+      mark(first);   // stars count each pick (one slip no longer costs the whole mission)
       await W.orderChip(next, W.lastHit);   // its number pops up and flies into the next place in the row
     }
     await W.orderDone();   // the row is in order: −12 < −9 < −6 < −3
-    mark(allFirst);
     if (R.cheer) W.strip(R.cheer, { big: true });   // ROUTE CLEARED! / ALL TARGETS CLEARED!
     W.reward({ big: !!R.cheer, confetti: true, pip: W.pipDone, at: { x: 960, y: 300 } });
     await wait(.5); await note(R.ok);
@@ -448,13 +446,14 @@
     // Level Completion: the sea calms, large confetti and the completion badge
     W.reward({ big: true, confetti: true, at: { x: 960, y: 320 } }); await wait(1.2);
     await complete('l3', D.L3_END.ost);
-    gsap.set('#scale', { autoAlpha: 1, opacity: 0 });
-    await storyEnd();   // the story's ending (storyboard row 12)
+    await storyEnd();   // (the number line stays hidden: it used to flash on for a moment here)   // the story's ending (storyboard row 12)
   }
 
-  /* ---------- level complete card (the completion badge): title + stars ---------- */
+  /* ---------- level complete card (the completion badge): title + stars ----------
+     Stars from the share of answers right first time (L1 / L2: each mission; L3: each submarine picked): 80 % or more ★★★,
+     50 % or more ★★, less ★. */
   async function complete(lv, title) {
-    const sc = SCORE[lv] || [], firsts = sc.filter(Boolean).length, n = sc.length || 1, stars = firsts === n ? 3 : firsts / n >= .6 ? 2 : 1;
+    const sc = SCORE[lv] || [], firsts = sc.filter(Boolean).length, n = sc.length || 1, r = firsts / n, stars = r >= .8 ? 3 : r >= .5 ? 2 : 1;
     (window.GAME_RESULT = window.GAME_RESULT || {})[lv] = { stars, firstTry: firsts, missions: n };
     $('#dt').textContent = title; $('#ds').textContent = ''; $('#dchain').innerHTML = ''; $('#dcta').textContent = 'Next';
     $('#dstars').innerHTML = [0, 1, 2].map(i => `<img src="assets/img/${i < stars ? 'star_gold' : 'star_silver'}.webp" class="${i < stars ? '' : 'off'}">`).join('');

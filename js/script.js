@@ -21,7 +21,7 @@
     l1b: M('l1b', 'Get ready! Let’s defend our territory!'),
     // Level 2 (fire and hit)
     l2a: M('l2a', 'Look at the submarine positions! Check this number line. The numbers on the left are smaller and closer to our border. The numbers on the right are bigger and farther away.'),
-    l2b: M('l2b', 'We need to fire at the submarines closest to our border. Hit the submarines with the smaller number. Fire! Fire! Fire!'),
+    l2b: M('l2b', 'Fire at the submarine with the smaller number. The smaller number is closer to our border. Fire! Fire! Fire!'),
     // Level 3 (arrange)
     l3a: M('l3a', 'Oh no! More submarines are coming! The submarines with smaller numbers are closer to our border. Start with the smaller numbers, then move to the bigger ones. Fire them from closer to farther!'),
   };
@@ -61,7 +61,7 @@
      submarine at … is closer to our border"). The sheet's "border 0" reads "our border" (0 is not the border).
      show = the comparison the Correct Animation shows after the lock. */
   const CHECK = 'Check which submarine is close to our border.', FIRE = 'Fire at the submarine with the smaller number.', FIRE1 = 'Fire the submarine closer to our border.';
-  const FIND = 'Find the submarine close to our border.', WHICH = 'Which submarine is close to our border?';
+  const FIND = 'Find the submarine with the smaller number.', WHICH = 'Which submarine has the smaller number?';   // (inactivity: they take the instruction's place)
   // a, b = the two positions as the sheet lists them; the answer is always the smaller
   const cmp = (a, b, ok, idle, o = {}) => { const t = Math.min(a, b), u = Math.max(a, b);
     return { subs: [a, b], target: t, vo: o.vo || FIRE1, ost: FIRE, ok, show: o.show || `${f(t)} < ${f(u)}`,
@@ -74,7 +74,7 @@
     cmp(-5, -8, 'Yes! −8 is smaller, and the submarine at −8 is closer to our border.', FIND),
     cmp(-14, -9, 'Yes! −14 is smaller, and the submarine at −14 is closer to our border.', FIND),
     cmp(-3, -7, 'Yes! −7 is smaller, and the submarine at −7 is closer to our border.', FIND),
-    cmp(-8, 4, 'Yes! Nice. −8 is closer to our border. −8 is also smaller than +4.', FIND, { vo: 'Submarines are at −8 and +4. Fire at the submarine close to our border.', f3: '−8 is closer to our border.' }),
+    cmp(-8, 4, 'Yes! Nice. −8 is closer to our border. −8 is also smaller than +4.', FIND, { vo: 'Submarines are at −8 and +4. Fire at the submarine with the smaller number.', f3: '−8 is closer to our border.' }),
     cmp(-6, 3, 'Yes! −6 is closer to our border. −6 is smaller than +3.', FIND, { vo: FIRE, f3: '−6 is closer to our border.' }),
     cmp(-2, 7, 'Yes! −2 is closer to our border. But +7 is greater than −2.', FIND, { vo: FIRE, f3: '−2 is closer to our border.', show: '+7 > −2' }),
     cmp(-9, 5, 'Yes! −9 is closer to our border. −9 is smaller than +5.', FIND, { vo: FIRE, f3: '−9 is closer to our border.' }),

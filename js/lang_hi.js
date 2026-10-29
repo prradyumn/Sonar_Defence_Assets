@@ -21,8 +21,8 @@
       'तैयार हो जाओ! चलो, अपनी सीमा की रक्षा करें!',
     'Look at the submarine positions! Check this number line. The numbers on the left are smaller and closer to our border. The numbers on the right are bigger and farther away.':
       'पनडुब्बियों की स्थिति देखो! इस संख्या रेखा को देखो। बाईं ओर की संख्याएँ छोटी हैं और हमारी सीमा के पास हैं। दाईं ओर की संख्याएँ बड़ी हैं और दूर हैं।',
-    'We need to fire at the submarines closest to our border. Hit the submarines with the smaller number. Fire! Fire! Fire!':
-      'हमें उन पनडुब्बियों पर वार करना है जो हमारी सीमा के सबसे पास हैं। छोटी संख्या वाली पनडुब्बियों पर निशाना लगाओ। दागो! दागो! दागो!',
+    'Fire at the submarine with the smaller number. The smaller number is closer to our border. Fire! Fire! Fire!':
+      'छोटी संख्या वाली पनडुब्बी पर दागो। छोटी संख्या हमारी सीमा के ज़्यादा पास है। दागो! दागो! दागो!',
     'Oh no! More submarines are coming! The submarines with smaller numbers are closer to our border. Start with the smaller numbers, then move to the bigger ones. Fire them from closer to farther!':
       'अरे नहीं! और पनडुब्बियाँ आ रही हैं! छोटी संख्या वाली पनडुब्बियाँ हमारी सीमा के ज़्यादा पास हैं। छोटी संख्याओं से शुरू करो, फिर बड़ी संख्याओं की ओर बढ़ो। पास वाली से दूर वाली की ओर दागो!',
     // the narrator's fixed lines
@@ -34,8 +34,8 @@
     'Fire at the submarine with the smaller number.': 'छोटी संख्या वाली पनडुब्बी पर दागो।',
     'Check which submarine is closer to our border.': 'देखो, कौन-सी पनडुब्बी हमारी सीमा के ज़्यादा पास है।',
     'Check which submarine is close to our border.': 'देखो, कौन-सी पनडुब्बी हमारी सीमा के पास है।',
-    'Which submarine is close to our border?': 'कौन-सी पनडुब्बी हमारी सीमा के पास है?',
-    'Find the submarine close to our border.': 'हमारी सीमा के पास वाली पनडुब्बी ढूँढो।',
+    'Which submarine has the smaller number?': 'किस पनडुब्बी की संख्या छोटी है?',
+    'Find the submarine with the smaller number.': 'छोटी संख्या वाली पनडुब्बी ढूँढो।',
     'Check which submarine has the smaller number and is closer to our border.': 'देखो, किस पनडुब्बी की संख्या छोटी है और वह हमारी सीमा के ज़्यादा पास है।',
     'Select the submarine with the smaller number.': 'छोटी संख्या वाली पनडुब्बी चुनो।',
     'Great! You fired from closer to farther.': 'शाबाश! तुमने पास से दूर की ओर दागा।',
