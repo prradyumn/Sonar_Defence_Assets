@@ -11,6 +11,7 @@
 
   // the spoken lines (Meera's 7), word for word
   const FIXED = {
+    'Sonar Defence!': 'सोनार डिफ़ेंस!',
     'Enemy submarines are entering our sea territory! We have to protect our borders!':
       'दुश्मन की पनडुब्बियाँ हमारी समुद्री सीमा में घुस रही हैं! हमें अपनी सीमाओं की रक्षा करनी है!',
     'Oh no! They’re firing missiles. We have to defuse them.':

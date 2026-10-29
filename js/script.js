@@ -13,6 +13,8 @@
   /* ---------- the spoken lines: ONLY these (the dialogue list for the Sonar Defence game: hook, and one intro per level).
      Everything else the levels say (the round's instruction, correct, wrong-answer hints) is on-screen text, below. ---------- */
   const S = {
+    // the title screen: the game's name, said when it opens and on a tap on the cover
+    title: M('title', 'Sonar Defence!'),
     // hook (the story before Level 1)
     h1: M('h1', 'Enemy submarines are entering our sea territory! We have to protect our borders!'),
     h2: M('h2', 'Oh no! They’re firing missiles. We have to defuse them.'),

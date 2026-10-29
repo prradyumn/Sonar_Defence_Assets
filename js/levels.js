@@ -487,7 +487,9 @@
   $('#start').onclick = async () => {
     if ($('#start')._go) return; $('#start')._go = true;
     SD.audioOn(); SFX.ping();
+    removeEventListener('keydown', seaOn);
     if (!sea.paused) gsap.to(sea, { volume: 0, duration: 1.6, onComplete: () => sea.pause() });   // the sea fades as the story opens
+    if (!nameVo.paused) gsap.to(nameVo, { volume: 0, duration: .4, onComplete: () => nameVo.pause() });
     const boot = $('#boot');
     if ((Q.get('at') || 'hook') === 'hook') { $('#story').classList.remove('hidden'); gsap.set('#story', { opacity: 1 }); }   // the story's solid backdrop goes up under the title first: the game never shows through
     await Promise.all([gsap.to('#title', { opacity: 0, duration: .5 }), SD.ready]);   // never start mid-load: that is where jumps used to hitch
@@ -495,14 +497,24 @@
     if (boot) await gsap.to(boot, { opacity: 0, duration: .45, onComplete: () => boot.remove() });
     window.SD_RUN = run();
   };
-  /* the title's sea: a soothing bow-wave loop (assets/sfx/cover_sea.ogg). It starts as soon as the browser allows sound (in many
-     browsers only after the first tap, which is why any tap on the title starts it) and fades out as the game begins. */
-  const sea = new Audio('assets/sfx/cover_sea.ogg'); sea.loop = true; sea.volume = 0; sea.preload = 'auto';
-  const seaOn = e => {
-    if (SD.MUTE || !sea.paused || $('#title').classList.contains('hidden') || (e && e.target.closest && e.target.closest('#start'))) return;
-    sea.play().then(() => { gsap.to(sea, { volume: .5, duration: 2.5 }); ['pointerdown', 'keydown'].forEach(k => removeEventListener(k, seaOn)); }).catch(() => {});
+  /* the title's sound: a soothing bow-wave loop (assets/sfx/cover_sea.ogg) under Meera saying the game's name (line 'title').
+     Both start as soon as the browser allows sound; where it waits for a first tap, a tap anywhere on the cover starts them,
+     and every tap on the cover (not on Play) says the name again. Both fade as the game begins. */
+  const onTitle = () => !$('#title').classList.contains('hidden');
+  const SEA = .5, sea = new Audio('assets/sfx/cover_sea.ogg'), nameVo = new Audio((SCRIPT.lang === 'hi' ? 'assets/vo/hi/' : 'assets/vo/') + 'title.ogg');
+  sea.loop = true; sea.volume = 0; sea.preload = nameVo.preload = 'auto';
+  const seaLevel = () => nameVo.paused ? SEA : SEA * .45;   // the sea dips under the voice
+  const seaOn = () => { if (SD.MUTE || !sea.paused || !onTitle()) return; sea.play().then(() => gsap.to(sea, { volume: seaLevel(), duration: 2.5 })).catch(() => {}); };
+  const sayName = () => {
+    if (SD.MUTE || !nameVo.paused || !onTitle()) return; nameVo.currentTime = 0; nameVo.volume = 1;
+    nameVo.play().then(() => { if (!sea.paused) gsap.to(sea, { volume: seaLevel(), duration: .3 }); }).catch(() => {});
   };
-  if (Q.get('autostart') !== '1') { seaOn(); ['pointerdown', 'keydown'].forEach(k => addEventListener(k, seaOn)); }
+  nameVo.onended = () => { if (!sea.paused && onTitle()) gsap.to(sea, { volume: SEA, duration: 1.2 }); };
+  if (Q.get('autostart') !== '1') {
+    seaOn(); setTimeout(sayName, 1300);   // (after the logo has dropped in)
+    $('#title').addEventListener('pointerdown', e => { if (e.target.closest('#start')) return; sayName(); seaOn(); });
+    addEventListener('keydown', seaOn);
+  }
   // title screen breathes
   gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.1, immediateRender: false });   // breathes once it has popped in
   gsap.fromTo('#title .art', { scale: 1.08 }, { scale: 1, duration: 2.6, ease: 'power2.out', clearProps: 'transform' });   // a slow push-in on the scene
