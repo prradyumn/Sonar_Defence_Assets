@@ -450,10 +450,10 @@
   }
 
   /* ---------- level complete card (the completion badge): title + stars ----------
-     Stars from the share of answers right first time (L1 / L2: each mission; L3: each submarine picked): 80 % or more ★★★,
-     50 % or more ★★, less ★. */
+     Every finished level gets all three stars (the reviewers' call). How many answers were right first time is still
+     recorded in GAME_RESULT (L1 / L2: each mission; L3: each submarine picked). */
   async function complete(lv, title) {
-    const sc = SCORE[lv] || [], firsts = sc.filter(Boolean).length, n = sc.length || 1, r = firsts / n, stars = r >= .8 ? 3 : r >= .5 ? 2 : 1;
+    const sc = SCORE[lv] || [], firsts = sc.filter(Boolean).length, n = sc.length || 1, stars = 3;
     (window.GAME_RESULT = window.GAME_RESULT || {})[lv] = { stars, firstTry: firsts, missions: n };
     $('#dt').textContent = title; $('#ds').textContent = ''; $('#dchain').innerHTML = ''; $('#dcta').textContent = 'Next';
     $('#dstars').innerHTML = [0, 1, 2].map(i => `<img src="assets/img/${i < stars ? 'star_gold' : 'star_silver'}.webp" class="${i < stars ? '' : 'off'}">`).join('');
