@@ -137,7 +137,7 @@ img{-webkit-user-drag:none;user-select:none}
 #title .logo,#title .sub2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}   /* read by screen readers; the art shows the title */
 /* play button: round, warm against the blue cover, sonar rings like the title's */
 /* the button is art (assets/img/cover/play_button.webp): a glow breathes behind it, sonar rings pulse out of it */
-#start{position:absolute;left:691px;top:468px;width:236px;height:236px;margin-left:-118px;border-radius:50%;cursor:pointer;
+#start{position:absolute;left:691px;top:522px;width:236px;height:236px;margin-left:-118px;border-radius:50%;cursor:pointer;
   background:url(../assets/img/cover/play_button.webp) center/100% 100% no-repeat;
   box-shadow:0 14px 28px rgba(0,20,50,.45),0 0 40px rgba(255,190,70,.6);animation:playGlow 2.4s ease-in-out infinite}
 #start svg{display:none}   /* (the triangle is in the art) */
