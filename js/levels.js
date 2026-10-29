@@ -487,6 +487,7 @@
   $('#start').onclick = async () => {
     if ($('#start')._go) return; $('#start')._go = true;
     SD.audioOn(); SFX.ping();
+    if (!sea.paused) gsap.to(sea, { volume: 0, duration: 1.6, onComplete: () => sea.pause() });   // the sea fades as the story opens
     const boot = $('#boot');
     if ((Q.get('at') || 'hook') === 'hook') { $('#story').classList.remove('hidden'); gsap.set('#story', { opacity: 1 }); }   // the story's solid backdrop goes up under the title first: the game never shows through
     await Promise.all([gsap.to('#title', { opacity: 0, duration: .5 }), SD.ready]);   // never start mid-load: that is where jumps used to hitch
@@ -494,6 +495,14 @@
     if (boot) await gsap.to(boot, { opacity: 0, duration: .45, onComplete: () => boot.remove() });
     window.SD_RUN = run();
   };
+  /* the title's sea: a soothing bow-wave loop (assets/sfx/cover_sea.ogg). It starts as soon as the browser allows sound (in many
+     browsers only after the first tap, which is why any tap on the title starts it) and fades out as the game begins. */
+  const sea = new Audio('assets/sfx/cover_sea.ogg'); sea.loop = true; sea.volume = 0; sea.preload = 'auto';
+  const seaOn = e => {
+    if (SD.MUTE || !sea.paused || $('#title').classList.contains('hidden') || (e && e.target.closest && e.target.closest('#start'))) return;
+    sea.play().then(() => { gsap.to(sea, { volume: .5, duration: 2.5 }); ['pointerdown', 'keydown'].forEach(k => removeEventListener(k, seaOn)); }).catch(() => {});
+  };
+  if (Q.get('autostart') !== '1') { seaOn(); ['pointerdown', 'keydown'].forEach(k => addEventListener(k, seaOn)); }
   // title screen breathes
   gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.1, immediateRender: false });   // breathes once it has popped in
   gsap.fromTo('#title .art', { scale: 1.08 }, { scale: 1, duration: 2.6, ease: 'power2.out', clearProps: 'transform' });   // a slow push-in on the scene

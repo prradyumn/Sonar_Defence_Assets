@@ -18,5 +18,6 @@ All sound effects below are **CC0 (public domain)** recordings from [Freesound](
 | `rush.ogg` | [speed boat outboard motor medium high gear +waves splash.flac](https://freesound.org/s/454199/) | kyles |
 | `harbour.ogg` | [Gentle ocean waves birdsong and gull.WAV](https://freesound.org/s/518637/) | jackmichaelking |
 | `waves.ogg` | [By the sea](https://freesound.org/s/404696/) | OSFX |
+| `cover_sea.ogg` (title screen) | [Sailing boat, bow wave (close perspective)](https://freesound.org/s/360631/) | Pfannkuchn |
 
 UI sounds (taps, chimes, reward arpeggio, door beeps) are synthesized live with Web Audio in `js/core.js`.

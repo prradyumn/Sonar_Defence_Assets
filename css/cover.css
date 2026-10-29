@@ -58,14 +58,26 @@
   100%{transform:translateY(0) rotate(-1.6deg) scale(1)}}
 @keyframes cvRadar{0%{transform:scaleX(1)}50%{transform:scaleX(-1)}100%{transform:scaleX(1)}}
 
-/* the bow spray: the water the bow pushes aside, bigger as the ship dips (same 3 s beat as the ship) */
-.cv-spray{left:1007px;top:676px;width:770px;height:266px;transform-origin:50% 92%;will-change:transform,opacity;animation:cvSpray 3s ease-in-out infinite}
+/* the bow spray, split at its V: each half peels off one side of the hull at the waterline (x 1176 / 1592, y 912) and
+   flies outward, so the bow itself stays clear; both swell as the ship dips (the same 3 s beat as the ship) */
+.cv-spray{top:715px;width:304px;height:209px;overflow:hidden;will-change:transform,opacity;animation:cvSpray 3s ease-in-out infinite}
+.cv-spray img{position:absolute;top:0;width:605px;height:209px}
+.cv-spray.l{left:892px;transform-origin:100% 100%}
+.cv-spray.r{left:1572px;transform-origin:0 100%}
+.cv-spray.r img{left:-304px}
 @keyframes cvSpray{
-  0%{transform:translateY(2px) scale(.92,.86);opacity:.9}
-  25%{transform:translateY(-6px) scale(.86,.78);opacity:.8}
-  50%{transform:translateY(0) scale(.95,.9);opacity:.92}
-  75%{transform:translateY(10px) scale(1.06,1.08);opacity:1}
-  100%{transform:translateY(2px) scale(.92,.86);opacity:.9}}
+  0%{transform:scale(.92,.86);opacity:.9}
+  25%{transform:scale(.84,.74);opacity:.8}
+  50%{transform:scale(.95,.9);opacity:.92}
+  75%{transform:translateY(6px) scale(1.08,1.12);opacity:1}
+  100%{transform:scale(.92,.86);opacity:.9}}
+
+/* the water at the foot of the bow: a piece of the near-wave art (its foamy crest) laid over the hull's base and faded at
+   both ends into the sea, so the hull sits in the water (no flat cut showing); it rides the ship's 3 s beat */
+.cv-wash{left:1084px;top:868px;width:600px;height:200px;background:url(../assets/img/cover/waves_near.webp) -1130px 0/3840px 320px no-repeat;
+  will-change:transform;animation:cvWash 3s ease-in-out infinite;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+@keyframes cvWash{0%,100%{transform:translateY(0)}25%{transform:translateY(-6px)}75%{transform:translateY(7px)}}
 
 /* foam streaming past both sides of the bow towards us, growing as it comes closer (that is what says "moving forward") */
 .cv-foam{width:250px;height:90px;margin:-45px 0 0 -125px;opacity:0;will-change:transform,opacity;animation:cvFoam 3.4s cubic-bezier(.45,0,.9,.6) infinite}
