@@ -205,10 +205,15 @@
     await new Promise(r => gsap.to(scan, { left: XR(to), duration: 2.2, ease: 'none', onUpdate() { const cur = Math.round((parseFloat(scan.style.left) - CONFIG.X0) / CONFIG.STEP); for (let v = 0; Math.abs(v) <= Math.abs(cur); v += dir || 1) { if (!lit.includes(v) && LBL[v]) { lit.push(v); gsap.fromTo(LBL[v], { scale: 1.6 }, { scale: 1, duration: .5 }); LBL[v].classList.add('on'); } if (!dir) break; } }, onComplete: r }));
     const w = el('word', sc, { left: (dir > 0 ? XR(to) - 340 : XR(to) + 20) + 'px', top: '400px' }); w.innerHTML = word || '';
     gsap.fromTo(w, { opacity: 0, x: -30 * dir }, { opacity: 1, x: 0, duration: .5 });
-    const arrow = el(dir > 0 ? 'sweep' : 'sweep left', sc, { left: Math.min(XR(0), XR(to)) + 'px', width: Math.abs(XR(to) - XR(0)) + 'px', top: '478px' });
-    gsap.fromTo(arrow, { opacity: 0 }, { opacity: .9, duration: .4 });
+    // the arrow grows out of 0: a shaft that thickens as the numbers grow, its head riding the tip, a light pulse running along it
+    const len = Math.abs(XR(to) - XR(0)), arrow = el(dir > 0 ? 'sweep' : 'sweep left', sc, { left: Math.min(XR(0), XR(to)) + 'px', width: len + 'px' });
+    const inn = el('in', arrow), shaft = el('shaft', inn), head = el('head', inn), glint = el('glint', shaft);
+    gsap.set(arrow, { opacity: 1 });
+    gsap.fromTo(shaft, { scaleX: 0 }, { scaleX: 1, duration: .55, ease: 'power3.out' });
+    gsap.fromTo(head, { x: 62 - len, scale: .4 }, { x: 0, scale: 1, duration: .55, ease: 'power3.out' });
+    const run = gsap.fromTo(glint, { xPercent: -100 }, { xPercent: 100, duration: 1.1, ease: 'power1.in', repeat: -1, repeatDelay: .25, delay: .5 });
     gsap.to(scan, { opacity: 0, duration: .4 });
-    return () => { gsap.to([w, arrow], { opacity: 0, duration: .3, onComplete: () => { w.remove(); arrow.remove(); } }); lit.forEach(v => LBL[v].classList.remove('on')); };
+    return () => { gsap.to([w, arrow], { opacity: 0, duration: .3, onComplete: () => { run.kill(); w.remove(); arrow.remove(); } }); lit.forEach(v => LBL[v].classList.remove('on')); };
   };
 
   /* ================= submarines ================= */

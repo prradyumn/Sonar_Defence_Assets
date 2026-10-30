@@ -82,8 +82,17 @@ img{-webkit-user-drag:none;user-select:none}
 .blast{position:absolute;width:340px;height:340px;margin:-170px 0 0 -170px;background:url(../assets/img/blast_sheet.webp) 0 0/1360px 340px no-repeat}
 .torp{position:absolute;width:120px;height:37px;margin:-18px 0 0 -60px}
 .tbub{position:absolute;border-radius:50%;border:2px solid rgba(220,250,255,.85);background:rgba(255,255,255,.18)}
-.sweep{position:absolute;top:478px;height:46px;background:url(../assets/img/sweep.webp) center/100% 100% no-repeat}
-.sweep.left{transform:scaleX(-1)}
+/* L2 intro arrow (world.js W.scan): cyan to the right (bigger · farther), orange to the left (smaller · closer), like the rail's ends */
+.sweep{position:absolute;top:470px;height:60px;--c:#16b8f0;--d:#7ff3ff;--g:rgba(20,190,255,.9);
+  filter:drop-shadow(0 0 1.5px #032a44) drop-shadow(0 0 1.5px #032a44) drop-shadow(0 0 10px var(--g))}
+.sweep.left{--c:#ff6a2c;--d:#ffc08a;--g:rgba(255,100,40,.9)}
+.sweep .in{position:absolute;inset:0}
+.sweep.left .in{transform:scaleX(-1)}
+.sweep .shaft{position:absolute;left:0;right:50px;top:0;bottom:0;overflow:hidden;transform-origin:0 50%;
+  clip-path:polygon(0 45%,100% 30%,100% 70%,0 55%);background:linear-gradient(90deg,transparent,var(--c) 22%,var(--d))}
+.sweep .glint{position:absolute;inset:0;background:linear-gradient(90deg,transparent 38%,rgba(255,255,255,.95) 50%,transparent 62%);will-change:transform}
+.sweep .head{position:absolute;right:0;top:0;width:62px;height:60px;transform-origin:0 50%;
+  clip-path:polygon(0 0,100% 50%,0 100%,18% 50%);background:linear-gradient(90deg,var(--c),var(--d) 70%,#fff)}
 
 /* L3 signals + marker */
 /* a dark outline keeps the pale arrows readable on the bright surface water; taps go to the pair button underneath */

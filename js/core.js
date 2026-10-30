@@ -287,7 +287,7 @@
     loadSheet(SHEET.meera); if (!CALM) loadSheet(SHEET.riya);
     if (!MUTE) loadSounds(['door_open', 'door_slide', 'music_calm', 'waves', 'sonar', 'bubbles', 'rush', 'splash', 'torpedo', 'explosion']);
     if (!LOW) ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'pop', 'pip_on', 'pip_off',
-      'star_gold', 'star_silver', 'marker', 'card', 'sweep', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water'].forEach(n => art('', n));
+      'star_gold', 'star_silver', 'marker', 'card', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water'].forEach(n => art('', n));
     setTimeout(() => { if (!MUTE) loadSounds(['music_play']); }, 2500);   // the missions' music last (not needed before Level 1)
   });
   function talker(who) {
