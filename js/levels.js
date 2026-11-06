@@ -467,7 +467,8 @@
     for (let i = Math.max(0, order.indexOf(at)); i < order.length; i++) {
       const k = order[i], st = k === at ? r : 0;
       SD.where = { at: k, round: st + 1 };
-      SD.prefetchVO(linesOf(k)); if (order[i + 1]) gsap.delayedCall(6, () => SD.prefetchVO(linesOf(order[i + 1])));   // this part's lines now, the next part's soon after
+      // this part's lines a little later (the line wanted first loads on its own, never behind its own prefetch), the next part's after that
+      gsap.delayedCall(5, () => SD.prefetchVO(linesOf(k))); if (order[i + 1]) gsap.delayedCall(12, () => SD.prefetchVO(linesOf(order[i + 1])));
       if (k !== 'hook' && k === at) { SD.music('play'); SD.ambience('waves'); }
       if (k === 'hook') await hook();
       if (k === 'l1') await level1(st);

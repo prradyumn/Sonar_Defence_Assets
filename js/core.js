@@ -216,7 +216,9 @@
       if (!VO_OK(id) || ext >= VO_EXT.length) return res(false);
       if (endPrev) endPrev();                          // a new line ends the one before it
       const my = ++vTok, a = voice;
-      let done = false, dog = gsap.delayedCall(8, () => fin(true));   // not started after 8 s: carry on
+      // not started after 8 s: carry on, unless the file is still arriving (a slow network: wait up to 30 s for it)
+      const t0 = performance.now(), give = () => { if (a.networkState === 2 && performance.now() - t0 < 30000) dog = gsap.delayedCall(2, give); else fin(true); };
+      let done = false, dog = gsap.delayedCall(8, give);
       const off = () => { dog.kill(); for (const k in on) a.removeEventListener(k, on[k]); if (endPrev === stop) endPrev = null; };
       const fin = ok => { if (done) return; done = true; off(); if (vTok === my) vLoading = false; if (vTok === my && curAudio === a) curAudio = null; res(ok); };
       const stop = () => fin(true);
