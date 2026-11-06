@@ -92,7 +92,7 @@
   /* Recorded sound: assets/sfx/*.ogg (CC0 effects + music made for the game, see assets/sfx/CREDITS.md).
      Over http(s) the files become Web Audio buffers (they overlap, duck under the voice and pause with the AudioContext);
      from file://, where fetch is blocked, each plays through one reused <audio> element. */
-  const ONE = { sonar: .5, explosion: .85, splash: .55, torpedo: .75, door_open: .95, door_slide: .85, bubbles: .5, rush: .7 };
+  const ONE = { sonar: .5, explosion: .85, splash: .55, torpedo: .75, bubbles: .5, rush: .7 };
   const BED = { music_calm: 'music', music_play: 'music', waves: 'amb' };
   const viaWA = /^https?:$/.test(location.protocol), BUF = {}, EL = {}, beds = {};
   let want = { music: null, amb: null }, ducked = false;
@@ -161,18 +161,7 @@
     blip() { tone('sine', 1500, 1500, .12, .08); },
     tap() { tone('sine', 520, 780, .07, .12); },
     bubble() { tone('sine', 300 + Math.random() * 300, 900 + Math.random() * 500, .12, .05); },
-    // sonar-room doors: unlock beeps → latch → air hiss → heavy slide (rumble + servo whine) → stop
-    doorBeep() { tone('sine', 1320, 0, .09, .12); tone('sine', 1760, 0, .12, .1, .13); },
     clunk() { tone('sine', 120, 36, .34, .5); noise(.16, .32, 650); tone('square', 74, 52, .07, .05); },
-    hiss(dur = .8) { sample('door_open') || (noise(dur, .2, 9000, 0, 2200), noise(dur * .6, .08, 3200, .05, 900)); },
-    doorSlide(dur = 1.8) {
-      if (!AC) return; sample('door_slide'); const t = AC.currentTime, o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain();
-      o.type = 'sawtooth'; o.frequency.setValueAtTime(46, t); o.frequency.linearRampToValueAtTime(68, t + dur * .55); o.frequency.linearRampToValueAtTime(50, t + dur);
-      f.type = 'lowpass'; f.frequency.value = 300;
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.1, t + .3); g.gain.setValueAtTime(.1, t + dur - .35); g.gain.linearRampToValueAtTime(0, t + dur);
-      o.connect(f); f.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + dur + .05);
-      noise(dur, .16, 240); tone('triangle', 230, 320, dur * .8, .025);
-    },
     foot() { noise(.07, .1, 900, 0, 160); },
     splash() { sample('splash') || (noise(1, .2, 1500, 0, 280), noise(.5, .08, 6000, .1, 2500)); },
     sail() { sample('rush') || noise(1.2, .18, 700, 0, 200); gsap.delayedCall(.15, () => sample('splash', .6)); },
@@ -191,23 +180,55 @@
   /* ONE audio element plays every line. A new element per line piles up media players until Chrome starts
      suspending them, and lines then stall for seconds mid-word. A token per line ignores the last line's events. */
   const voice = new Audio(); voice.preload = 'auto';
+  /* how loud the voice is right now (0 … 1), for the talking characters' mouths: the line runs through the AudioContext once
+     there is one, so an analyser can listen to it. null = can't tell (no AudioContext yet, or the browser voice). */
+  let vAn = null, vBuf = null;
+  function voiceTap() {
+    if (vAn || !AC || !viaWA) return;
+    try { const src = AC.createMediaElementSource(voice); vAn = AC.createAnalyser(); vAn.fftSize = 512; vBuf = new Uint8Array(vAn.fftSize); src.connect(vAn); vAn.connect(AC.destination); } catch (e) { vAn = null; }
+  }
+  function voiceLevel() {
+    if (!vAn || !curAudio || curAudio.paused) return null;
+    vAn.getByteTimeDomainData(vBuf); let s = 0; for (let i = 0; i < vBuf.length; i++) { const d = (vBuf[i] - 128) / 128; s += d * d; }
+    return Math.sqrt(s / vBuf.length);
+  }
+  // the next lines' recordings are fetched ahead (into the browser's cache), so a line starts the moment its box shows
+  /* One file at a time, and never while a line that is wanted now is loading: on a slow connection the prefetch must not hold up
+     the line on screen. */
+  const fetched = new Set(), queue = [];
+  let fetching = false, vLoading = false;
+  function prefetchVO(texts) {
+    if (MUTE || !viaWA) return;
+    for (const t of texts) { const L = t && window.SCRIPT && SCRIPT.find(t); if (!L || !VO_OK(L.id) || fetched.has(L.id)) continue; fetched.add(L.id); queue.push(L.id); }
+    pump();
+  }
+  function pump() {
+    if (fetching || !queue.length) return;
+    if (vLoading) return setTimeout(pump, 400);
+    const id = queue.shift(); fetching = true;
+    fetch(VO_DIR + id + '.ogg', { priority: 'low' }).then(r => r.arrayBuffer()).catch(() => fetched.delete(id)).then(() => { fetching = false; pump(); });
+  }
   let vTok = 0, endPrev = null;
-  function playVO(id, ext = 0) {
+  /* plays one recorded line; resolves true when it has been said (false: no recording). onStart runs when the sound starts.
+     A line that never starts, or never ends, can't hold the game up: watchdogs on the game clock (they freeze with a pause). */
+  function playVO(id, ext = 0, onStart) {
     return new Promise(res => {
       if (!VO_OK(id) || ext >= VO_EXT.length) return res(false);
       if (endPrev) endPrev();                          // a new line ends the one before it
       const my = ++vTok, a = voice;
-      let done = false;
-      const off = () => { for (const k in on) a.removeEventListener(k, on[k]); if (endPrev === stop) endPrev = null; };
-      const fin = ok => { if (done) return; done = true; off(); if (vTok === my && curAudio === a) curAudio = null; res(ok); };
+      let done = false, dog = gsap.delayedCall(8, () => fin(true));   // not started after 8 s: carry on
+      const off = () => { dog.kill(); for (const k in on) a.removeEventListener(k, on[k]); if (endPrev === stop) endPrev = null; };
+      const fin = ok => { if (done) return; done = true; off(); if (vTok === my) vLoading = false; if (vTok === my && curAudio === a) curAudio = null; res(ok); };
       const stop = () => fin(true);
       const on = {
+        playing: () => { if (vTok !== my) return; vLoading = false; dog.kill(); dog = gsap.delayedCall((isFinite(a.duration) ? a.duration : 20) * Math.max(1, SPEED / 2) + 3, () => fin(true));   // never ended: carry on
+          if (onStart) { const f = onStart; onStart = null; f(); } },
         ended: () => fin(true),
         pause: () => { if (!a._held && vTok === my) fin(true); },
-        error: () => { if (done || vTok !== my) return; done = true; off(); playVO(id, ext + 1).then(res); },   // .ogg missing → .wav
+        error: () => { if (done || vTok !== my) return; done = true; off(); playVO(id, ext + 1, onStart).then(res); },   // .ogg missing → .wav
       };
       for (const k in on) a.addEventListener(k, on[k]);
-      endPrev = stop; a._held = false;
+      endPrev = stop; a._held = false; voiceTap(); vLoading = true;
       a.src = VO_DIR + id + '.' + VO_EXT[ext]; a._id = id; a.playbackRate = Math.min(SPEED, 2); curAudio = a;
       const go = () => { if (vTok === my) a.play().catch(e => { if (vTok === my && (!e || (e.name !== 'NotSupportedError' && e.name !== 'AbortError'))) fin(false); }); };
       held ? onResume.push(go) : go();
@@ -263,9 +284,11 @@
      and a character only draws once its bitmap is ready. Riya never speaks, and in calm mode (the default) only the speaker
      is on screen, so her sheet (1.2 MB) loads only with the full effects. */
   const loadSheet = s => {
-    s.img = new Image(); s.img.src = s.src;
-    s.ready = s.img.decode().then(() => window.createImageBitmap ? createImageBitmap(s.img) : s.img).catch(() => s.img)
-      .then(bm => { s.bm = bm; if (bm !== s.img) s.img = null; s.wait.splice(0).forEach(f => f()); });   // keep one decoded copy, not two
+    const done = bm => { s.bm = bm; s.wait.splice(0).forEach(f => f()); };
+    const viaImg = () => { const i = new Image(); i.src = s.src; return i.decode().then(() => i, () => i); };
+    /* from a Blob: the browser decodes it fully on a worker. (A bitmap made from an <img> is decoded lazily, on the main thread at
+       the first draw: a 0.4 s freeze as Level 1 began on a slower laptop, QA bug 5.) */
+    s.ready = (viaWA && window.createImageBitmap ? fetch(s.src).then(r => r.blob()).then(b => createImageBitmap(b)).catch(viaImg) : viaImg()).then(done);
   };
   for (const k in SHEET) SHEET[k].wait = [];
   const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
@@ -276,7 +299,7 @@
          story's first, the missions' music last). Decoded images are kept (KEEP) so the browser does not throw the pixels away
          and decode them again at the first hit. */
   const KEEP = [], art = (dir, n) => { const i = new Image(); i.src = 'assets/img/' + dir + n + '.webp'; KEEP.push(i); return i.decode().catch(() => {}); };
-  const STORY = LOW ? Promise.resolve() : Promise.all(['../door_left', '../door_right', 'bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'meera_shocked', 'meera_determined'].map(n => art('story/', n)));
+  const STORY = LOW ? Promise.resolve() : Promise.all(['bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'meera_shocked', 'meera_determined'].map(n => art('story/', n)));
   // ready: the fonts and the story's art are in (capped at 5 s) — the game starts after this
   const READY = Promise.race([
     Promise.all([STORY, document.fonts ? document.fonts.ready : 0]).then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))),
@@ -285,28 +308,31 @@
   READY.then(() => {   // LATER
     document.body.classList.remove('booting');   // the game world's pictures (css/game.css)
     loadSheet(SHEET.meera); if (!CALM) loadSheet(SHEET.riya);
-    if (!MUTE) loadSounds(['door_open', 'door_slide', 'music_calm', 'waves', 'sonar', 'bubbles', 'rush', 'splash', 'torpedo', 'explosion']);
-    if (!LOW) ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'escape_pod', 'pop', 'pip_on', 'pip_off',
+    if (!MUTE) loadSounds(['music_calm', 'waves', 'sonar', 'bubbles', 'rush', 'splash', 'torpedo', 'explosion']);
+    if (!LOW) ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'pop', 'pip_on', 'pip_off',
       'star_gold', 'star_silver', 'marker', 'card', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water'].forEach(n => art('', n));
     setTimeout(() => { if (!MUTE) loadSounds(['music_play']); }, 2500);   // the missions' music last (not needed before Level 1)
   });
   function talker(who) {
     const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');
     c.width = s.w; c.height = s.h;
-    let f = s.rest[0], on = false, acc = 0, ticking = false;
+    let f = s.rest[0], on = false, acc = 0, ticking = false, loudAt = 0;
+    // lip sync: the mouth moves while the voice is sounding and runs to a closed mouth in its pauses (always moving when we can't tell)
+    const sounding = () => { const v = voiceLevel(), now = performance.now(); if (v === null || v > .03) loudAt = now; return now - loudAt < 150; };
     const draw = () => { if (!s.bm) return; g.clearRect(0, 0, s.w, s.h); g.drawImage(s.bm, (f % 6) * s.w, (f / 6 | 0) * s.h, s.w, s.h, 0, 0, s.w, s.h); };
     if (s.bm) draw(); else s.wait.push(() => { draw(); gsap.fromTo(c, { opacity: 0 }, { opacity: 1, duration: .3 }); });
     const halt = () => { gsap.ticker.remove(tick); ticking = false; acc = 0; };
     function tick(t, dt) {
       if (!c.isConnected) return halt();
       if (SD.paused) return;
-      const step = on ? s.ms : s.ms / 2;   // settling to a closed mouth runs at double speed
+      const talking = on && sounding(), step = talking ? s.ms : s.ms / 2;   // settling to a closed mouth runs at double speed
       acc = Math.min(acc + dt * Math.min(SPEED, 2) * SD.rate, step * 3);
       let moved = false;
       while (acc >= step) {
         acc -= step;
-        if (!on && s.rest.includes(f)) { halt(); break; }
-        f = (f + 1) % 36; moved = true;
+        if (!talking && s.rest.includes(f)) { if (!on) halt(); acc = 0; break; }   // (still on: holds the closed mouth until the voice comes back)
+        f = (f + 1) % 36; if (talking && f < 6) f = 6;   // (talking: skip the sheet's long closed-mouth run, frames 0-5, so the mouth moves while the voice does)
+        moved = true;
       }
       if (moved) draw();
     }
@@ -321,25 +347,31 @@
     const text = typeof x === 'string' ? x : x.text, who = o.who || (L && L.who) || 'meera', id = L && L.id;
     if (!L) SD_MISSING.push(text);
     lastLine = { x, o }; const my = ++sayN;
-    let box;
-    if (o.bubble) { box = o.bubble; box.querySelector('.txt').innerHTML = text; }
-    else {
-      nameTag(who);
-      box = $('#caption'); box.innerHTML = text;
-      gsap.killTweensOf('#comms'); gsap.to('#comms', { opacity: 1, duration: .25 });
-      gsap.fromTo(box, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: .3 });
-    }
+    if (o.bubble) o.bubble.querySelector('.txt').innerHTML = text;   // (a story bubble is already on its way in: K.say)
+    // the speech box comes up as the voice starts (not before it), and the speaker's mouth moves with it
+    const talk = o.talk || (SD.crew && SD.crew[who]);   // story bubbles pass their actor; otherwise the crew member at their station talks
+    let shown = false;
+    const show = () => {
+      if (shown || my !== sayN) return; shown = true;
+      if (!o.bubble) {
+        nameTag(who);
+        const box = $('#caption'); box.innerHTML = text;
+        gsap.killTweensOf('#comms'); gsap.to('#comms', { opacity: 1, duration: .2 });
+        gsap.fromTo(box, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: .25 });
+      }
+      if (talk) talk(true);
+    };
     duck(true);
     const t0 = performance.now();
     const skipP = new Promise(r => { skipFn = r; });
-    const talk = o.talk || (SD.crew && SD.crew[who]);   // story bubbles pass their actor; otherwise the crew member at their station talks
-    if (talk) talk(true);
-    const spokeP = playVO(id).then(ok => ok || speak(text, who));
+    const late = gsap.delayedCall(.9, show);   // a slow line: the box doesn't wait longer than this for the voice
+    const spokeP = playVO(id, 0, show).then(ok => { show(); return ok || speak(text, who); });
     const spoke = await Promise.race([spokeP, skipP.then(() => 'skip')]);
     if (spoke !== 'skip') {
       const spent = (performance.now() - t0) / 1000 * SPEED, min = spoke ? .25 : readTime(text);
       if (spent < min) await Promise.race([wait(min - spent), skipP]);
     } else hush();
+    late.kill(); show();
     if (talk) talk(false);
     skipFn = null;
     if (my !== sayN) return;
@@ -362,7 +394,49 @@
   function captionOff(delay = 0) { gsap.to('#comms', { opacity: 0, duration: .3, delay }); }
   function skip() { if (skipFn) { const f = skipFn; skipFn = null; hush(); f(); } }
 
-  window.SD = { $, Q, SPEED, stageScale, toStage, MUTE, wait, fmt, readTime, audioOn, SFX, say, narrate, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  /* ================= pause =================
+     hold(why, on): the whole game freezes while any reason holds it — 'away' (its tab or window is not in front) or 'editor'
+     (the layout editor's pause) — and carries on from the same moment: the game clock, the voice (from the same word), the
+     music and effects, the CSS loops, and anything registered with onHold (the title's sea and name). */
+  const ROOT = gsap.globalTimeline, holds = new Set(), onHold = [];
+  let cssHeld = [];
+  function hold(why, on) {
+    const was = holds.size > 0; on ? holds.add(why) : holds.delete(why);
+    if (was === holds.size > 0) return;
+    if (on) {
+      SD.paused = true; ROOT.pause(); gsap.ticker.sleep();
+      if (AC && AC.state === 'running') AC.suspend();
+      holdVoice(true);
+      cssHeld = document.getAnimations ? document.getAnimations().filter(a => a.playState === 'running') : []; cssHeld.forEach(a => a.pause());
+      onHold.forEach(f => f(true));
+    } else {
+      const t = ROOT.time(); SD.paused = false; gsap.ticker.wake(); ROOT.resume(); ROOT.startTime(gsap.ticker.time - t / ROOT.timeScale());   // on from the same moment (the editor may have stepped it)
+      if (AC && AC.state === 'suspended') AC.resume();
+      holdVoice(false);
+      cssHeld.splice(0).forEach(a => { try { a.play(); } catch (e) {} });
+      onHold.forEach(f => f(false));
+    }
+  }
+  /* ================= lighter on slow machines =================
+     If the frame rate stays low during play (median frame over 22 ms, i.e. under ~45 fps, two 2-second checks in a row), the
+     purely decorative layers switch off (sun rays, caustics, surface shimmer, marine snow): body.lite + the 'sd-lite' event
+     (QA bugs 5, 19). ?fx=lite forces it. The learning and the feedback are untouched. */
+  const goLite = () => { if (SD.lite) return; SD.lite = true; document.body.classList.add('lite'); document.dispatchEvent(new Event('sd-lite')); };
+  READY.then(() => {
+    if (Q.get('fx') === 'lite') return goLite();
+    let F = [], slow = 0;
+    const gov = (t, dt) => {
+      if (SD.paused || document.hidden || dt > 250) return;   // (a stall on its own, or a pause, says nothing about the machine)
+      F.push(dt); if (F.length < 120) return;
+      F.sort((a, b) => a - b); const med = F[60]; F = [];
+      slow = med > 22 ? slow + 1 : 0; if (slow >= 2) { gsap.ticker.remove(gov); goLite(); }
+    };
+    gsap.ticker.add(gov);
+  });
+  const away = () => hold('away', document.hidden || !document.hasFocus());
+  document.addEventListener('visibilitychange', away); addEventListener('blur', away); addEventListener('focus', away);
+
+  window.SD = { $, Q, SPEED, lite: false, hold, onHold: f => onHold.push(f), voiceLevel, prefetchVO, stageScale, toStage, MUTE, wait, fmt, readTime, audioOn, SFX, say, narrate, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

@@ -125,6 +125,7 @@
   const surf = cur.querySelector('.surf i');
   gsap.fromTo(surf, { x: -900 }, { x: 0, duration: 38, repeat: -1, ease: 'none' });
   gsap.to(cur.querySelector('.surf'), { opacity: .7, duration: 4.5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  document.addEventListener('sd-lite', () => gsap.killTweensOf([surf, cur.querySelector('.surf'), ...cur.querySelectorAll('.streak')]));   // (a slow machine: off, core.js)
   for (let i = 0; i < (SD.CALM ? 0 : 6); i++) {
     const s = el('streak', cur, { top: (190 + i * 115 + Math.random() * 40) + 'px', width: (520 + Math.random() * 520) + 'px' });
     const go = first => {

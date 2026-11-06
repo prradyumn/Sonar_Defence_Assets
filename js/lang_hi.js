@@ -80,7 +80,7 @@
     'ROUTE CLEARED!': 'रास्ता साफ़!', 'ALL TARGETS CLEARED!': 'सभी निशाने साफ़!', 'Smaller → Bigger': 'छोटी → बड़ी',
     'smaller · closer': 'छोटी · पास', 'bigger · farther': 'बड़ी · दूर', 'smaller': 'छोटी', 'bigger': 'बड़ी',
     'Next': 'आगे', 'Commander Meera': 'कमांडर मीरा', 'Narrator': 'सूत्रधार',
-    'ALERT! ALERT!': 'चेतावनी! चेतावनी!',
+    'ALERT! ALERT!': 'चेतावनी! चेतावनी!', 'NEGATIVE missiles': 'ऋणात्मक मिसाइलें', 'POSITIVE missiles': 'धनात्मक मिसाइलें',
     'Guard the sea route · Integers on the navigation scale': 'समुद्री रास्ते की रक्षा करो · नौवहन पैमाने पर पूर्णांक',
     'Skip story ▸▸': 'कहानी छोड़ो ▸▸', 'Next mission': 'अगला मिशन', 'tap to continue ▸': 'आगे बढ़ने के लिए छुओ ▸',
   };

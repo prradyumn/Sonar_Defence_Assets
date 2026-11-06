@@ -33,6 +33,16 @@ tools/              make_voices.py (records the voices) · dev_server.py (lets t
 ```
 The original art pack (PNG sources, concepts, briefs) is not needed by the game; it was moved out to `~/Downloads/Sonar_Defence_Archive_2026-10-09/` and is also in this repo's git history.
 
+## QA round: POD-B (Q2) bug sheet
+- **Pauses when away:** the game freezes while its tab is hidden or its window is not in front (game clock, voice from the same word, music, CSS loops, the title's sea) and carries on from the same moment (`SD.hold` in `js/core.js`; the layout editor's pause uses it too).
+- **Slow machines:** if the frame rate stays under ~45 fps in play, the decorative layers switch off (sun rays, caustics, surface shimmer, marine snow: `body.lite`); `?fx=lite` forces it. Meera's talking sheet decodes on a worker, and the story's WebGL water is prepared while the title is up, at the screen's own resolution.
+- **Voice:** each part's recordings are fetched ahead; the speech box comes up as the voice starts; Meera's mouth moves only while the voice is sounding. A line that never starts (8 s) or never ends carries on by itself, so it can't hold the game up.
+- **Title voice:** browsers allow no sound before the first click, tap or key, so "Sonar Defence!" plays on the first one anywhere on the cover.
+- **Cards:** every Level Complete card waits for Next (the heading follows the ribbon's arch). After Level 3 the ending plays and stays on ROUTE CLEARED: no restart, no Play Again.
+- **Removed:** the sonar-room doors after Play, the escape pod after a hit (it read as a second missile), the panel's flicker and the shake on a wrong answer.
+- **Level 1:** the launcher's badge says what it makes ("NEGATIVE missiles" / "POSITIVE missiles"), and in the tutorial its sign hops onto the first missile; the correct line is said while the pairs cancel.
+- **Level 2:** after a wrong tap the number line stays until the hint has been said, plus 2 s.
+
 ## Deploy (Vercel)
 It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
 
@@ -84,7 +94,7 @@ The camera is inside the submarine, looking out through the big bow window (`ass
 - A miss: the cannon lines up under the wrong submarine and judders (no shot), the two ceiling lamps flash red and the window edge glows red.
 - Meera (left) and Riya (right) stand at their stations; whoever speaks plays their talking sheet and lights up. Dialogue appears on the console screen, which shows a slow sonar trace when nobody is talking.
 - Level 3 pair buttons sit high in the window, above the submarines. Cancelling a pair: the ▶ and ◀ collide, a ring bursts and a big glowing **0** springs out.
-- Fun layer (`js/cockpit.js`, bottom): every hit shakes the view (one whole-pixel shake of all layers, `W.shake` in `js/world.js`) and the submarine's number pops up big over its label; fish scatter from the blast; the enemy crew bail out in an escape pod with a white flag (`escape_pod.webp`); blast bubbles stick to the glass and slide down. Three first-try hits in a row turn the cannon gold and the next shot is a golden super torpedo. Each level dives deeper: the sea darkens a step, glowing plankton appear, and the console shows the depth (60 → 110 → 160 → 220 m). When a level is done, Meera's and Riya's stations glow and sparkle.
+- Fun layer (`js/cockpit.js`, bottom): every hit shakes the view (one whole-pixel shake of all layers, `W.shake` in `js/world.js`) and the submarine's number pops up big over its label; fish scatter from the blast; blast bubbles stick to the glass and slide down. Three first-try hits in a row turn the cannon gold and the next shot is a golden super torpedo. Each level dives deeper: the sea darkens a step, glowing plankton appear, and the console shows the depth (60 → 110 → 160 → 220 m). When a level is done, Meera's and Riya's stations glow and sparkle.
 - Art: the cockpit frame (`assets/img/cockpit.webp`, glass cut out) and the cannon are Gemini images in the game's style; the cannon's muzzle position is `MUZZLE_Y` in `js/cockpit.js` (read from `#cannon` in `css/cockpit.css`).
 - Code: `js/world.js` draws the sea, scale, submarines and effects; `js/cockpit.js` adds the sliding bow cannon (`W.aimHook`, `W.fire`), the crew and the cockpit effects; `css/cockpit.css` holds its layout. Layout constants (`SUB_Y`, `SUB_ROW`, `SIG_Y1/2`, `SCALE_DY`) are `DEFAULTS` in `js/world.js`.
 - The earlier ship-at-the-surface version was removed; it is still in the git history (before commit "Keep only the submarine cockpit version").
@@ -130,7 +140,7 @@ open http://localhost:8000/?edit=1
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
 - `js/levels.js` flow + pedagogy: the hook (lines `h1`, `h2`), the level intros (`l1a` `l1b`, `l2a` `l2b`, `l3a`), the ending (ROUTE CLEARED!), tutorial glow in each level's first round, 3-strike feedback as panel text, idle help (6 s visual → 12 s text → 22 s reminder), stars
 - `tools/make_voices.py` makes the voice files
-- `assets/img` web versions of the art pack (all `.webp`; the sonar-room doors are `door_left/right.webp`)
+- `assets/img` web versions of the art pack (all `.webp`)
 
 ## Placeholders still in code (replace when the art arrives)
 - rule card → CSS (`#rule`)
@@ -138,7 +148,7 @@ open http://localhost:8000/?edit=1
 - fish → inline SVG in `world.js`
 
 ## HUD
-The mission panel (`#hudbar`) is part of the ship: a slim navy steel plate with a brass rim and rivets, hanging from two brass ceiling mounts on thin struts. It comes down when a mission starts (servo whirr, latch clunk, the screen flickers on), refreshes its screen when the text changes, and goes back up into the ceiling between missions (`W.strip` / `W.stripOff`, cockpit.js). The hear-again button is a brass knob on the left; progress lamps sit on the right. The panel is 1400 px wide with 36 px text; a long line wraps onto two lines at 32 px (it never shrinks below that).
+The mission panel (`#hudbar`) is part of the ship: a slim navy steel plate with a brass rim and rivets, hanging from two brass ceiling mounts on thin struts. It comes down when a mission starts (servo whirr, latch clunk, the screen fades on), slides a new line in when the text changes, and goes back up into the ceiling between missions (`W.strip` / `W.stripOff`, cockpit.js). The hear-again button is a brass knob on the left; progress lamps sit on the right. The panel is 1400 px wide with 36 px text; a long line wraps onto two lines at 32 px (it never shrinks below that).
 During play, what Meera or Riya says appears in a speech bubble beside her (Meera bottom-left, Riya bottom-right) with its tail pointing at the speaker.
 One bar on the ceiling holds the hear-again button, the mission text and the progress pips (`#hudbar`). The ceiling lamps are toned down (`#lampDim`), the crew are 15 % smaller and dim until they speak, the console shows the sonar trace + depth only between missions, fish swim below the scale (never behind the submarine row), and number labels not in play are faded to 50 %.
 
@@ -155,17 +165,17 @@ One bar on the ceiling holds the hear-again button, the mission text and the pro
 
 ## Calm mode (default) vs Full
 The game starts in **Calm** mode to keep the screen simple. The QA panel (**Q**) has a **Calm / Full** switch (saved per browser; `?fx=full` / `?fx=calm` also work).
-Calm keeps the hit's hero beats (blast + the sub breaking in two, escape pod, the number popping up, the sonar ping flying to progress) and drops: confetti, the floating praise word (Riya still says it), glass bubbles, frame glow, shock ring, debris, distance beam, current streaks, plankton, propeller and muzzle bubbles, the waiting rings on every sub (the 6 s help still pulses them) and the cannon's ring. Fish and rising bubbles are halved, the console screen box shows only between missions, and only the crew member who is speaking is on screen.
+Calm keeps the hit's hero beats (blast + the sub breaking in two, the number popping up, the sonar ping flying to progress) and drops: confetti, the floating praise word (Riya still says it), glass bubbles, frame glow, shock ring, debris, distance beam, current streaks, plankton, propeller and muzzle bubbles, the waiting rings on every sub (the 6 s help still pulses them) and the cannon's ring. Fish and rising bubbles are halved, the console screen box shows only between missions, and only the crew member who is speaking is on screen.
 
 ## Buoy trail + dialogue boxes
 - The number line is a **buoy trail**: a twisted rope strung right across the sea (under the window frame at both ends) with a red-and-white buoy at every whole number and a bigger gold buoy at 0 (`buoy.webp`, `buoy_zero.webp`, Nano Banana 2), each anchored by a short chain, the number under it. Numbers are 106 px apart (`STEP`). Buoys swing gently on their rings (rotation only, so their spacing never changes). A buoy with a submarine above it glows and grows; its number lights up in a chip.
-- Dialogue boxes are the two supplied images, cut into stretchable frames plus a separate tail so they fit any line: the wide glossy box during play (`bubble_wide*.webp`, tail bottom-left for Meera, bottom-right for Riya) and the glossy oval in the story (`bubble_oval*.webp`). Dialogue text is Poppins SemiBold 32 (`assets/fonts/poppins-latin-600-normal.woff2`).
+- Dialogue boxes are drawn in CSS in the supplied art's colours (the sliced images left faint dotted seams at laptop sizes, QA bug 6), with the art's tails: during play tail bottom-left for Meera, bottom-right for Riya (`bubble_wide_tail*.webp`), in the story the oval's tail (`bubble_oval_tail*.webp`). Dialogue text is Poppins SemiBold 32 (`assets/fonts/poppins-latin-600-normal.woff2`).
 
 ## Story (storyboard: Integers- Submarine - Story)
 The whole story is **one continuous underwater scene**: the camera never cuts.
 - **Water** (`js/water.js`): one WebGL canvas draws the backdrop with slow refraction ripples, moving caustic light, god rays and a soft Gaussian depth blur toward the bottom and edges. When the game is opened straight from a file (`file://`), browsers don't let WebGL read the image, so the plain background is used instead; Live Server and Vercel get the full effect.
 - The Coast Guard ship is a dark silhouette at the surface above; Meera and Riya speak from glass comms panels (LIVE) in the bottom corners; the narrator and the Defence System use a glass caption.
-- It opens through the sonar-room doors (`door_left/right.webp`): two lamp blinks, the latch kicks, air hisses, then both halves slide apart (0.5 s, then 1.8 s at cubic-bezier(.45,0,.2,1)) onto the water.
+- Play goes straight into the underwater scene (the sonar-room doors were removed: QA bug 4).
 - The hook: the doors open on the water, three enemy subs slip in (Meera: "Enemy submarines are entering our sea territory! We have to protect our borders!") → they fire missiles up at the ship, the water flushes red, ALERT! ALERT! (Meera: "Oh no! They're firing missiles. We have to defuse them.") → the cockpit frame closes in → Level 1.
 - The ending (after Level 3) returns to the same water, brighter, with ROUTE CLEARED! and confetti (no words).
 - The longer storyboard (control room, defence station, the navigation-scale scenes, How to play) was cut when the dialogue was cut down; it is in the git history.

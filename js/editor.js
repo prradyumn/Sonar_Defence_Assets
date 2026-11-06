@@ -141,18 +141,13 @@
       ROOT.timeScale(ts); realign(t); SD.rate = ts / (SD.SPEED || 1); barUI();
     }
     const speedStep = d => setSpeed(d > 0 ? (SPEEDS.find(s => s > ts + 1e-6) || 3) : (SPEEDS.slice().reverse().find(s => s < ts - 1e-6) || .25));
-    function pause() {
-      if (SD.paused) return; SD.paused = true; frames = 0;
-      ROOT.pause(); gsap.ticker.sleep();
-      const ac = SD.audioCtx; if (ac && ac.state === 'running') ac.suspend();
-      SD.holdVoice(true); document.body.classList.add('sde-paused'); barUI();
+    function pause() {   // (the game's own pause: SD.hold in core.js, shared with the pause while the tab is away)
+      if (document.body.classList.contains('sde-paused')) return; frames = 0;
+      SD.hold('editor', true); document.body.classList.add('sde-paused'); barUI();
     }
     function resume() {
-      if (!SD.paused) return;
-      const t = ROOT.time(); SD.paused = false;
-      gsap.ticker.wake(); ROOT.resume(); realign(t);
-      const ac = SD.audioCtx; if (ac && ac.state === 'suspended') ac.resume();
-      SD.holdVoice(false); document.body.classList.remove('sde-paused'); barUI();
+      if (!document.body.classList.contains('sde-paused')) return;
+      SD.hold('editor', false); document.body.classList.remove('sde-paused'); barUI();
     }
     function step() {   // exactly one 60 fps frame of game time (ticker-driven sea life + tweens), then frozen again
       if (!SD.paused) return pause();

@@ -2,7 +2,7 @@
    world.js still draws the sea, the scale, the enemy submarines and every effect; this file swaps the ship's launcher for the
    bow cannon that slides along under the scale and fires the torpedoes, puts Meera and Riya at their stations (their talking sheets play while they speak) and adds cockpit
    feedback: red warning lamps on a miss, a hull kick when a torpedo leaves, the engines rumbling when we sail on.
-   The fun layer (bottom of the file) adds the hit moment, escape pods, the streak glow and the dive between levels. */
+   The fun layer (bottom of the file) adds the hit moment, the streak glow and the dive between levels. */
 (function () {
   const { $, SFX } = SD, X = W.X, el = W.el, sea = $('#bubbles');   // sea: outside the glass, behind the scale
 
@@ -22,8 +22,10 @@
   scope.innerHTML = `<svg viewBox="0 0 ${SW} ${SH}" preserveAspectRatio="none"><path d="M0 ${MID} H${SW}" stroke="rgba(73,220,255,.18)" stroke-width="2"/>` +
     '<path id="trace" fill="none" stroke="#49dcff" stroke-width="3" stroke-linejoin="round" opacity=".7"/></svg><span class="lbl2">SONAR</span>';
   const trace = $('#trace');
-  gsap.ticker.add(t => {
-    const talk = +gsap.getProperty(comms, 'opacity'), mission = +gsap.getProperty('#strip', 'opacity'), q = (1 - talk) * (1 - mission);
+  let mission = 0;   // follows the mission panel being down (not its text's opacity: a new line fading in made this screen flash, QA bugs 8, 9)
+  gsap.ticker.add((t, dt) => {
+    mission += ((down ? 1 : 0) - mission) * Math.min(1, dt / 160);
+    const talk = +gsap.getProperty(comms, 'opacity'), q = (1 - talk) * (1 - mission);
     scope.style.opacity = q * .9; if (SD.CALM) screenEl.style.opacity = q;   // calm: the console screen box shows only between missions too   // quiet during a mission: the trace + depth show only between missions
     if (talk > .95 || SD.paused) return;
     const ph = (t * .35) % 1.3 - .15; let d = '';
@@ -64,22 +66,33 @@
   W.clearSubs = () => { slideTo(W.CONFIG.X0, .9); return clear0(); };   // back to the middle of the window
 
   /* ---- the mission panel: hangs from the ceiling on two struts; it comes down for each mission and goes up after.
-     A new line during a mission refreshes the screen (scanline flicker) without moving the panel. ---- */
+     A new line during a mission slides in without moving the panel. ---- */
   const bar = $('#hudbar'), strip = $('#strip'), strip0 = W.strip, stripOff0 = W.stripOff;
   let down = false;
   const servo = (up) => { const s = SD.snd; s.tone('sawtooth', up ? 150 : 110, up ? 210 : 70, .42, .025); s.noise(.4, .05, 900, 0, 200); };
+  let shown = null, swapping = false;
   W.strip = (html, o = {}) => {
-    strip0(html, o); gsap.killTweensOf(strip); gsap.set(strip, { opacity: 1, y: 0, scale: 1 });
-    if (!down) {
-      down = true; gsap.killTweensOf(bar); servo(false);
-      gsap.timeline()
-        .fromTo(bar, { y: -160 }, { y: 0, duration: .55, ease: 'back.out(1.5)' })
-        .call(() => SFX.clunk(), null, .42)
-        .fromTo(strip, { opacity: 0 }, { keyframes: [{ opacity: .9, duration: .05 }, { opacity: .2, duration: .05 }, { opacity: 1, duration: .08 }] }, .5);   // the screen switches on
-    } else gsap.fromTo(strip, { opacity: 0, y: 6 }, { keyframes: [{ opacity: .7, y: 0, duration: .06 }, { opacity: .25, duration: .05 }, { opacity: 1, duration: .1 }] });   // just a screen refresh
+    const key = (o.big ? 'big:' : '') + html;
+    if (down && key === shown) {   // the same line again (the idle reminder): a soft pulse, no blink
+      if (!swapping) gsap.fromTo(strip, { scale: 1 }, { scale: 1.03, duration: .25, yoyo: true, repeat: 1, ease: 'sine.inOut' });
+      return;
+    }
+    shown = key; gsap.killTweensOf(strip);
+    if (down) {   // a new line: the old one fades out, the new one slides in (one smooth change, no flicker: QA bugs 8, 9)
+      swapping = true;
+      gsap.to(strip, { opacity: 0, y: -6, scale: 1, duration: .14, ease: 'power1.in', onComplete: () => {
+        swapping = false; strip0(html, o); gsap.killTweensOf(strip); gsap.fromTo(strip, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .28, ease: 'power2.out' }); } });
+      return;
+    }
+    strip0(html, o); gsap.killTweensOf(strip); gsap.set(strip, { opacity: 0, y: 0, scale: 1 });
+    down = true; gsap.killTweensOf(bar); servo(false);
+    gsap.timeline()
+      .fromTo(bar, { y: -160 }, { y: 0, duration: .55, ease: 'back.out(1.5)' })
+      .call(() => SFX.clunk(), null, .42)
+      .to(strip, { opacity: 1, duration: .3, ease: 'power1.out' }, .45);   // the screen comes on
   };
   W.stripOff = () => {
-    stripOff0();
+    shown = null; swapping = false; gsap.killTweensOf(strip); stripOff0();
     if (!down) return; down = false; gsap.killTweensOf(bar); servo(true);
     gsap.to(bar, { y: -160, duration: .45, delay: .15, ease: 'power2.in' });
   };
@@ -125,7 +138,7 @@
     const lamps = $('#lamps').querySelectorAll('i'), edge = $('#lamps .edge');
     gsap.fromTo(lamps, { opacity: 0 }, { opacity: 1, duration: .14, yoyo: true, repeat: 5, ease: 'power1.inOut' });
     gsap.fromTo(edge, { opacity: 0 }, { opacity: .9, duration: .2, yoyo: true, repeat: 3 });
-    setStreak(0); kick(5, .3);
+    setStreak(0);   // (no shake: a wrong answer jolting the whole view read as a screen glitch, QA bug 9)
   };
   const wrong0 = W.wrong;
   W.wrong = async s => {
@@ -137,6 +150,7 @@
      takes taps (through a tap target in the HUD: the play layers sit above the cannon). W.launcher(0) puts it back.
      The FIRE button (the story's button art) sits beside it: W.fireBtn('' | 'dim' | 'lit'). ---- */
   const hud = $('#hud'), sign = document.createElement('b'); sign.className = 'sign'; cn.appendChild(sign);
+  const tag = document.createElement('b'); tag.className = 'signTag'; cn.appendChild(tag);   // what the badge means, in words (QA bug 7)
   const hit = document.createElement('div'); hit.id = 'launchHit'; hit.dataset.edit = 'launcher'; hud.appendChild(hit);
   const fbtn = document.createElement('div'); fbtn.id = 'l1fire'; fbtn.dataset.edit = 'fire-button';
   fbtn.innerHTML = '<img src="assets/img/story/fire_off.webp" alt=""><img class="lit" src="assets/img/story/fire_lit.webp" alt="">'; hud.appendChild(fbtn);
@@ -145,7 +159,7 @@
   W.launcher = s => {
     const on = !!s, was = cn.classList.contains('armed');
     cn.classList.toggle('armed', on); cn.classList.toggle('pos', s > 0); hit.classList.toggle('on', on);
-    if (on) sign.textContent = s > 0 ? '+' : '−';
+    if (on) { sign.textContent = s > 0 ? '+' : '−'; tag.textContent = s > 0 ? 'POSITIVE missiles' : 'NEGATIVE missiles'; }
     if (on && !was) {   // it powers up: rises on its rail, the badge springs on
       slideTo(W.CONFIG.X0, .5); servo(false); gsap.delayedCall(.3, SFX.clunk);
       gsap.fromTo(cn, { y: 0 }, { keyframes: [{ y: -18, duration: .2, ease: 'power2.out' }, { y: 0, duration: .5, ease: 'bounce.out' }] });
@@ -153,6 +167,17 @@
     }
   };
   W.cannonShot = () => { shot(3, SD.CALM ? 3 : 6); return W.muzzle(); };
+  // the first missile launched in the tutorial: the badge's sign hops onto it, so the − (or +) on the launcher reads as "this
+  // launcher makes − missiles" (QA bug 7)
+  W.signLink = m => {
+    const a = W.centreOf(sign), neg = !cn.classList.contains('pos'), chip = el('signChip' + (neg ? '' : ' pos'), top, { left: a.x + 'px', top: a.y + 'px' });
+    chip.textContent = sign.textContent;
+    gsap.fromTo(tag, { scale: 1 }, { scale: 1.15, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' });
+    gsap.timeline({ onComplete: () => chip.remove() })
+      .to(chip, { left: m.x, top: m.y - 58, duration: .7, ease: 'power2.inOut' })
+      .to(chip, { scale: 1.3, duration: .2, yoyo: true, repeat: 3 })
+      .to(chip, { opacity: 0, duration: .4 }, '+=1.4');
+  };
   W.launcherNo = () => { SFX.clunk(); judder(); };
   W.onLaunch = fn => { LN.launch = fn; };
   hit.onpointerdown = e => { e.stopPropagation(); if (LN.launch) LN.launch(); };
@@ -206,20 +231,9 @@
       .fromTo(n, { scale: .2, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: -30, duration: .45, ease: 'back.out(2.6)' })
       .to(n, { y: -110, scale: .7, opacity: 0, duration: .55, ease: 'power2.in' }, '+=.45');
     W.scare(x, y);
-    gsap.delayedCall(.35, () => escapePod(x, y));
     if (!SD.CALM) glassBubbles(x, y);
   }
 
-  // 2 · escape pod: the enemy crew bail out with a white flag and bob away up out of sight (nobody gets hurt)
-  function escapePod(x, y) {
-    const p = new Image(); p.src = 'assets/img/escape_pod.webp'; Object.assign(p.style, { width: '92px', left: x - 46 + 'px', top: y - 60 + 'px' }); vis.appendChild(p);
-    const side = Math.random() < .5 ? -1 : 1;
-    gsap.timeline({ onComplete: () => p.remove() })
-      .fromTo(p, { scale: .2, opacity: 0, rotation: -30 * side }, { scale: 1, opacity: 1, y: -70, x: 30 * side, rotation: 8 * side, duration: .45, ease: 'back.out(2.2)' })
-      .to(p, { y: -480, x: 30 * side + 60 * side, rotation: -6 * side, duration: 2.6, ease: 'sine.in' })
-      .to(p, { opacity: 0, duration: .6 }, '-=.6');
-    gsap.to(p, { rotation: '+=10', duration: .4, yoyo: true, repeat: 7, ease: 'sine.inOut', delay: .45 });
-  }
 
   // 3 · bubbles from the blast stick to the glass and slide down
   function glassBubbles(x, y) {

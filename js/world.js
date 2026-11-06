@@ -62,19 +62,20 @@
     const s = dt / 1000 * W.mult * SD.rate; W.t = time;
     const px = PV.c * CONFIG.STEP;   // parallax: the far reef and the seabed follow a pan of the rope a little
     for (const L of LAYERS) { L.x = (L.x + L.speed * s) % (2 * L.w); const t = ((L.x + px * L.par) % (2 * L.w) + 2 * L.w) % (2 * L.w); L.t.style.transform = `translate3d(${-t}px,0,0)`; }
-    caus.x = (caus.x + 26 * s) % 512; cEl.style.transform = `translate3d(${-caus.x}px,${Math.sin(time * .6) * 6}px,0)`;
+    if (!SD.lite) { caus.x = (caus.x + 26 * s) % 512; cEl.style.transform = `translate3d(${-caus.x}px,${Math.sin(time * .6) * 6}px,0)`; }
   });
   gsap.to('#rays', { x: 60, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });   // drift only: rotating this big layer redrew it every frame
   gsap.to('#rays', { opacity: .3, duration: 3.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#caustics', { opacity: .22, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('#far', { y: 8, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  document.addEventListener('sd-lite', () => gsap.killTweensOf(['#rays', '#caustics']));   // a slow machine: these layers are off (core.js)
 
   /* ---- marine snow (tiny drifting specks: the strongest "we are underwater" cue) ---- */
   const snow = $('#snow'), sctx = snow.getContext('2d'), SN = []; sctx.scale(.5, .5);   // half-resolution canvas, CSS shows it full size
   for (let i = 0; i < 110; i++) SN.push({ x: Math.random() * 1920, y: Math.random() * 1080, z: .3 + Math.random() * .7, ph: Math.random() * 6 });
   let snowDt = 0, snowOdd = false;
   gsap.ticker.add((t, dt) => {
-    if (SD.paused) return;
+    if (SD.paused || SD.lite) return;
     snowDt += dt; snowOdd = !snowOdd; if (snowOdd) return;   // 30 fps is plenty for slow specks and halves the canvas uploads
     const s = snowDt / 1000 * SD.rate; snowDt = 0; sctx.clearRect(0, 0, 1920, 1080);
     for (const p of SN) {
@@ -205,15 +206,19 @@
     await new Promise(r => gsap.to(scan, { left: XR(to), duration: 2.2, ease: 'none', onUpdate() { const cur = Math.round((parseFloat(scan.style.left) - CONFIG.X0) / CONFIG.STEP); for (let v = 0; Math.abs(v) <= Math.abs(cur); v += dir || 1) { if (!lit.includes(v) && LBL[v]) { lit.push(v); gsap.fromTo(LBL[v], { scale: 1.6 }, { scale: 1, duration: .5 }); LBL[v].classList.add('on'); } if (!dir) break; } }, onComplete: r }));
     const w = el('word', sc, { left: (dir > 0 ? XR(to) - 340 : XR(to) + 20) + 'px', top: '400px' }); w.innerHTML = word || '';
     gsap.fromTo(w, { opacity: 0, x: -30 * dir }, { opacity: 1, x: 0, duration: .5 });
-    // the arrow grows out of 0: a shaft that thickens as the numbers grow, its head riding the tip, a light pulse running along it
-    const len = Math.abs(XR(to) - XR(0)), arrow = el(dir > 0 ? 'sweep' : 'sweep left', sc, { left: Math.min(XR(0), XR(to)) + 'px', width: len + 'px' });
-    const inn = el('in', arrow), shaft = el('shaft', inn), head = el('head', inn), glint = el('glint', shaft);
-    gsap.set(arrow, { opacity: 1 });
+    const arrow = W.arrow(0, to);
+    gsap.to(scan, { opacity: 0, duration: .4 });
+    return () => { gsap.to([w, arrow], { opacity: 0, duration: .3, onComplete: () => { arrow.kill(); w.remove(); arrow.remove(); } }); lit.forEach(v => LBL[v].classList.remove('on')); };
+  };
+  /* an arrow along the rope from one number to another (the L2 intro, the hints): a shaft that grows out of `from`, thickening
+     towards `to`, its head riding the tip, a light pulse running along it. Cyan to the right, orange to the left (css .sweep). */
+  W.arrow = (from, to) => {
+    const len = Math.abs(XR(to) - XR(from)), a = el(to > from ? 'sweep' : 'sweep left', sc, { left: Math.min(XR(from), XR(to)) + 'px', width: len + 'px' });
+    const inn = el('in', a), shaft = el('shaft', inn), head = el('head', inn), glint = el('glint', shaft);
     gsap.fromTo(shaft, { scaleX: 0 }, { scaleX: 1, duration: .55, ease: 'power3.out' });
     gsap.fromTo(head, { x: 62 - len, scale: .4 }, { x: 0, scale: 1, duration: .55, ease: 'power3.out' });
     const run = gsap.fromTo(glint, { xPercent: -100 }, { xPercent: 100, duration: 1.1, ease: 'power1.in', repeat: -1, repeatDelay: .25, delay: .5 });
-    gsap.to(scan, { opacity: 0, duration: .4 });
-    return () => { gsap.to([w, arrow], { opacity: 0, duration: .3, onComplete: () => { run.kill(); w.remove(); arrow.remove(); } }); lit.forEach(v => LBL[v].classList.remove('on')); };
+    a.kill = () => run.kill(); return a;
   };
 
   /* ================= submarines ================= */
@@ -335,7 +340,7 @@
   W.handTo = async (x, y, dur = .7) => { const h = $('#hand'); gsap.killTweensOf(h); h.classList.add('on'); const off = +getComputedStyle(h).opacity < .1; if (off) gsap.set(h, { left: x, top: y, scale: .4 }); gsap.to(h, { opacity: 1, scale: 1, duration: .3, ease: 'back.out(2)' }); if (!off) await gsap.to(h, { left: x, top: y, duration: dur, ease: 'power2.inOut' }); else await wait(Math.min(dur, .45)); };
   W.handTap = async (x, y) => { const h = $('#hand'); await gsap.to(h, { scale: 1.35, duration: .14, yoyo: true, repeat: 1, ease: 'power2.out' }); W.tapFx(x, y); SFX.tap(); };
   W.clearHints = () => {
-    hintEls.forEach(a => { if (a.ring) return gsap.to(a.ring, { opacity: 0, duration: .25 }); gsap.killTweensOf(a); gsap.to(a, { opacity: 0, duration: .25, onComplete: () => a.remove() }); });
+    hintEls.forEach(a => { if (a.ring) return gsap.to(a.ring, { opacity: 0, duration: .25 }); gsap.killTweensOf(a); gsap.to(a, { opacity: 0, duration: .25, onComplete: () => { if (a.kill) a.kill(); a.remove(); } }); });
     hintEls = []; W.hand(null); W.dimOthers(null, false);
   };
   // the distance from 0 to a position: a band along the rope with the number of steps on it (stays until the hints clear)
@@ -354,8 +359,7 @@
       play.style.pointerEvents = 'auto'; W.picking = false; SFX.tap(); W.tapFx(X(v), W.LBL_Y + CONFIG.SCALE_DY); res(v); }; });
   });
   W.sweepTo = (from, to) => {   // (stays until the hints clear)
-    const lo = Math.min(from, to), hi = Math.max(from, to), a = el('sweep' + (to < from ? ' left' : ''), sc, { left: XR(lo) + 'px', width: (XR(hi) - XR(lo)) + 'px', top: '478px' });
-    gsap.fromTo(a, { opacity: 0 }, { opacity: .95, duration: .4 }); SFX.ping(); hintEls.push(a);
+    const a = W.arrow(from, to); SFX.ping(); hintEls.push(a);
     if (LBL[to]) gsap.fromTo(LBL[to], { scale: 1 }, { scale: 1.45, duration: .35, yoyo: true, repeat: 3, delay: .4 });
   };
   W.lineLit = (v, on) => { const s = W.subAt(v); if (s) s.line.classList.toggle('lit', on); };
@@ -407,7 +411,7 @@
     const t = s.firstElementChild && o.big ? s.firstElementChild : s, fs = parseFloat(getComputedStyle(t).fontSize), sw = s.scrollWidth, cw = s.clientWidth;   // one measurement:
     if (sw > cw + 1) { const fit = Math.floor(fs * cw / sw);   // a long line shrinks to fit the panel…
       if (fit >= 32) { t.style.fontSize = fit + 'px'; if (s.scrollWidth > s.clientWidth + 1) t.style.fontSize = Math.max(32, fit - 2) + 'px'; } else { s.classList.add('two'); t.style.fontSize = '32px'; } }   // …and a very long one takes two lines (still big enough to read)
-    s.classList.remove('glint'); void s.offsetWidth; s.classList.add('glint'); gsap.fromTo(s, { opacity: 0, y: -24, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .45, ease: 'back.out(2)' }); };
+    gsap.fromTo(s, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .3, ease: 'power2.out' }); };
   W.stripOff = () => gsap.to('#strip', { opacity: 0, duration: .3 });
   W.pips = (n, done) => { const p = $('#pips'); p.innerHTML = ''; W.pipDone = done; for (let i = 0; i < n; i++) { const im = new Image(); im.src = 'assets/img/' + (i < done ? 'pip_on' : 'pip_off') + '.webp'; p.appendChild(im); } if (done > 0) gsap.fromTo(p.children[done - 1], { scale: 1.8 }, { scale: 1, duration: .4, ease: 'back.out(3)' }); if (p.children[done]) p.children[done].classList.add('now'); };
   W.banner = async (k, t, s, hold = 2.4) => {
