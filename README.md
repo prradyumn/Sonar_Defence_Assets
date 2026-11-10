@@ -51,6 +51,11 @@ The original art pack (PNG sources, concepts, briefs) is not needed by the game;
 - **Level 3 (27):** the panel says the order: "Fire in ascending order (smallest first): −3, −6, −9, −12" (Hindi: "आरोही क्रम में दागो (सबसे छोटी संख्या पहले): …"); the intro line is "Ascending order: from smallest to biggest".
 - **Fonts (28):** every panel line is Baloo 600 at 36 px (a long one takes two rows, never shrinks); every font face is loaded before Play and `font-display: block` means a fallback font is never drawn; the ◀ ▶ arrows (not in the game's fonts, so the browser drew them in a system font, and looking that font up stalled a frame) are drawn in CSS.
 
+## QA round 3 (last items)
+- **Level 2's comparison (−15 < −10):** the same font and weight as every panel line, at 44 px (`#strip .expr`): bare digits and < are only as tall as capitals, so at 36 px the comparison read smaller than the sentences (most of all next to Hindi).
+- **Level 2's inactivity hint** (the answer's submarine and number pulse) comes after 9 s without a tap, not 6 s (then 12 s and 22 s as before). The first round's tutorial hand is unchanged.
+- **Level 1's missiles** pop once, as they arrive (with the pop sound); later hints (inactivity, after a wrong volley) make them glow gold instead of popping them again, and the sign badge lands on the first launched missile once instead of pulsing on it.
+
 ## Deploy (Vercel)
 It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
 

@@ -413,8 +413,9 @@
 
   /* ================= HUD ================= */
   /* every line in the panel is the same font, size and weight (QA bug 28): a line too long for one row takes two rows at the same
-     size (it is never shrunk); only a line too long even for two rows is made smaller */
-  W.strip = (html, o = {}) => { const s = $('#strip'); s.innerHTML = o.big ? `<span class="big">${html}</span>` : html; s.style.fontSize = ''; s.classList.remove('two');
+     size (it is never shrunk); only a line too long even for two rows is made smaller. o.expr: Level 2's comparison (−15 < −10),
+     the same font a little larger, since bare digits and < read smaller than words (most of all next to Hindi) */
+  W.strip = (html, o = {}) => { const s = $('#strip'); s.innerHTML = o.big || o.expr ? `<span class="${o.expr ? 'expr' : 'big'}">${html}</span>` : html; s.style.fontSize = ''; s.classList.remove('two');
     if (s.scrollWidth > s.clientWidth + 1) { s.classList.add('two'); if (s.offsetHeight > s.parentNode.clientHeight) s.style.fontSize = '30px'; }
     gsap.fromTo(s, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .3, ease: 'power2.out' }); };
   W.stripOff = () => gsap.to('#strip', { opacity: 0, duration: .3 });
@@ -453,6 +454,7 @@
     for (let k = 0; k < n; k++) {
       const m = mkMsl(sign, 0, k);
       gsap.fromTo(m.d, { x: sign > 0 ? -900 : 900, opacity: 0 }, { x: 0, opacity: 1, duration: .9, ease: 'power3.out', delay: k * .07 });
+      gsap.fromTo(m.d, { scale: .55 }, { scale: 1, duration: .5, ease: 'back.out(3)', delay: k * .07 + .45 });   // the pop is on arrival (with its sound)
       bobMsl(m, .6);
     }
     SFX.whoosh ? SFX.whoosh() : SFX.pop(); gsap.delayedCall(.5, () => SFX.pop()); await wait(1 + n * .07);
@@ -486,7 +488,7 @@
   // the pairs that can cancel (first + with first −, …) and the missiles left over after them
   W.mslPairs = () => { const p = W.mslAlive().filter(m => m.sign > 0), n = W.mslAlive().filter(m => m.sign < 0), out = []; for (let i = 0; i < Math.min(p.length, n.length); i++) out.push([p[i], n[i]]); return out; };
   W.mslRemain = () => { const p = W.mslAlive().filter(m => m.sign > 0), n = W.mslAlive().filter(m => m.sign < 0); return p.length > n.length ? p.slice(n.length) : n.slice(p.length); };
-  W.mslHintsOff = () => MS.list.forEach(m => { if (!m.d.classList.contains('hint')) return; m.d.classList.remove('hint'); gsap.killTweensOf(m.d, 'scale'); gsap.set(m.d, { scale: 1 }); });
+  W.mslHintsOff = () => MS.list.forEach(m => { m.hintK = (m.hintK || 0) + 1; m.d.classList.remove('hint'); });
   W.mslRow = r => W.mslAlive().filter(m => m.row === r);
   // counting the missiles that came: 1, 2, 3 … pops up over each as it glows; the numbers fade away a few seconds after the last
   let counts = [];
@@ -498,7 +500,10 @@
     counts.forEach(c => gsap.to(c, { opacity: 0, y: -14, duration: .5, delay: end, onComplete: () => c.remove() }));
   };
   W.mslCountOff = () => { counts.forEach(c => { gsap.killTweensOf(c); gsap.to(c, { opacity: 0, duration: .2, onComplete: () => c.remove() }); }); counts = []; };
-  W.mslPulse = (list, delay = 0, each = .04) => list.forEach((m, i) => { gsap.delayedCall(delay + i * each, () => m.d.classList.add('hint')); gsap.fromTo(m.d, { scale: 1 }, { scale: 1.25, duration: .4, yoyo: true, repeat: 5, delay: delay + i * each, ease: 'sine.inOut', onComplete: () => m.d.classList.remove('hint') }); });
+  // a hint on missiles already in place: they glow gold for a while (they don't pop again: the pop is their entrance)
+  W.mslPulse = (list, delay = 0, each = .04) => list.forEach((m, i) => { const k = m.hintK = (m.hintK || 0) + 1;
+    gsap.delayedCall(delay + i * each, () => { if (m.hintK === k) m.d.classList.add('hint'); });
+    gsap.delayedCall(delay + i * each + 2.4, () => { if (m.hintK === k) m.d.classList.remove('hint'); }); });
   // a missile that came with no partner gets through: it dives at the window, growing as it comes at us (resolves on impact)
   W.mslHitUs = (m, to) => { m.alive = false; gsap.killTweensOf([m.d, m.im]); m.d.classList.remove('hint', 'bad');
     return new Promise(r => gsap.to(m.d, { left: to.x, top: to.y, scale: 4.2, rotation: (to.x < m.x ? -1 : 1) * 14, duration: .55, ease: 'power2.in', onComplete: () => { m.d.remove(); r(); } })); };

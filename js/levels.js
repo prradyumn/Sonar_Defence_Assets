@@ -30,7 +30,7 @@
 
   /* ---------- fire at one submarine with the 3-strike rule ----------
      A wrong tap gets Incorrect Feedback 1, 2, 3 (with their animations); after the third only the right submarine answers.
-     Idle: 6 s → the inactivity animation · 12 s → the inactivity line too (as text) · 22 s → both again.
+     Idle: 6 s (o.nudge: Level 2 waits 9 s) → the inactivity animation · 12 s → the inactivity line too (as text) · 22 s → both again.
      o.guide (a level's first round, the tutorial): the helper glow shows what to tap, again after every miss.
      o.replay (Level 2): on the second wrong tap the guided replay runs instead of Incorrect Feedback 2; after it only the right
      submarine answers (o.didReplay is set). */
@@ -44,7 +44,7 @@
          at it, so it is clear what can be tapped; a tap on a grey one gets a soft "not this one" and the helper again (QA bug 26) */
       const point = () => { if (!only) return; W.dimOthers(only); W.ring(only); W.pulseSub(only); W.handTo(only.x, only.cy, .5); };
       point();
-      const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); note(idleLine, R.ost); }, onIdle2: () => { idleAnim(); note(idleLine, R.ost); }, only,
+      const s = await W.waitTap({ nudge: o.nudge, onNudge: idleAnim, onIdle: () => { idleAnim(); note(idleLine, R.ost); }, onIdle2: () => { idleAnim(); note(idleLine, R.ost); }, only,
         onBlocked: b => { SFX.wrong(); W.nudgeNo(b); point(); } });
       SD.skip();
       if (s.v === target) { noteEnd(); W.clearHints(); if (R.unexplain) R.unexplain(); const r = await W.lock(s); SFX.right(); await W.fire(s, r); return wrong === 0; }
@@ -214,7 +214,7 @@
     let strikes = 0, busy = false, tut = !!R.tutorial, linked = false;   // tut: the hand shows what to tap
     const count = () => W.mslRow(1).length;
     const ANIM = {   // no incorrect animations in the sheet for Level 1: point at the count
-      given: () => { W.mslPulse(W.mslRow(0), 0, .4); W.mslCount(W.mslRow(0), 0, .4); },   // the missiles that came pulse one by one, counted 1, 2, 3 …
+      given: () => { W.mslPulse(W.mslRow(0), 0, .4); W.mslCount(W.mslRow(0), 0, .4); },   // the missiles that came glow one by one, counted 1, 2, 3 …
       launcher: () => { W.handTo(...pt('#launchHit')); if (!tut) gsap.delayedCall(2.6, () => W.hand(null)); },   // the launcher glows
       both: () => { ANIM.given(); ANIM.launcher(); },
     };
@@ -330,11 +330,12 @@
         if (W.waiting) W.handTo(s.x, s.cy, .8); }),
       fb: k => { const fb = R.fbL[Math.min(k, 3) - 1]; return { line: fb.line, anim: async () => { if (!line) await explain(R); ANIM[fb.kind](R); if (k === 1 && line) W.borderTag(true); } }; },
       replay: !tut && !extra && (() => replay(R)),
+      nudge: 9,   // the inactivity hint shows the answer, so it waits 9 s (QA)
     };
     const first = await strike(R, R.target, o); W.dragRope(false);
     if (!extra) mark(first);
     W.reward({ big: first, pip: extra ? null : W.pipDone });
-    await wait(.5); W.strip(R.show, { big: true }); await Promise.all([SD.narrate(R.show), wait(1.4)]);   // Correct Animation: show −12 < −10
+    await wait(.5); W.strip(R.show, { expr: true }); await Promise.all([SD.narrate(R.show), wait(1.4)]);   // Correct Animation: show −12 < −10
     await note(R.ok);
     await wait(1.4); W.borderTag(false); await W.clearSubs(); W.stripOff();
     return !!o.didReplay;

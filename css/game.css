@@ -114,6 +114,7 @@ img{-webkit-user-drag:none;user-select:none}
   background:radial-gradient(circle,#7ff2ff 0 5px,transparent 6px)}
 #strip b{color:#ffd66b}
 #strip .big{font:inherit;letter-spacing:normal}   /* every line in the panel has one font, size and weight (QA bug 28) */
+#strip .expr{font:inherit;font-size:44px;line-height:1;letter-spacing:normal;word-spacing:4px}   /* …the comparison −15 < −10 a little larger: digits are as tall as capitals only, so at 36px it read smaller than the sentences */
 #pips{position:absolute;right:128px;top:50px;display:flex;gap:8px}
 #pips img{width:40px;height:40px;object-fit:contain}
 .ibtn{position:absolute;width:84px;height:84px;pointer-events:auto;cursor:pointer;background:center/contain no-repeat}

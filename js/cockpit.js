@@ -177,7 +177,7 @@
     gsap.fromTo(tag, { scale: 1 }, { scale: 1.15, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' });
     gsap.timeline({ onComplete: () => chip.remove() })
       .to(chip, { x: m.x - a.x, y: m.y - 58 - a.y, duration: .7, ease: 'power2.inOut' })   // (transform only: no layout per frame)
-      .to(chip, { scale: 1.3, duration: .2, yoyo: true, repeat: 3 })
+      .fromTo(chip, { scale: 1.25 }, { scale: 1, duration: .3, ease: 'power2.out' })   // it lands once (the missile under it doesn't pop again)
       .to(chip, { opacity: 0, duration: .4 }, '+=1.4');
   };
   W.launcherNo = () => { SFX.clunk(); judder(); };
