@@ -37,11 +37,19 @@ The original art pack (PNG sources, concepts, briefs) is not needed by the game;
 - **Pauses when away:** the game freezes while its tab is hidden or its window is not in front (game clock, voice from the same word, music, CSS loops, the title's sea) and carries on from the same moment (`SD.hold` in `js/core.js`; the layout editor's pause uses it too).
 - **Slow machines:** if the frame rate stays under ~45 fps in play, the decorative layers switch off (sun rays, caustics, surface shimmer, marine snow: `body.lite`); `?fx=lite` forces it. Meera's talking sheet decodes on a worker, and the story's WebGL water is prepared while the title is up, at the screen's own resolution.
 - **Voice:** each part's recordings are fetched ahead; the speech box comes up as the voice starts; Meera's mouth moves only while the voice is sounding. A line that never starts (8 s) or never ends carries on by itself, so it can't hold the game up.
-- **Title voice:** browsers allow no sound before the first click, tap or key, so "Sonar Defence!" plays on the first one anywhere on the cover.
+- **Title voice:** browsers allow no sound before the first click, tap or key, so "Sonar Defence!" is tried on load and plays on the first press anywhere (Play included: the story waits for it); every later tap on the cover says it again.
 - **Cards:** every Level Complete card waits for Next (the heading follows the ribbon's arch). After Level 3 the ending plays and stays on ROUTE CLEARED: no restart, no Play Again.
 - **Removed:** the sonar-room doors after Play, the escape pod after a hit (it read as a second missile), the panel's flicker and the shake on a wrong answer.
-- **Level 1:** the launcher's badge says what it makes ("NEGATIVE missiles" / "POSITIVE missiles"), and in the tutorial its sign hops onto the first missile; the correct line is said while the pairs cancel.
-- **Level 2:** after a wrong tap the number line stays until the hint has been said, plus 2 s.
+- **Level 1:** the launcher's badge says what it makes ("NEGATIVE missiles" / "POSITIVE missiles"), and in every mission its sign hops onto the first missile launched; the correct line is said while the pairs cancel.
+- **Level 2:** after a wrong tap the number line comes in with the hint and stays while the child chooses (they can answer after ~1.7 s); from the 3rd miss, and after the guided replay, the other submarines grey out and the helper points at the one that answers (a tap on a grey one gets a soft "not this one"); in the replay the helper points at the two numbers to pick from. A submarine's glow and shield rings don't take taps.
+
+## QA round 2: re-test (bugs 1, 7, 15, 19, 22, 24–28)
+- **Launch (1):** the title shows once its pictures are decoded (the navy frame until then, at most 2.5 s), then fades in whole and plays its entrance on a quiet page: the story's art, the game's art, the sounds and the story's WebGL water load only after that, one at a time in idle moments.
+- **Transitions (19):** no screen shake on sailing, on a launch or as the stars land; the hit is one short smooth thump; the torpedo, the hit's light and the blast frames move by transform only (no layout or repaint per frame).
+- **Cards (15):** Next is centred without a transform and never scaled (only a glow behind it pulses), the card glides in without overshoot.
+- **Story (25):** no tap-to-skip, no Skip button, no "tap to continue": the story always plays in order.
+- **Level 3 (27):** the panel says the order: "Fire in ascending order (smallest first): −3, −6, −9, −12" (Hindi: "आरोही क्रम में दागो (सबसे छोटी संख्या पहले): …"); the intro line is "Ascending order: from smallest to biggest".
+- **Fonts (28):** every panel line is Baloo 600 at 36 px (a long one takes two rows, never shrinks); every font face is loaded before Play and `font-display: block` means a fallback font is never drawn; the ◀ ▶ arrows (not in the game's fonts, so the browser drew them in a system font, and looking that font up stalled a frame) are drawn in CSS.
 
 ## Deploy (Vercel)
 It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
@@ -129,7 +137,6 @@ open http://localhost:8000/?edit=1
 ## Test shortcuts (URL)
 - `?at=hook | l1 | l2 | l3` start at a section, `&round=2` start at a round
 - `&speed=2` faster animations, `&mute=1` no sound/voice, `&autostart=1` skip the title button
-- In the story: tap = next line, "Skip story" jumps to the dive.
 
 ## Files
 - `js/script.js` EVERY spoken line ({id, who, text}) + level data. The game and `tools/make_voices.py` both read it — edit lines here (and re-record: `--only <id> --force`).

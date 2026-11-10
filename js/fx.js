@@ -3,7 +3,7 @@
    3 outside sounds come through the glass (muffled, panned left/right), a hit = beat of silence → deep thump → glass rattle
    4 a hit submarine breaks in two                    5 a sonar sweep from 0 finds the submarines before they rise
    6 a distance beam runs from the hit number to 0   7 a soft tension layer while the child is choosing
-   8 level complete: we surface into sunlight and the stars slam down
+   8 level complete: we surface into sunlight and the stars land
    Everything animates transform / opacity only (no per-frame repaints). */
 (function () {
   const { $, SFX } = SD, snd = SD.snd, X = W.X, el = W.el, wait = SD.wait;
@@ -43,8 +43,8 @@
     const t = sea.querySelector('.torp');
     if (t) {
       if (!lit) { lit = true; gsap.to(light, { opacity: 1, duration: .15 }); }
-      const sc = +(t.style.transform.match(/scale\(([\d.]+)\)/) || [0, 1])[1];
-      light.style.transform = `translate(${parseFloat(t.style.left)}px,${parseFloat(t.style.top)}px) scale(${(.6 + sc * .6).toFixed(3)})`;
+      if (t._x == null) return;
+      light.style.transform = `translate3d(${t._x.toFixed(1)}px,${t._y.toFixed(1)}px,0) scale(${(.6 + t._s * .6).toFixed(3)})`;
     } else if (lit) { lit = false; gsap.to(light, { opacity: 0, duration: .25 }); }
   });
   // the blast's light lands on the metal frame: a pre-tinted copy of the frame fades in and out (opacity only — no per-frame filter)
@@ -138,17 +138,17 @@
     go(true);
   }
 
-  /* ---------- 8 · level complete: we surface into sunlight, the stars slam down ---------- */
+  /* ---------- 8 · level complete: we surface into sunlight, the stars land ---------- */
   const done = $('#done'), wash = el('sunwash', $('#water'));
   new MutationObserver(() => {
-    if (done.classList.contains('hidden')) { gsap.to(wash, { autoAlpha: 0, duration: 1.2 }); gsap.to('#rays', { filter: 'brightness(1)', duration: 1.2 }); return; }
-    gsap.to(wash, { autoAlpha: 1, duration: 1.4, ease: 'sine.out' }); gsap.to('#rays', { filter: 'brightness(1.9)', duration: 1.4 });
+    if (done.classList.contains('hidden')) { gsap.to(wash, { autoAlpha: 0, duration: 1.2 }); return; }
+    gsap.to(wash, { autoAlpha: 1, duration: 1.4, ease: 'sine.out' });   // (the sun wash alone: a filter tween on the rays repainted the whole layer every frame)
     for (let i = 0; i < 14; i++) setTimeout(() => W.spawnBubble(true), i * 70);
     snd.noise(1.4, .12, 1800, 0, 300);
     [392, 494, 587, 784].forEach((f, i) => snd.tone('sine', f, 0, 1.6, .05, .1 + i * .08));
     const stars = done.querySelectorAll('#dstars img');
-    stars.forEach((st, i) => gsap.delayedCall(.4 + i * .18 + .4, () => {   // as each star lands (levels.js pops them in with back.out)
-      W.shake(3.5, .22); snd.tone('sine', 150, 55, .3, .3); snd.noise(.12, .12, 2500);
+    stars.forEach((st, i) => gsap.delayedCall(.4 + i * .18 + .4, () => {   // as each star lands: a soft thud (no screen shake: QA bug 15)
+      snd.tone('sine', 150, 55, .3, .3); snd.noise(.12, .12, 2500);
       if (!st.classList.contains('off')) snd.tone('triangle', [1047, 1319, 1568][i] || 1568, 0, .5, .1, .03);
     }));
   }).observe(done, { attributes: true, attributeFilter: ['class'] });

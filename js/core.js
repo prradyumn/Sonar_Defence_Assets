@@ -295,25 +295,35 @@
   for (const k in SHEET) SHEET[k].wait = [];
   const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
   /* Loading in order of need, so the first screens are not slowed by art they don't show:
-     1 · the title's art (in the page itself, highest priority: index.html)
-     2 · the story's art (the hook comes right after Play), decoded in the background — READY waits for it
-     3 · LATER, once that is in: Meera's sheet (first needed at Level 1's intro), the rest of the game art, the sounds (the
-         story's first, the missions' music last). Decoded images are kept (KEEP) so the browser does not throw the pixels away
-         and decode them again at the first hit. */
+     1 · the title's art (in the page itself, highest priority: index.html). The title shows once it is decoded and plays its
+         entrance on a quiet page: nothing else is fetched or decoded until then (QA bug 1). levels.js calls SD.titleShown()
+         when it appears and SD.titleSettled() when its entrance is over (or Play is pressed).
+     2 · the story's art (the hook comes right after Play), decoded in the background once the title is up — READY waits for it
+     3 · LATER, once the title has settled: Meera's sheet (first needed at Level 1's intro), the rest of the game art, the sounds
+         (the story's first, the missions' music last), one at a time in the browser's idle moments. Decoded images are kept (KEEP)
+         so the browser does not throw the pixels away and decode them again at the first hit. */
+  let shown, settled; const SHOWN = new Promise(r => { shown = r; }), SETTLED = new Promise(r => { settled = r; });
+  setTimeout(() => { shown(); settled(); }, 8000);   // (never later than this, whatever happens)
+  const idle = () => new Promise(r => window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 700 }) : setTimeout(r, 50));
   const KEEP = [], art = (dir, n) => { const i = new Image(); i.src = 'assets/img/' + dir + n + '.webp'; KEEP.push(i); return i.decode().catch(() => {}); };
-  const STORY = LOW ? Promise.resolve() : Promise.all(['bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'meera_shocked', 'meera_determined'].map(n => art('story/', n)));
+  const STORY = LOW ? Promise.resolve() : Promise.race([SHOWN.then(() => new Promise(r => setTimeout(r, 900))), SETTLED])   // (after the logo has landed)
+    .then(() => Promise.all(['bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'meera_shocked', 'meera_determined'].map(n => art('story/', n))));
+  /* every font face the game uses is loaded up front (Hindi: its Devanagari faces too). A face loads only when text first uses it, so
+     a feedback line in a face not yet used came up in the fallback font for a moment, the first time only (QA bug 28). */
+  const FONTS = document.fonts ? Promise.all(['600 1em Baloo', '800 1em Baloo', '500 1em Fredoka', '700 1em Fredoka', '600 1em Poppins']
+    .map(f => document.fonts.load(f, HIN ? 'A अ' : 'A').catch(() => {}))) : Promise.resolve();
   // ready: the fonts and the story's art are in (capped at 5 s) — the game starts after this
   const READY = Promise.race([
-    Promise.all([STORY, document.fonts ? document.fonts.ready : 0]).then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))),
+    Promise.all([STORY, FONTS]).then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))),
     new Promise(r => setTimeout(r, 5000)),
   ]);
-  READY.then(() => {   // LATER
-    document.body.classList.remove('booting');   // the game world's pictures (css/game.css)
-    loadSheet(SHEET.meera); if (!CALM) loadSheet(SHEET.riya);
+  Promise.all([READY, SETTLED]).then(async () => {   // LATER: one thing at a time, each in an idle moment (no burst of decoding)
+    await idle(); document.body.classList.remove('booting');   // the game world's pictures (css/game.css)
+    await idle(); loadSheet(SHEET.meera); if (!CALM) loadSheet(SHEET.riya);
     if (!MUTE) loadSounds(['music_calm', 'waves', 'sonar', 'bubbles', 'rush', 'splash', 'torpedo', 'explosion']);
-    if (!LOW) ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'pop', 'pip_on', 'pip_off',
-      'star_gold', 'star_silver', 'marker', 'card', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water'].forEach(n => art('', n));
-    setTimeout(() => { if (!MUTE) loadSounds(['music_play']); }, 2500);   // the missions' music last (not needed before Level 1)
+    if (!LOW) for (const n of ['sub', 'sub_hit', 'torpedo', 'reticle', 'cannon', 'cockpit', 'blast_sheet', 'pop', 'pip_on', 'pip_off',
+      'star_gold', 'star_silver', 'marker', 'card', 'surface_light', 'caustics', 'rays', 'far', 'seabed', 'water']) { await idle(); await art('', n); }
+    await idle(); if (!MUTE) loadSounds(['music_play']);   // the missions' music last (not needed before Level 1)
   });
   function talker(who) {
     const s = SHEET[who], c = document.createElement('canvas'), g = c.getContext('2d');
@@ -438,7 +448,7 @@
   const away = () => hold('away', document.hidden || !document.hasFocus());
   document.addEventListener('visibilitychange', away); addEventListener('blur', away); addEventListener('focus', away);
 
-  window.SD = { $, Q, SPEED, lite: false, hold, onHold: f => onHold.push(f), voiceLevel, prefetchVO, stageScale, toStage, MUTE, wait, fmt, readTime, audioOn, SFX, say, narrate, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
+  window.SD = { $, Q, SPEED, lite: false, hold, idle, settled: SETTLED, titleShown: () => shown(), titleSettled: () => { shown(); settled(); }, onHold: f => onHold.push(f), voiceLevel, prefetchVO, stageScale, toStage, MUTE, wait, fmt, readTime, audioOn, SFX, say, narrate, hush, skip, captionOff, talker, ready: READY, CALM, LOW, snd: { tone, noise, sample, get AC() { return AC; }, get music() { return musicBus; }, get master() { return master; } }, music: n => bed('music', n && 'music_' + n), ambience: n => bed('amb', n), get lastLine() { return lastLine; },
     // editor hooks: paused = freeze ticker work + spawners · rate = extra speed factor for ticker-driven motion · where = current section
     paused: false, rate: 1, where: { at: 'title', round: 1 }, get audioCtx() { return AC; }, holdVoice, fit, inset, layoutCSS, applyLayout };
 })();

@@ -101,3 +101,9 @@
 }
 /* the title is gone: its loops stop (no work while the game runs) */
 #title.hidden .art *{animation-play-state:paused}
+
+/* until its pictures are decoded the title is its navy frame (no picture popping in, no stutter while they decode), then the
+   art fades in and the entrance starts from its first frame (levels.js reveal(), QA bug 1) */
+#title .art{transition:opacity .4s ease-out}
+#title.wait .art,#title.wait .pings,#title.wait #start{opacity:0}
+#title.wait .art *,#title.wait .pings i{animation-play-state:paused!important}

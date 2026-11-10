@@ -91,12 +91,15 @@
   Object.keys(L2_EXTRA).forEach(k => reg('v3l2_extra_' + k, L2_EXTRA[k]));
 
   /* ---------- Level 3 · fire in order, smaller number first (sheet L3 V3) ----------
-     ost = the numbers shown on screen, in the sheet's order; the child fires them from the smallest up.
+     ost = the order to fire in, said in words, then the numbers in the sheet's order; the child fires them from the smallest up
+     (the check in levels.js orderRound sorts them the same way, ascending). The panel used to show the bare numbers, which did
+     not say which way to order them (QA bug 27).
      Incorrect Feedback 3 names the submarine to fire next ("Select the submarine with −12."). */
-  const L3_TEACH = { ost: 'Smaller → Bigger' };
+  const L3_TEACH = { ost: 'Ascending order: from smallest to biggest' };
+  const ORD_OST = list => `Fire in ascending order (smallest first): ${list}`;
   const ORD_FB1 = 'Check which submarine is closer to our border.', ORD_FB2 = 'Check which submarine has the smaller number and is closer to our border.';
   const ORD_IDLE = 'Select the submarine with the smaller number.', ORD_OK = 'Great! You fired from closer to farther.', ORD_VO = 'Fire submarines that are closer and then farthest.';
-  const ord = (subs, cheer) => ({ subs, vo: ORD_VO, ost: subs.map(f).join(', '), ok: ORD_OK, cheer, fb: [[ORD_FB1, 'shake'], [ORD_FB2, 'numbers']], idle: [ORD_IDLE, 'smallest'] });
+  const ord = (subs, cheer) => ({ subs, vo: ORD_VO, ost: ORD_OST(subs.map(f).join(', ')), ok: ORD_OK, cheer, fb: [[ORD_FB1, 'shake'], [ORD_FB2, 'numbers']], idle: [ORD_IDLE, 'smallest'] });
   const L3 = [
     ord([-3, -6, -9, -12], 'ROUTE CLEARED!'),
     ord([-2, -5, -8, -11]),

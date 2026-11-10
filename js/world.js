@@ -13,8 +13,9 @@
     const tilt = !!(TILT.r || TILT.y);
     if (!SHK.amp && !tilt && !TILT.was) return;
     TILT.was = tilt; let x = 0, y = 0;
-    if (SHK.amp) { SHK.t += dt / 1000; const a = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d);
-      if (a < .5) SHK.amp = 0; else { x = Math.round((Math.random() - .5) * 2 * a); y = Math.round((Math.random() - .5) * 1.2 * a); } }
+    // a short, smooth thump (a damped swing, not random jitter: that read as stutter on a slow screen, QA bug 22)
+    if (SHK.amp) { SHK.t += dt / 1000; const k = SHK.t / SHK.d, a = SHK.amp * Math.max(0, 1 - k) * Math.max(0, 1 - k);
+      if (a < .5) SHK.amp = 0; else { const w = SHK.t * 2 * Math.PI * 9; x = Math.round(Math.sin(w) * a); y = Math.round(Math.sin(w * 1.3 + 1) * a * .6); } }
     shakeEl.style.transform = `translate3d(${x}px,${y + TILT.y}px,0)` + (tilt ? ` rotate(${TILT.r}deg) scale(${1 + Math.abs(TILT.r) * .032 + Math.abs(TILT.y) / 540})` : '');   // (scaled up so the edges never show)
   });
   const shake = (k = 8, d = .4) => { const left = SHK.amp * Math.max(0, 1 - SHK.t / SHK.d); if (k < left) return; SHK.amp = k; SHK.t = 0; SHK.d = d; };
@@ -274,15 +275,16 @@
   W.ring = s => { if (!s) return; const r = s.d.querySelector('.ring'); gsap.killTweensOf(r); gsap.set(r, { opacity: 1 }); gsap.fromTo(r, { scale: 1.6 }, { scale: 1, duration: .4, ease: 'back.out(2)' }); hintEls.push({ ring: r }); };
 
   /* ================= tapping ================= */
-  let tapRes = null, tapFilter = null;
+  let tapRes = null, tapFilter = null, tapBlocked = null;
   play.addEventListener('pointerdown', e => {
     const d = e.target.closest('.sub'); if (!d || !tapRes || !d._s.alive) return;
-    if (tapFilter && !tapFilter(d._s)) return; const r = tapRes; tapRes = null; r(d._s);
+    if (tapFilter && !tapFilter(d._s)) { if (tapBlocked) tapBlocked(d._s); return; }   // (o.only: a tap on another one is answered, not ignored)
+    const r = tapRes; tapRes = null; r(d._s);
   });
   // waits for a sub tap. Escalating help while the child is stuck:
   //   6 s → rings turn gold & subs wiggle (no words) · 12 s → onIdle (spoken nudge) · 22 s → onIdle2 (gentle reminder)
   W.waitTap = (o = {}) => new Promise(res => {
-    tapFilter = o.only ? (s => s === o.only) : null; play.style.pointerEvents = 'auto'; W.waiting = true; play.classList.add('waiting');
+    tapFilter = o.only ? (s => s === o.only) : null; tapBlocked = o.onBlocked || null; play.style.pointerEvents = 'auto'; W.waiting = true; play.classList.add('waiting');
     const calls = [
       o.noIdle ? null : gsap.delayedCall(o.nudge || 6, o.onNudge || (() => { play.classList.add('nudge'); W.pulseAll(); gsap.fromTo('#strip', { scale: 1 }, { scale: 1.04, duration: .25, yoyo: true, repeat: 3 }); })),
       o.onIdle ? gsap.delayedCall(o.idle || 12, o.onIdle) : null,
@@ -292,6 +294,7 @@
   });
   W.tapFx = (x, y) => { const t = el('tapfx', fx, { left: x + 'px', top: y + 'px' }); gsap.fromTo(t, { scale: .3, opacity: 1 }, { scale: 1.6, opacity: 0, duration: .45, onComplete: () => t.remove() }); };
   W.cancelTap = () => { tapRes = null; W.waiting = false; play.classList.remove('waiting', 'nudge'); };
+  W.nudgeNo = s => s && gsap.fromTo(s.d, { x: 0 }, { x: 8, duration: .06, yoyo: true, repeat: 5, ease: 'none', clearProps: 'x' });   // "not this one" (a soft shake)
 
   /* ================= targeting & blast (the cannon and its torpedo live in cockpit.js: W.aimHook, W.fire) ================= */
   const aim = (x, y, dur) => W.aimHook && W.aimHook(x, y, dur);
@@ -304,10 +307,9 @@
   };
   W.blast = async s => {
     SFX.boom(); s.alive = false;
-    const b = el('blast', fx, { left: s.x + 'px', top: s.cy + 'px' });
-    shake(5, .45);
-    const fl = $('#flash'); fl.style.setProperty('--fx', s.x + 'px'); fl.style.setProperty('--fy', s.cy + 'px');
-    gsap.fromTo(fl, { opacity: 1 }, { opacity: 0, duration: .6, ease: 'power2.out' });
+    const b = el('blast', fx, { left: s.x + 'px', top: s.cy + 'px' }), bf = el('', b);
+    shake(4, .35);
+    gsap.set('#flash', { x: s.x, y: s.cy }); gsap.fromTo('#flash', { opacity: 1 }, { opacity: 0, duration: .6, ease: 'power2.out' });
     if (!SD.CALM) { const sh = el('shock', fx, { left: s.x + 'px', top: s.cy + 'px' });
     gsap.fromTo(sh, { scale: .2, opacity: 1 }, { scale: 3.4, opacity: 0, duration: .7, ease: 'power2.out', onComplete: () => sh.remove() }); }
     for (let i = 0; i < (SD.CALM ? 0 : 14); i++) {   // calm: the sub breaking in two (fx.js) carries the hit
@@ -316,7 +318,7 @@
       gsap.to(bb, { x: Math.cos(a) * d, y: Math.sin(a) * d * .7 + (i < 5 ? 160 : -60), rotation: i < 5 ? 360 * Math.random() : 0, opacity: 0, duration: i < 5 ? 1.4 : 1 + Math.random(), ease: 'power2.out', onComplete: () => bb.remove() });
     }
     W.lastHit = { x: s.x, y: s.cy };
-    for (let f = 0; f < 4; f++) gsap.delayedCall(f * .12, () => { b.style.backgroundPosition = `${-f * 340}px 0`; });
+    for (let f = 0; f < 4; f++) gsap.delayedCall(f * .12, () => { bf.style.transform = `translate3d(${-f * 340}px,0,0)`; });
     gsap.fromTo(b, { scale: .6 }, { scale: 1.25, duration: .5, ease: 'power2.out' }); gsap.to(b, { opacity: 0, duration: .4, delay: .45, onComplete: () => b.remove() });
     await wait(.12);
     s.im.src = 'assets/img/sub_hit.webp'; gsap.killTweensOf(s.bob); gsap.delayedCall(.35, SFX.sink);
@@ -354,8 +356,11 @@
   W.waitLabel = vals => new Promise(res => {
     play.style.pointerEvents = 'none'; W.picking = true;
     const ls = vals.filter(v => LBL[v]);
+    // the choice is the numbers on the line (they glow, .pick): the helper goes from one to the other, so it is clear what to tap (QA bug 26)
+    let k = 0, hop = null; const point = () => { const v = ls[k++ % ls.length]; W.handTo(X(v), W.LBL_Y + CONFIG.SCALE_DY + 62, .5); hop = gsap.delayedCall(1.6, point); };
+    point();
     ls.forEach(v => { LBL[v].classList.add('pick'); LBL[v].onpointerdown = e => {
-      e.stopPropagation(); ls.forEach(q => { if (!LBL[q]) return; LBL[q].classList.remove('pick'); LBL[q].onpointerdown = null; });
+      e.stopPropagation(); hop.kill(); W.hand(null); ls.forEach(q => { if (!LBL[q]) return; LBL[q].classList.remove('pick'); LBL[q].onpointerdown = null; });
       play.style.pointerEvents = 'auto'; W.picking = false; SFX.tap(); W.tapFx(X(v), W.LBL_Y + CONFIG.SCALE_DY); res(v); }; });
   });
   W.sweepTo = (from, to) => {   // (stays until the hints clear)
@@ -366,7 +371,7 @@
   let btag = null;
   W.borderTag = on => {   // (the name is from when the left tag said "our border")
     if (on && !btag) {
-      btag = [el('btag l', fx), el('btag r', fx)]; btag[0].innerHTML = '<b>◀</b> smaller'; btag[1].innerHTML = 'bigger <b>▶</b>';
+      btag = [el('btag l', fx), el('btag r', fx)]; btag[0].innerHTML = '<b></b> smaller'; btag[1].innerHTML = 'bigger <b></b>';   // (<b>: a drawn arrow, css)
       btag.forEach((t, i) => gsap.fromTo(t, { x: i ? -40 : 40, opacity: 0 }, { x: 0, opacity: 1, duration: .4, ease: 'back.out(2)' }));
     }
     if (on) btag.forEach((t, i) => gsap.fromTo(t.querySelector('b'), { x: 0 }, { x: i ? 10 : -10, duration: .3, yoyo: true, repeat: 5 }));
@@ -407,10 +412,10 @@
   W.clearOrder = () => { if (!ORD) return; ORD.els.forEach(e => gsap.to(e, { opacity: 0, duration: .3, onComplete: () => e.remove() })); ORD = null; };
 
   /* ================= HUD ================= */
+  /* every line in the panel is the same font, size and weight (QA bug 28): a line too long for one row takes two rows at the same
+     size (it is never shrunk); only a line too long even for two rows is made smaller */
   W.strip = (html, o = {}) => { const s = $('#strip'); s.innerHTML = o.big ? `<span class="big">${html}</span>` : html; s.style.fontSize = ''; s.classList.remove('two');
-    const t = s.firstElementChild && o.big ? s.firstElementChild : s, fs = parseFloat(getComputedStyle(t).fontSize), sw = s.scrollWidth, cw = s.clientWidth;   // one measurement:
-    if (sw > cw + 1) { const fit = Math.floor(fs * cw / sw);   // a long line shrinks to fit the panel…
-      if (fit >= 32) { t.style.fontSize = fit + 'px'; if (s.scrollWidth > s.clientWidth + 1) t.style.fontSize = Math.max(32, fit - 2) + 'px'; } else { s.classList.add('two'); t.style.fontSize = '32px'; } }   // …and a very long one takes two lines (still big enough to read)
+    if (s.scrollWidth > s.clientWidth + 1) { s.classList.add('two'); if (s.offsetHeight > s.parentNode.clientHeight) s.style.fontSize = '30px'; }
     gsap.fromTo(s, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .3, ease: 'power2.out' }); };
   W.stripOff = () => gsap.to('#strip', { opacity: 0, duration: .3 });
   W.pips = (n, done) => { const p = $('#pips'); p.innerHTML = ''; W.pipDone = done; for (let i = 0; i < n; i++) { const im = new Image(); im.src = 'assets/img/' + (i < done ? 'pip_on' : 'pip_off') + '.webp'; p.appendChild(im); } if (done > 0) gsap.fromTo(p.children[done - 1], { scale: 1.8 }, { scale: 1, duration: .4, ease: 'back.out(3)' }); if (p.children[done]) p.children[done].classList.add('now'); };

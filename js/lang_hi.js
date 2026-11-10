@@ -54,6 +54,7 @@
     [`^Correct! ${N} is smaller than ${N}\\. Good job\\.$`, 'सही! $1, $2 से छोटा है। शाबाश!'],
     [`^${N} is closer to our border\\.$`, '$1 हमारी सीमा के ज़्यादा पास है।'],
     [`^Select the submarine with ${N}\\.$`, '$1 वाली पनडुब्बी चुनो।'],
+    [`^Fire in ascending order \\(smallest first\\): (.+)$`, 'आरोही क्रम में दागो (सबसे छोटी संख्या पहले): $1'],
     [`^${N} < ${N}$`, '$1 < $2'],   // (the screen keeps the symbols; spoken() reads them)
     [`^${N} > ${N}$`, '$1 > $2'],
   ].map(([re, out]) => [new RegExp(re), out]);
@@ -77,12 +78,12 @@
   const ui = {
     'LEVEL 1': 'स्तर 1', 'LEVEL 2': 'स्तर 2', 'LEVEL 3': 'स्तर 3',
     'LEVEL 1 COMPLETE!': 'स्तर 1 पूरा!', 'LEVEL 2 COMPLETE!': 'स्तर 2 पूरा!', 'LEVEL 3 COMPLETE!': 'स्तर 3 पूरा!',
-    'ROUTE CLEARED!': 'रास्ता साफ़!', 'ALL TARGETS CLEARED!': 'सभी निशाने साफ़!', 'Smaller → Bigger': 'छोटी → बड़ी',
+    'ROUTE CLEARED!': 'रास्ता साफ़!', 'ALL TARGETS CLEARED!': 'सभी निशाने साफ़!', 'Ascending order: from smallest to biggest': 'आरोही क्रम: सबसे छोटी से सबसे बड़ी तक',
     'smaller · closer': 'छोटी · पास', 'bigger · farther': 'बड़ी · दूर', 'smaller': 'छोटी', 'bigger': 'बड़ी',
     'Next': 'आगे', 'Commander Meera': 'कमांडर मीरा', 'Narrator': 'सूत्रधार',
     'ALERT! ALERT!': 'चेतावनी! चेतावनी!', 'NEGATIVE missiles': 'ऋणात्मक मिसाइलें', 'POSITIVE missiles': 'धनात्मक मिसाइलें',
     'Guard the sea route · Integers on the navigation scale': 'समुद्री रास्ते की रक्षा करो · नौवहन पैमाने पर पूर्णांक',
-    'Skip story ▸▸': 'कहानी छोड़ो ▸▸', 'Next mission': 'अगला मिशन', 'tap to continue ▸': 'आगे बढ़ने के लिए छुओ ▸',
+    'Next mission': 'अगला मिशन',
   };
   const UIRE = [[/^DEPTH (\d+) m$/, 'गहराई $1 मी']];
   const uiText = t => { const k = t.trim(); if (ui[k]) return t.replace(k, ui[k]); for (const [re, out] of UIRE) if (re.test(k)) return t.replace(k, k.replace(re, out)); return null; };

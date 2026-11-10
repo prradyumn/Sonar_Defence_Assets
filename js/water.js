@@ -54,7 +54,14 @@
       gl.uniform1f(uT, t - t0); gl.uniform1f(uG, S.glow); gl.uniform3f(uTint, S.r, S.g, S.b); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); };
     return {
       state: S,
-      load(src) { return new Promise(res => { const im = new Image(); im.onload = () => { try { gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im); ready = true; } catch (e) { ready = false; } res(ready); }; im.onerror = () => res(false); im.src = src; }); },
+      /* the picture is decoded off the main thread (a bitmap from the file's bytes), uploaded, and drawn once on the hidden canvas so
+         the shader is really compiled now, not at the story's first frame */
+      load(src) {
+        const up = im => { try { gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im); ready = true;
+          gl.viewport(0, 0, canvas.width, canvas.height); gl.uniform3f(uTint, 1, 1, 1); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); } catch (e) { ready = false; } return ready; };
+        const viaImg = () => new Promise(res => { const im = new Image(); im.onload = () => res(up(im)); im.onerror = () => res(false); im.src = src; });
+        return window.createImageBitmap ? fetch(src).then(r => r.blob()).then(b => createImageBitmap(b)).then(up, viaImg) : viaImg();
+      },
       start() { if (on) return; on = true; t0 = gsap.ticker.time; gsap.ticker.add(draw); },
       stop() { on = false; gsap.ticker.remove(draw); },
     };

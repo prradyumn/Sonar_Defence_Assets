@@ -37,7 +37,6 @@
         ['#dt', 'Title', { mv: 'xy', sz: 'w', t: 1 }], ['#ds', 'Subtitle', { mv: 'xy', sz: 'w', t: 1 }], ['#dstars', 'Stars', { mv: 'xy', sz: 'w' }],
         ['#dchain', 'Rule line', { mv: 'xy', sz: 'w', t: 1 }], ['#dcta', 'Next button', { mv: 'xy', t: 1 }]]]]],
       ['Title', [['#title .logo', 'Logo', { mv: 'xy', t: 1 }], ['#title .sub2', 'Tagline', { mv: 'xy', t: 1 }], ['#start', 'Start button', { mv: 'xy', t: 1 }]]],
-      ['Story', [['#skipStory', 'Skip story', { mv: 'xy', t: 1 }], ['#tapNext', 'Tap to continue', { mv: 'xy', t: 1 }]]],
     ];
     const ENT = {}, ORDER = [];
     for (const [group, list] of GROUPS) (function walk(list, parent, depth) {

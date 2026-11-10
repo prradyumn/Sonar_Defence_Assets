@@ -39,15 +39,21 @@
     const idleAnim = o.idleAnim || (() => ANIM[R.idleL.kind](R)), idleLine = o.idleLine || R.idleL.line;
     for (let k = 0; ; k++) {
       if (o.guide) o.guide(k === 0);
-      const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); note(idleLine, R.ost); }, onIdle2: () => { idleAnim(); note(idleLine, R.ost); }, only: wrong >= 3 || guided ? W.subAt(target) : null });
+      const only = wrong >= 3 || guided ? W.subAt(target) : null;
+      /* from the 3rd miss (or after the guided replay) only the right submarine answers: the others grey out and the helper points
+         at it, so it is clear what can be tapped; a tap on a grey one gets a soft "not this one" and the helper again (QA bug 26) */
+      const point = () => { if (!only) return; W.dimOthers(only); W.ring(only); W.pulseSub(only); W.handTo(only.x, only.cy, .5); };
+      point();
+      const s = await W.waitTap({ onNudge: idleAnim, onIdle: () => { idleAnim(); note(idleLine, R.ost); }, onIdle2: () => { idleAnim(); note(idleLine, R.ost); }, only,
+        onBlocked: b => { SFX.wrong(); W.nudgeNo(b); point(); } });
       SD.skip();
-      if (s.v === target) { noteEnd(); W.clearHints(); const r = await W.lock(s); SFX.right(); await W.fire(s, r); return wrong === 0; }
+      if (s.v === target) { noteEnd(); W.clearHints(); if (R.unexplain) R.unexplain(); const r = await W.lock(s); SFX.right(); await W.fire(s, r); return wrong === 0; }
       wrong++;
       const red = await W.lock(s, 'red'); await W.wrong(s); red.remove(); W.clearHints();
       if (o.replay && wrong === 2) { await o.replay(); guided = o.didReplay = true; continue; }
       const fb = o.fb ? o.fb(wrong) : R.fbL[Math.min(wrong, 3) - 1];
-      const said = note(fb.line, R.ost);
-      const shown = fb.anim ? fb.anim(said) : ANIM[fb.kind](R);   // (a promise when it takes time: Level 2's number line, up until the hint is said)
+      note(fb.line, R.ost);
+      const shown = fb.anim ? fb.anim() : ANIM[fb.kind](R);   // (a promise when it takes time: Level 2's number line coming in, ~1.7 s)
       await Promise.all([shown, wait(.5)]);
     }
   }
@@ -61,7 +67,7 @@
   const IMG = n => 'assets/img/story/' + n + '.webp';
   let WATER = null, waterP = null;
   /* the story's WebGL water: made once, while the title is still up (shaders compiled, the sea picture uploaded), so pressing Play
-     doesn't stall on it (QA bug 5) */
+     doesn't stall on it (QA bug 5) — after the title's entrance, in an idle moment, so it doesn't stall that either (QA bug 1) */
   const waterReady = () => waterP || (waterP = (async () => {
     const k = SD.LOW ? .5 : Math.min(1, Math.max(.5, SD.stageScale() * (devicePixelRatio || 1)));   // as many pixels as the screen shows (half on phones)
     const cv = document.createElement('canvas'); cv.id = 'waterCv'; cv.width = Math.round(1920 * k); cv.height = Math.round(1080 * k); cv.style.display = 'none';
@@ -69,15 +75,12 @@
     WATER = Water(cv) || false; if (WATER && !(await WATER.load(IMG('bg_under')))) WATER = false;
     return cv;
   })());
-  SD.ready.then(() => setTimeout(waterReady, 300));
+  SD.settled.then(() => new Promise(r => setTimeout(r, 1500))).then(SD.idle).then(waterReady);
   function storyKit(fade) {   // fade: the story fades in over the cockpit (part 2 and the ending come after a level)
     const st = $('#story'), bg = $('#storyBg'), cast = $('#cast'), sfx = $('#storyFx');
     st.classList.remove('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([st, bg, cast, sfx], { clearProps: 'all' });
     if (fade) gsap.set(st, { opacity: 0 });
-    const K = { st, bg, cast, sfx, fade, skipping: false, SKIP: {} };
-    K.chk = () => { if (K.skipping) throw K.SKIP; };
-    $('#skipStory').onclick = e => { e.stopPropagation(); K.skipping = true; SD.skip(); };
-    st.onpointerdown = e => { if (e.target.id !== 'skipStory') SD.skip(); };   // tap = next line
+    const K = { st, bg, cast, sfx, fade };   // (no tap-to-skip and no Skip button: the story always plays in order, QA bug 25)
     const mk = (tag, cls, css, parent = sfx) => { const d = document.createElement(tag); if (cls) d.className = cls; Object.assign(d.style, css || {}); parent.appendChild(d); return d; };
     K.mk = mk;
     K.img = (n, cls, css, parent) => { const i = mk('img', cls, css, parent); i.src = IMG(n); i.alt = ''; return i; };
@@ -116,16 +119,13 @@
     K.leave = (who) => { const p = people[who]; if (!p || !p.on) return; p.on = false; gsap.to(p.el, { x: who === 'riya' ? 420 : -420, opacity: 0, duration: .4, ease: 'power2.in' }); };
     K.leaveAll = () => Object.keys(people).forEach(K.leave);
     K.say = async (L, extra) => {
-      K.chk();
       const who = L.who, side = who === 'riya' ? 'r' : 'l';
       const b = mk('div', `bubble ${who} sx-b ${side}`, {}, cast);
       b.innerHTML = `<span class="nm">${SCRIPT.WHO[who].name}</span><span class="txt"></span>`;
       if (who === 'narrator' || who === 'system') { for (const k in people) people[k].el.classList.add('dim'); }
       gsap.fromTo(b, { opacity: 0, y: 18, scale: .94 }, { opacity: 1, y: 0, scale: 1, duration: .35, ease: 'back.out(2)' });
-      const tn = gsap.fromTo('#tapNext', { opacity: 0 }, { opacity: .85, duration: .4, delay: 1.8 });
       if (extra) extra();
       await say(L, { bubble: b });
-      tn.kill(); gsap.set('#tapNext', { opacity: 0 });
       await gsap.to(b, { opacity: 0, y: -8, duration: .2 }); b.remove();
     };
     K.stamp = (text, cls = '', hold = 1.5) => {
@@ -153,27 +153,25 @@
       gsap.fromTo(u, { x: 1000, opacity: 0 }, { x: 0, opacity: 1, duration: 2.4, delay: .3 + i * .4, ease: 'power3.out',
         onComplete: () => { const p = K.px(u), r = K.mk('div', 'sx-ring', { left: p.x + 'px', top: p.y + 'px' }); gsap.fromTo(r, { scale: .2, opacity: .9 }, { scale: 2, opacity: 0, duration: 1, onComplete: () => r.remove() }); SFX.blip(); } });
       u.bob = gsap.to(u, { y: '+=8', duration: 1.6 + i * .2, yoyo: true, repeat: -1, ease: 'sine.inOut' }); subs.push(u); return u; };
-    try {
-      /* enemy submarines slip into our waters */
-      sub(1180, 520, 0); sub(1520, 640, 1); sub(780, 440, 2);
-      await wait(1); K.chk();
-      K.who('meera', 'determined');
-      await K.say(S.h1);
+    /* enemy submarines slip into our waters */
+    sub(1180, 520, 0); sub(1520, 640, 1); sub(780, 440, 2);
+    await wait(1);
+    K.who('meera', 'determined');
+    await K.say(S.h1);
 
-      /* they fire missiles up at the ship: the water flushes red, ALERT */
-      subs.forEach((u, i) => gsap.delayedCall(i * .35, () => { const p = K.px(u), m = K.img('missile_red', 'sx-mis', { left: p.x - 40 + 'px', top: p.y - 70 + 'px' }); SFX.launch(); K.trail(m);
-        gsap.to(m, { x: -260 - i * 140, y: -620, rotation: -62, duration: 1.6, ease: 'power1.in', onComplete: () => m.remove() }); }));
-      await wait(1.4); K.chk();
-      K.tint(1.5, .55, .5); SFX.alarm();
-      const al = K.stamp('ALERT! ALERT!', 'red', 0); gsap.to(al, { opacity: .45, duration: .4, yoyo: true, repeat: -1, delay: .9 });
-      K.who('meera', 'shocked');
-      await K.say(S.h2, () => gsap.delayedCall(1.3, SFX.alarm));
-      gsap.killTweensOf(al); gsap.to(al, { opacity: 0, duration: .3, onComplete: () => al.remove() });
-      K.tint(1, 1, 1, 1); await wait(.5); K.chk();
-    } catch (e) { if (e !== K.SKIP) throw e; }
+    /* they fire missiles up at the ship: the water flushes red, ALERT */
+    subs.forEach((u, i) => gsap.delayedCall(i * .35, () => { const p = K.px(u), m = K.img('missile_red', 'sx-mis', { left: p.x - 40 + 'px', top: p.y - 70 + 'px' }); SFX.launch(); K.trail(m);
+      gsap.to(m, { x: -260 - i * 140, y: -620, rotation: -62, duration: 1.6, ease: 'power1.in', onComplete: () => m.remove() }); }));
+    await wait(1.4);
+    K.tint(1.5, .55, .5); SFX.alarm();
+    const al = K.stamp('ALERT! ALERT!', 'red', 0); gsap.to(al, { opacity: .45, duration: .4, yoyo: true, repeat: -1, delay: .9 });
+    K.who('meera', 'shocked');
+    await K.say(S.h2, () => gsap.delayedCall(1.3, SFX.alarm));
+    gsap.killTweensOf(al); gsap.to(al, { opacity: 0, duration: .3, onComplete: () => al.remove() });
+    K.tint(1, 1, 1, 1); await wait(.5);
 
     /* into the game: the same water — the cockpit frame closes in around the view */
-    SD.hush(); K.st.onpointerdown = null; gsap.set('#tapNext', { opacity: 0 });
+    SD.hush();
     SFX.swoosh(); SD.music('play'); SD.ambience('waves');
     gsap.to(cast, { opacity: 0, duration: .3 });
     await gsap.to(K.st, { opacity: 0, scale: 1.15, duration: .8, ease: 'power2.in' });
@@ -184,17 +182,14 @@
   /* ---- the ending: the same water, calm and bright, the route cleared (no words) ---- */
   async function storyEnd() {
     const K = storyKit(true);
-    $('#skipStory').style.display = 'none';
-    try {
-      await K.open(); if (WATER) gsap.to(WATER.state, { glow: .6, duration: 2 });   // the light comes back
-      const ship = K.img('ship', 'sx-hull', {}); gsap.fromTo(ship, { x: -500 }, { x: 260, duration: 6, ease: 'none' });
-      for (let i = 0; i < 3; i++) { const fish = K.mk('div', 'sx-fish', { top: 360 + i * 120 + 'px' }); fish.innerHTML = '<i></i><i></i><i></i><i></i>'; gsap.fromTo(fish, { x: 2100 }, { x: -400, duration: 9 + i * 2, delay: i * .8, ease: 'none' }); }
-      K.stamp('ROUTE CLEARED!', 'end', 0); SFX.tada();
-      const COL = ['#ffd66b', '#7ff2ff', '#ff8fb1', '#9dff9a', '#ffffff', '#ffb070'];
-      for (let i = 0; i < 40; i++) { const c = K.mk('div', 'sx-conf', { left: 200 + Math.random() * 1520 + 'px', top: '-30px', background: COL[i % COL.length] });
-        gsap.to(c, { y: 700 + Math.random() * 400, x: (Math.random() - .5) * 240, rotation: (Math.random() - .5) * 900, opacity: 0, duration: 2.4 + Math.random() * 1.6, delay: .4 + Math.random() * .8, ease: 'power1.in', onComplete: () => c.remove() }); }
-      await wait(3.6);
-    } catch (e) { if (e !== K.SKIP) throw e; }
+    await K.open(); if (WATER) gsap.to(WATER.state, { glow: .6, duration: 2 });   // the light comes back
+    const ship = K.img('ship', 'sx-hull', {}); gsap.fromTo(ship, { x: -500 }, { x: 260, duration: 6, ease: 'none' });
+    for (let i = 0; i < 3; i++) { const fish = K.mk('div', 'sx-fish', { top: 360 + i * 120 + 'px' }); fish.innerHTML = '<i></i><i></i><i></i><i></i>'; gsap.fromTo(fish, { x: 2100 }, { x: -400, duration: 9 + i * 2, delay: i * .8, ease: 'none' }); }
+    K.stamp('ROUTE CLEARED!', 'end', 0); SFX.tada();
+    const COL = ['#ffd66b', '#7ff2ff', '#ff8fb1', '#9dff9a', '#ffffff', '#ffb070'];
+    for (let i = 0; i < 40; i++) { const c = K.mk('div', 'sx-conf', { left: 200 + Math.random() * 1520 + 'px', top: '-30px', background: COL[i % COL.length] });
+      gsap.to(c, { y: 700 + Math.random() * 400, x: (Math.random() - .5) * 240, rotation: (Math.random() - .5) * 900, opacity: 0, duration: 2.4 + Math.random() * 1.6, delay: .4 + Math.random() * .8, ease: 'power1.in', onComplete: () => c.remove() }); }
+    await wait(3.6);
     // the game ends here: ROUTE CLEARED stays on the calm sea (no restart, no Play Again: QA bug 23)
     SD.music('calm'); SD.ambience('waves');
   }
@@ -248,7 +243,7 @@
         arm(); SD.skip(); if (busy) return; W.mslHintsOff();
         if (count() >= n + room || (strikes >= 3 && count() >= n)) return W.launcherNo();   // (after three mistakes it stops at the right number)
         const m = W.mslLaunch(mine, W.cannonShot()); fireState(); guide();
-        if (teach && !linked) { linked = true; gsap.delayedCall(.45, () => W.signLink(m)); }   // the first one: the badge's sign hops onto it
+        if (!linked) { linked = true; gsap.delayedCall(.45, () => W.signLink(m)); }   // every mission's first launch: the label pulses and the badge's sign hops onto the missile (QA bug 7)
       });
       W.onMissile(m => { if (m.row !== 1 || busy) return; arm(); SD.skip(); W.mslTakeBack(m, W.muzzle()); fireState(); guide(); });
       W.onFire(async () => {
@@ -333,7 +328,7 @@
       guide: tut && (async first => { const s = W.subAt(R.target); if (!s) return;   // the tutorial: the glow shows the smaller number, then its submarine
         if (first) { await W.handTo(W.X(R.target), W.LBL_Y + W.CONFIG.SCALE_DY, .5); W.pulseLbl(R.target); await wait(1.2); }
         if (W.waiting) W.handTo(s.x, s.cy, .8); }),
-      fb: k => { const fb = R.fbL[Math.min(k, 3) - 1]; return { line: fb.line, anim: async said => { if (!line) await explain(R, said); ANIM[fb.kind](R); if (k === 1 && line) W.borderTag(true); } }; },
+      fb: k => { const fb = R.fbL[Math.min(k, 3) - 1]; return { line: fb.line, anim: async () => { if (!line) await explain(R); ANIM[fb.kind](R); if (k === 1 && line) W.borderTag(true); } }; },
       replay: !tut && !extra && (() => replay(R)),
     };
     const first = await strike(R, R.target, o); W.dragRope(false);
@@ -345,13 +340,15 @@
     return !!o.didReplay;
   }
   /* a wrong tap without the number line: the line comes in, the two numbers glow (the bigger, then the smaller) and a light runs
-     from the bigger to the smaller, towards "◀ smaller"; then the line goes again and the child fires at the submarine */
-  async function explain(R, said) {   // said: the hint being read out; the line stays up until it has been said, then 2 s more to look (QA bug 21)
+     from the bigger to the smaller, towards "◀ smaller". The child can answer as soon as the light has run (about 1.7 s): the line
+     stays up to look at while they choose (QA bug 21) and goes with the right tap, instead of holding the screen for ~9 s and then
+     vanishing on its own (QA bug 26). */
+  async function explain(R) {
     const t = R.target, u = R.subs.find(v => v !== t);
-    lineOn(true); await wait(.6);
-    W.borderTag(true); W.pulseLbl(u); await wait(.9);
-    W.pulseLbl(t); W.sweepTo(u, t); await Promise.all([wait(4.5), said]); await wait(2);
-    W.clearHints(); W.borderTag(false); lineOn(false); await wait(.5);
+    lineOn(true); await wait(.5);
+    W.borderTag(true); W.pulseLbl(u); await wait(.6);
+    W.pulseLbl(t); W.sweepTo(u, t); await wait(.6);
+    R.unexplain = () => { R.unexplain = null; W.borderTag(false); lineOn(false); };
   }
   /* the guided replay (Level 2, the second wrong tap): the question in the two steps the child does, wrong options blocked.
      A · compare: both submarines grey out, only the two numbers answer ("Check which is smaller: −10 or −12?"); a wrong number
@@ -365,10 +362,10 @@
     W.dragRope(false); W.borderTag(true); W.subs().forEach(s => s.d.classList.add('dim'));
     note(R.fbL[1].line);
     while (await W.waitLabel(R.subs) !== t) { SFX.wrong(); W.sweepTo(u, t); await wait(1.4); W.clearHints(); W.subs().forEach(s => s.d.classList.add('dim')); }
-    SFX.ding(); W.pulseLbl(t); await note(R.fbL[2].line);
-    if (free) { W.clearHints(); W.borderTag(false); lineOn(false); await wait(.5); }   // the line goes: now the shot
-    const s = W.subAt(t); s.d.classList.remove('dim'); W.lineLit(t, true); W.pulseSub(s); W.pulseTag(s); SFX.ping();
-    note(R.fbL[0].line);
+    // the right number: its line is said while the submarine comes back (the child can fire after ~1.5 s, not after the whole line)
+    SFX.ding(); W.pulseLbl(t); note(R.fbL[2].line, R.ost); await wait(1.2);
+    if (free) { W.clearHints(); W.borderTag(false); lineOn(false); await wait(.3); }   // the line goes: now the shot
+    const s = W.subAt(t); s.d.classList.remove('dim'); W.lineLit(t, true); W.pulseTag(s); SFX.ping();
   }
 
   /* =====================================================================
@@ -444,12 +441,12 @@
     $('#dstars').innerHTML = [0, 1, 2].map(i => `<img src="assets/img/${i < stars ? 'star_gold' : 'star_silver'}.webp" class="${i < stars ? '' : 'off'}">`).join('');
     const d = $('#done'); d.classList.remove('hidden'); SFX.tada();
     const tp = $('#dt text'), room = 560; if (tp.getComputedTextLength() > room) tp.style.fontSize = Math.floor(54 * room / tp.getComputedTextLength()) + 'px';   // a long title shrinks to stay on the ribbon
-    gsap.fromTo('#done .card', { scale: .5, opacity: 0 }, { scale: 1, opacity: 1, duration: .55, ease: 'back.out(1.7)' });
-    gsap.fromTo('#dstars img', { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: .45, stagger: .18, delay: .4, ease: 'back.out(3)', onStart: () => SFX.pop() });
-    gsap.fromTo('#dcta', { scale: 1 }, { scale: 1.07, duration: .6, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.2 });
+    // the card glides in and settles (no overshoot); the stars pop in place; Next stays still (only its glow pulses) and nothing
+    // shakes the screen meanwhile (QA bug 15)
+    gsap.fromTo('#done .card', { scale: .86, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'power2.out' });
+    gsap.fromTo('#dstars img', { scale: 0 }, { scale: 1, duration: .4, stagger: .18, delay: .4, ease: 'back.out(1.6)', onStart: () => SFX.pop() });
     await new Promise(r => { $('#dcta').onclick = () => { $('#dcta').onclick = null; SFX.tap(); r(); }; });   // stays until Next (QA bug 15)
-    gsap.killTweensOf('#dcta'); gsap.set('#dcta', { scale: 1 });
-    await gsap.to('#done .card', { scale: .8, opacity: 0, duration: .3 }); d.classList.add('hidden');
+    await gsap.to('#done .card', { scale: .94, opacity: 0, duration: .3, ease: 'power1.in' }); d.classList.add('hidden');
     if (lv !== 'l3') await W.sail();   // (after the last level the ending follows straight away)
   }
 
@@ -480,41 +477,60 @@
   $('#btnSpeak').onclick = () => { const l = SD.lastLine; if (l) l.o.narr ? SD.narrate(l.x) : say(l.x, l.o.bubble ? {} : l.o); };
   $('#start').onclick = async () => {
     if ($('#start')._go) return; $('#start')._go = true;
-    SD.audioOn(); SFX.ping();
+    SD.titleSettled(); SD.audioOn(); SFX.ping();
     if (!sea.paused) gsap.to(sea, { volume: 0, duration: 1.6, onComplete: () => sea.pause() });   // the sea fades as the story opens
-    if (!nameVo.paused) gsap.to(nameVo, { volume: 0, duration: .4, onComplete: () => nameVo.pause() });
+    // Play was the first press: the name is said now (QA bug 24) and the story waits for it; said before: it fades out
+    const named = !heard && !SD.MUTE && Q.get('autostart') !== '1' ? new Promise(r => { const p = sayName(true); if (!p) return r(); p.catch(r); nameVo.addEventListener('ended', r, { once: true }); setTimeout(r, 3500); }) : null;
+    if (!named && !nameVo.paused) gsap.to(nameVo, { volume: 0, duration: .4, onComplete: () => nameVo.pause() });
     const boot = $('#boot');
     if ((Q.get('at') || 'hook') === 'hook') { $('#story').classList.remove('hidden'); gsap.set('#story', { opacity: 1 }); }   // the story's solid backdrop goes up under the title first: the game never shows through
-    await Promise.all([gsap.to('#title', { opacity: 0, duration: .5 }), SD.ready]);   // never start mid-load: that is where jumps used to hitch
+    await Promise.all([gsap.to('#title', { opacity: 0, duration: .5 }), SD.ready, named]);   // never start mid-load: that is where jumps used to hitch
     $('#title').classList.add('hidden'); gsap.killTweensOf(['#start', '#title .art']);   // the title's loops stop with it
     if (boot) await gsap.to(boot, { opacity: 0, duration: .45, onComplete: () => boot.remove() });
     window.SD_RUN = run();
   };
   /* the title's sound: a soothing bow-wave loop (assets/sfx/cover_sea.ogg) under Meera saying the game's name (line 'title').
-     Both start as soon as the browser allows sound; where it waits for a first tap, a tap anywhere on the cover starts them,
-     and every tap on the cover (not on Play) says the name again. Both fade as the game begins. */
+     Both are tried as soon as the title is up; a browser plays no sound before the page's first click / tap / key press, so where it
+     says no, the first press anywhere starts them (on Play too: the name is said as the title fades). Every later tap on the cover
+     says the name again (from the start). Both fade as the game begins. (QA bug 24) */
   const onTitle = () => !$('#title').classList.contains('hidden');
   const SEA = .5, sea = new Audio('assets/sfx/cover_sea.ogg'), nameVo = new Audio((SCRIPT.lang === 'hi' ? 'assets/vo/hi/' : 'assets/vo/') + 'title.ogg');
   sea.loop = true; sea.volume = 0; sea.preload = nameVo.preload = 'auto';
+  let heard = false; nameVo.addEventListener('playing', () => { heard = true; });
   const seaLevel = () => nameVo.paused ? SEA : SEA * .45;   // the sea dips under the voice
   const seaOn = () => { if (SD.MUTE || !sea.paused || !onTitle()) return; sea.play().then(() => gsap.to(sea, { volume: seaLevel(), duration: 2.5 })).catch(() => {}); };
-  const sayName = () => {
-    if (SD.MUTE || !nameVo.paused || !onTitle()) return; nameVo.currentTime = 0; nameVo.volume = 1;
-    nameVo.play().then(() => { if (!sea.paused) gsap.to(sea, { volume: seaLevel(), duration: .3 }); }).catch(() => {});
+  const sayName = again => {
+    if (SD.MUTE || !onTitle()) return;
+    if (!nameVo.paused) { if (!again || nameVo.currentTime < .6) return; nameVo.pause(); }   // a tap while it is being said: from the start (not for a double tap)
+    nameVo.currentTime = 0; nameVo.volume = 1;
+    const p = nameVo.play(); p.then(() => { if (!sea.paused) gsap.to(sea, { volume: seaLevel(), duration: .3 }); }).catch(() => {}); return p;
   };
   nameVo.onended = () => { if (!sea.paused && onTitle()) gsap.to(sea, { volume: SEA, duration: 1.2 }); };
   if (Q.get('autostart') !== '1') {
-    seaOn(); setTimeout(sayName, 1300);   // (after the logo has dropped in)
-    // a browser plays no sound before the first click / tap / key: the first one anywhere starts the sea and the name (QA bug 24)
-    // (on touch, sound is allowed only once the finger lifts: pointerup / click too, or the first tap would be silent)
-    const first = e => { if (e.target && e.target.closest && e.target.closest('#start')) return; sayName(); seaOn(); };
-    ['pointerdown', 'pointerup', 'click'].forEach(k => addEventListener(k, first, true));
-    addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('#start')) return; sayName(); seaOn(); });
+    // the first press anywhere (pointer, touch or key; on touch the sound is allowed only once the finger lifts, hence pointerup /
+    // touchend / click too) and every tap on the cover after it (one tap fires several of these: only its first restarts the name)
+    const first = e => { if (e.target && e.target.closest && e.target.closest('#start')) return; sayName(e.type === 'pointerdown'); seaOn(); };
+    ['pointerdown', 'pointerup', 'touchend', 'click'].forEach(k => addEventListener(k, first, true));
+    addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('#start')) return; sayName(true); seaOn(); });
   }
   SD.onHold(on => { for (const a of [sea, nameVo]) { if (on && !a.paused) { a._held = true; a.pause(); } else if (!on && a._held) { a._held = false; if (onTitle()) a.play().catch(() => {}); } } });   // (the game paused: QA bugs 2, 3)
-  // title screen breathes
-  gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.1, immediateRender: false });   // breathes once it has popped in
-  gsap.from('#start', { scale: 0, rotation: -120, opacity: 0, duration: .9, delay: 1.1, ease: 'back.out(2.2)' });
+  /* the title appears whole (QA bug 1): the navy frame shows until its pictures are decoded (at most 2.5 s), then it fades in and its
+     entrance plays (the logo drops in, Play pops up, the name is said) on a quiet page; the rest of the game loads after that (core.js) */
+  const reveal = () => {
+    const t = $('#title'); if (!t.classList.contains('wait')) return; t.classList.remove('wait'); SD.titleShown();
+    gsap.from('#start', { scale: 0, rotation: -120, opacity: 0, duration: .9, delay: 1.1, ease: 'back.out(2.2)' });
+    gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.1, immediateRender: false });   // breathes once it has popped in
+    if (Q.get('autostart') !== '1') { seaOn(); gsap.delayedCall(1.3, () => sayName()); }   // (after the logo has dropped in)
+    gsap.delayedCall(2.4, SD.titleSettled);
+  };
+  if (Q.get('autostart') === '1') reveal();
+  else {
+    const pics = [...new Set([...document.querySelectorAll('#title img')].map(i => i.src)
+      .concat(['sky', 'islands', 'sea_base', 'waves_far', 'waves_mid', 'waves_near'].map(n => new URL('assets/img/cover/' + n + '.webp', location.href).href)))];
+    const keep = pics.map(u => { const i = new Image(); i.src = u; return i; });
+    Promise.race([Promise.all(keep.map(i => i.decode().catch(() => {}))), new Promise(r => setTimeout(r, 2500))])
+      .then(() => requestAnimationFrame(() => requestAnimationFrame(reveal)));
+  }
   $('#start').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#start').onclick(); } };
   if (Q.get('autostart') === '1') {   // a QA / editor jump: a quiet sonar screen covers the page while it loads, then the level fades in
     const boot = document.createElement('div'); boot.id = 'boot'; boot.innerHTML = '<i></i><i></i><span>SONAR CONTACT…</span>'; $('#stage').appendChild(boot);

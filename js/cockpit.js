@@ -102,9 +102,9 @@
 
   /* ---- torpedo: out of the cannon's muzzle, running away from us (it shrinks) to the target ---- */
   // recoil + muzzle flash + a burst of bubbles
-  function shot(k, nb = 9) {
+  function shot(k, nb = 9) {   // (no screen shake as it leaves: the recoil carries it, QA bug 22)
     const sx = C.x, sy = MUZZLE_Y;
-    SFX.launch(); kick(k, .3);
+    SFX.launch();
     gsap.fromTo(cn, { y: 0 }, { keyframes: [{ y: 16, duration: .06, ease: 'power2.out' }, { y: 0, duration: .5, ease: 'elastic.out(1,.45)' }] });
     gsap.fromTo(cflash, { opacity: 1, scale: .35 }, { opacity: 0, scale: 1.5, duration: .38, ease: 'power2.out' });
     for (let i = 0; i < nb; i++) { const b = el('pbub', sea, { left: (sx + (Math.random() - .5) * 60) + 'px', top: (sy - 20 + Math.random() * 20) + 'px', width: '14px', height: '14px' }); gsap.to(b, { y: -60 - Math.random() * 90, x: (Math.random() - .5) * 120, scale: 1.6, opacity: 0, duration: 1 + Math.random() * .6, onComplete: () => b.remove() }); }
@@ -113,17 +113,19 @@
     await arrive();
     const tx = s.x, ty = s.cy, sx = C.x, sy = MUZZLE_Y, cx = (sx + tx) / 2, cy = (sy + ty) / 2;
     shot(10);
-    const t = new Image(); t.src = 'assets/img/torpedo.webp'; t.className = 'torp'; sea.appendChild(t);   // it runs outside, behind the scale on the glass
+    // the torpedo moves by transform only (its left/top changed every frame before: a layout each frame), on a smooth ease-in
+    const t = new Image(); t.src = 'assets/img/torpedo.webp'; t.className = 'torp'; t.style.transform = `translate3d(${sx}px,${sy}px,0) scale(1.3)`; sea.appendChild(t);   // it runs outside, behind the scale on the glass
     const sup = cn.classList.contains('gold'); if (sup) { t.style.filter = 'sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.15) drop-shadow(0 0 12px #ffd66b)'; SFX.sparkle(); }
     const o = { p: 0 }; let last = 0;
-    await new Promise(r => gsap.to(o, { p: 1, duration: .8, ease: 'power1.in', onUpdate() {
+    await new Promise(r => gsap.to(o, { p: 1, duration: .75, ease: 'sine.in', onUpdate() {
       const p = o.p, q = 1 - p, x = q * q * sx + 2 * q * p * cx + p * p * tx, y = q * q * sy + 2 * q * p * cy + p * p * ty;
       const dx = 2 * q * (cx - sx) + 2 * p * (tx - cx), dy = 2 * q * (cy - sy) + 2 * p * (ty - cy);
-      t.style.left = x + 'px'; t.style.top = y + 'px'; t.style.transform = `rotate(${Math.atan2(dy, dx)}rad) scale(${1.3 - .75 * p})`;
-      if (p - last > .06) { last = p; const b = el('tbub', sea, { left: x + 'px', top: y + 'px', width: (16 - 8 * p) + 'px', height: (16 - 8 * p) + 'px' }); if (sup) b.style.background = 'rgba(255,214,107,.7)'; gsap.to(b, { y: -30 - Math.random() * 30, scale: 1.8, opacity: 0, duration: 1.1, onComplete: () => b.remove() }); }
+      t._x = x; t._y = y; t._s = 1.3 - .75 * p;   // (fx.js: the torpedo's light follows these)
+      t.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotate(${Math.atan2(dy, dx).toFixed(3)}rad) scale(${t._s.toFixed(3)})`;
+      if (p - last > .1) { last = p; const b = el('tbub', sea, { left: x + 'px', top: y + 'px', width: (16 - 8 * p) + 'px', height: (16 - 8 * p) + 'px' }); if (sup) b.style.background = 'rgba(255,214,107,.7)'; gsap.to(b, { y: -30 - Math.random() * 30, scale: 1.8, opacity: 0, duration: 1.1, onComplete: () => b.remove() }); }
     }, onComplete: r }));
     t.remove(); if (ret) ret.remove();
-    kick(sup ? 14 : 8, sup ? .6 : .45);
+    kick(sup ? 10 : 6, sup ? .5 : .35);
     if (sup) superBurst(tx, ty);
     await W.blast(s);
   };
@@ -167,14 +169,14 @@
     }
   };
   W.cannonShot = () => { shot(3, SD.CALM ? 3 : 6); return W.muzzle(); };
-  // the first missile launched in the tutorial: the badge's sign hops onto it, so the − (or +) on the launcher reads as "this
-  // launcher makes − missiles" (QA bug 7)
+  // the first missile launched in each mission: the label pulses and the badge's sign hops onto it, so the − (or +) on the
+  // launcher reads as "this launcher makes − missiles" (QA bug 7)
   W.signLink = m => {
     const a = W.centreOf(sign), neg = !cn.classList.contains('pos'), chip = el('signChip' + (neg ? '' : ' pos'), top, { left: a.x + 'px', top: a.y + 'px' });
     chip.textContent = sign.textContent;
     gsap.fromTo(tag, { scale: 1 }, { scale: 1.15, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' });
     gsap.timeline({ onComplete: () => chip.remove() })
-      .to(chip, { left: m.x, top: m.y - 58, duration: .7, ease: 'power2.inOut' })
+      .to(chip, { x: m.x - a.x, y: m.y - 58 - a.y, duration: .7, ease: 'power2.inOut' })   // (transform only: no layout per frame)
       .to(chip, { scale: 1.3, duration: .2, yoyo: true, repeat: 3 })
       .to(chip, { opacity: 0, duration: .4 }, '+=1.4');
   };
@@ -194,7 +196,7 @@
   const cracks = [];
   W.impact = (x, y, crack = true) => {
     SFX.boom(); W.shake(12, .55); W.alarm();
-    const fl = $('#flash'); fl.style.setProperty('--fx', x + 'px'); fl.style.setProperty('--fy', y + 'px'); gsap.fromTo(fl, { opacity: 1 }, { opacity: 0, duration: .6, ease: 'power2.out' });
+    gsap.set('#flash', { x, y }); gsap.fromTo('#flash', { opacity: 1 }, { opacity: 0, duration: .6, ease: 'power2.out' });
     if (crack) crackAt(x, y);
   };
   function crackAt(x, y) {
@@ -212,9 +214,7 @@
   };
   fbtn.onpointerdown = e => { e.stopPropagation(); if (fbtn.className !== 'lit' || !LN.fire) return; SFX.tap(); gsap.fromTo(fbtn.querySelector('.lit'), { scale: .88 }, { scale: 1, duration: .35, ease: 'back.out(3)' }); LN.fire(); };
 
-  /* ---- full speed ahead: the engines rumble ---- */
-  const sail0 = W.sail;
-  W.sail = async (dur = 1.6) => { kick(4, dur); return sail0(dur); };
+  /* (full speed ahead is the sea rushing past and the engine sound, world.js: the view no longer shakes as we sail, QA bug 15) */
 
   /* ======================= fun layer ======================= */
   const top = $('#fxTop'), glassFx = $('#glassFx'), vis = $('#visitors'), DY = () => W.CONFIG.SCALE_DY;
