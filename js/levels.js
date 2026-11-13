@@ -69,10 +69,13 @@
   /* the story's WebGL water: made once, while the title is still up (shaders compiled, the sea picture uploaded), so pressing Play
      doesn't stall on it (QA bug 5) — after the title's entrance, in an idle moment, so it doesn't stall that either (QA bug 1) */
   const waterReady = () => waterP || (waterP = (async () => {
-    const k = SD.LOW ? .5 : Math.min(1, Math.max(.5, SD.stageScale() * (devicePixelRatio || 1)));   // as many pixels as the screen shows (half on phones)
+    const k = Math.min(1, Math.max(.5, SD.stageScale() * (devicePixelRatio || 1)));   // as many pixels as the screen shows
     const cv = document.createElement('canvas'); cv.id = 'waterCv'; cv.width = Math.round(1920 * k); cv.height = Math.round(1080 * k); cv.style.display = 'none';
     $('#story').insertBefore(cv, $('#storyFx'));
-    WATER = Water(cv) || false; if (WATER && !(await WATER.load(IMG('bg_under')))) WATER = false;
+    /* phones and tablets (SD.LOW): the full-resolution picture with the same slow camera drift and bubbles, not the WebGL water.
+       The water there ran at half resolution, stretched 2-3× on a tablet's screen (blurry, QA), and full resolution is too much
+       for their GPUs. */
+    WATER = SD.LOW ? false : Water(cv) || false; if (WATER && !(await WATER.load(IMG('bg_under')))) WATER = false;
     return cv;
   })());
   SD.settled.then(() => new Promise(r => setTimeout(r, 1500))).then(SD.idle).then(waterReady);
@@ -204,6 +207,7 @@
      in turn (the missiles that came are counted out loud on screen, 1, 2, 3 …); from the third on, the launcher stops at the
      right number, and from the fourth on FIRE stays off until the bay holds exactly that many (no loop of wrong volleys). No sinking. Row 1 is the teaching (the missiles come, the launcher activates) and the tutorial (the hand).
      ===================================================================== */
+  let NAMED = false;   // the launcher's label has been shown in this level
   async function launchRound(R, teach) {
     const n = Math.abs(R.give), given = Math.sign(R.give), mine = -given, room = 2;
     W.launcher(0); W.fireBtn('');
@@ -211,7 +215,7 @@
     if (teach) { await wait(.3); W.launcher(mine); await wait(.6); await say(S.l1a); await say(S.l1b); await wait(.2); }   // the launcher activates; Meera's two lines
     W.launcher(mine); W.bay(true); W.fireBtn('dim');
     W.strip(R.ost); SD.narrate(R.ost); await wait(.6);
-    let strikes = 0, busy = false, tut = !!R.tutorial, linked = false;   // tut: the hand shows what to tap
+    let strikes = 0, busy = false, tut = !!R.tutorial;   // tut: the hand shows what to tap
     const count = () => W.mslRow(1).length;
     const ANIM = {   // no incorrect animations in the sheet for Level 1: point at the count
       given: () => { W.mslPulse(W.mslRow(0), 0, .4); W.mslCount(W.mslRow(0), 0, .4); },   // the missiles that came glow one by one, counted 1, 2, 3 …
@@ -243,7 +247,7 @@
         arm(); SD.skip(); if (busy) return; W.mslHintsOff();
         if (count() >= n + room || (strikes >= 3 && count() >= n)) return W.launcherNo();   // (after three mistakes it stops at the right number)
         const m = W.mslLaunch(mine, W.cannonShot()); fireState(); guide();
-        if (!linked) { linked = true; gsap.delayedCall(.45, () => W.signLink(m)); }   // every mission's first launch: the label pulses and the badge's sign hops onto the missile (QA bug 7)
+        if (!NAMED) { NAMED = true; W.signTag(true); }   // the level's first launch: the label in words (only then: QA)
       });
       W.onMissile(m => { if (m.row !== 1 || busy) return; arm(); SD.skip(); W.mslTakeBack(m, W.muzzle()); fireState(); guide(); });
       W.onFire(async () => {
@@ -263,7 +267,7 @@
       });
       arm(); guide();
     });
-    W.matching = false; W.hand(null); W.fireBtn(''); W.launcher(0);
+    W.matching = false; W.hand(null); W.fireBtn(''); W.launcher(0); W.signTag(false);
     // Correct Animation: each launched missile leaves the bay, meets one missile that came and both are absorbed: all the pairs
     // disappear. The correct line is said as they cancel (not after), so a big volley doesn't hold the next mission up (QA bug 11).
     W.mslCountOff(); mark(strikes === 0);
@@ -273,7 +277,7 @@
     await said; await wait(.3); W.clearMissiles(); W.stripOff();
   }
   async function level1(start = 0) {
-    LV = 'l1'; W.dragRope(false); gsap.set('#scale', { opacity: 0 });   // Level 1 has no scale: it comes in the L2 transition
+    LV = 'l1'; NAMED = false; W.dragRope(false); gsap.set('#scale', { opacity: 0 });   // Level 1 has no scale: it comes in the L2 transition
     await W.banner('', 'LEVEL 1', '');
     W.pips(D.L1.length, start);
     for (let r = start; r < D.L1.length; r++) {

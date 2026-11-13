@@ -56,6 +56,11 @@ The original art pack (PNG sources, concepts, briefs) is not needed by the game;
 - **Level 2's inactivity hint** (the answer's submarine and number pulse) comes after 9 s without a tap, not 6 s (then 12 s and 22 s as before). The first round's tutorial hand is unchanged.
 - **Level 1's missiles** pop once, as they arrive (with the pop sound); later hints (inactivity, after a wrong volley) make them glow gold instead of popping them again, and the sign badge lands on the first launched missile once instead of pulsing on it.
 
+## QA round 4 (tablets, low-end devices)
+- **No blue screen before the cover:** a 96×54 picture of the cover (1.5 KB, inline in `css/cover.css` as `--poster`) is the page's background from the first frame (letterboxed like the stage; the stage stays hidden until the inline script in `index.html` has sized it) and the title's background while its art loads; the sharp art fades in over it.
+- **Story on tablets and phones (`SD.LOW`):** the full-resolution underwater picture with the same slow camera drift and bubbles, not the WebGL water (on those screens it ran at half resolution, stretched 2–3×, so it looked blurry, and full resolution is too heavy for their GPUs). Desktops keep the water.
+- **Launcher label** ("NEGATIVE missiles" / "POSITIVE missiles") appears only with Level 1's first launch and stays for that mission; from the next mission the − / + badge alone says it. No sign chip on launched missiles any more.
+
 ## Deploy (Vercel)
 It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
 

@@ -169,16 +169,12 @@
     }
   };
   W.cannonShot = () => { shot(3, SD.CALM ? 3 : 6); return W.muzzle(); };
-  // the first missile launched in each mission: the label pulses and the badge's sign hops onto it, so the − (or +) on the
-  // launcher reads as "this launcher makes − missiles" (QA bug 7)
-  W.signLink = m => {
-    const a = W.centreOf(sign), neg = !cn.classList.contains('pos'), chip = el('signChip' + (neg ? '' : ' pos'), top, { left: a.x + 'px', top: a.y + 'px' });
-    chip.textContent = sign.textContent;
-    gsap.fromTo(tag, { scale: 1 }, { scale: 1.15, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut' });
-    gsap.timeline({ onComplete: () => chip.remove() })
-      .to(chip, { x: m.x - a.x, y: m.y - 58 - a.y, duration: .7, ease: 'power2.inOut' })   // (transform only: no layout per frame)
-      .fromTo(chip, { scale: 1.25 }, { scale: 1, duration: .3, ease: 'power2.out' })   // it lands once (the missile under it doesn't pop again)
-      .to(chip, { opacity: 0, duration: .4 }, '+=1.4');
+  // the label in words ("NEGATIVE missiles") comes only with the level's first launch (QA): it pops in over the launcher, pulses,
+  // and stays for that mission; from the next mission on the − / + badge alone says it. (No chip on the launched missile.)
+  W.signTag = on => {
+    cn.classList.toggle('named', on); if (!on) return;
+    gsap.fromTo(tag, { scale: .6, opacity: 0 }, { scale: 1, opacity: 1, duration: .35, ease: 'back.out(2.2)' });
+    gsap.fromTo(tag, { scale: 1 }, { scale: 1.12, duration: .3, yoyo: true, repeat: 3, ease: 'sine.inOut', delay: .4 });
   };
   W.launcherNo = () => { SFX.clunk(); judder(); };
   W.onLaunch = fn => { LN.launch = fn; };

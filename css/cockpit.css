@@ -137,14 +137,11 @@ background:radial-gradient(120% 95% at 50% 46%,rgba(10,70,110,0) 58%,rgba(10,70,
 #cannon .sign{position:absolute;left:50%;top:44px;width:70px;height:70px;margin-left:-35px;border-radius:50%;display:none;box-sizing:border-box;
   font:700 60px/58px Fredoka,sans-serif;color:#fff;text-align:center;background:radial-gradient(circle at 35% 30%,#5fb8ff,#1458b8);border:4px solid #fff;box-shadow:0 0 22px 4px rgba(73,190,255,.85)}
 #cannon.pos .sign{background:radial-gradient(circle at 35% 30%,#ff8a7a,#c8231a);box-shadow:0 0 22px 4px rgba(255,110,90,.85)}
-#cannon.armed .sign,#cannon.armed .signTag{display:block}
-/* the launcher's badge in words: blue "− NEGATIVE missiles" / red "+ POSITIVE missiles" (QA bug 7) */
+#cannon.armed .sign,#cannon.armed.named .signTag{display:block}
+/* the launcher's badge in words: blue "− NEGATIVE missiles" / red "+ POSITIVE missiles", with the level's first launch only (#cannon.named) */
 #cannon .signTag{position:absolute;left:50%;top:-40px;margin-left:-150px;width:300px;display:none;text-align:center;padding:7px 0 5px;border-radius:18px;
   font:800 27px/1 Baloo,sans-serif;color:#fff;white-space:nowrap;background:#136fd0;border:3px solid #bfe8ff;box-shadow:0 0 16px rgba(73,200,255,.85)}
 #cannon.pos .signTag{background:#c8231a;border-color:#ffd2c8;box-shadow:0 0 16px rgba(255,110,90,.85)}
-.signChip{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;text-align:center;font:800 52px/60px Baloo,sans-serif;color:#fff;
-  background:radial-gradient(circle at 35% 30%,#7fd0ff,#1466c8);border:3px solid #dff4ff;box-shadow:0 0 18px rgba(73,200,255,.9);pointer-events:none;z-index:5}
-.signChip.pos{background:radial-gradient(circle at 35% 30%,#ff8a7a,#c8231a);border-color:#ffe0da;box-shadow:0 0 18px rgba(255,110,90,.9)}
 #cannon.armed img{filter:drop-shadow(0 0 16px rgba(73,200,255,.95)) drop-shadow(0 0 34px rgba(73,200,255,.5))}
 #cannon.armed.pos img{filter:drop-shadow(0 0 16px rgba(255,110,90,.95)) drop-shadow(0 0 34px rgba(255,110,90,.5))}
 #launchHit{position:absolute;left:830px;top:720px;width:260px;height:240px;border-radius:40%;display:none;pointer-events:auto;cursor:pointer}
