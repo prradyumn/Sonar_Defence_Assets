@@ -136,7 +136,7 @@
 
   /* ================= navigation scale ================= */
   const back = el('', sc); back.id = 'scaleBack'; const sheen = el('sheen', back);
-  const rail = el('', sc); rail.id = 'rail'; el('arrowL', rail); el('arrowR', rail);
+  const rail = el('', sc); rail.id = 'rail'; const rope = el('rope', rail); el('arrowL', rail); el('arrowR', rail);
   let LBL = {}, TICK = {}, ON = [];
   const side = v => v === 0 ? ' zero' : v < 0 ? ' neg' : ' pos', VALS = () => Object.keys(LBL).map(Number).sort((a, b) => a - b);
   function syncBuoys() {   // buoys exist only near the view (±11 around its centre): made and dropped as it pans
@@ -158,7 +158,7 @@
   const zchip = el('', $('#fx')); zchip.id = 'zchip'; zchip.innerHTML = '<b>0</b>';
   zchip.onpointerdown = e => { e.stopPropagation(); W.panTo(0); };
   function applyPan() {
-    const px = PV.c * CONFIG.STEP; gsap.set([sc, play], { x: -px }); gsap.set(rail, { x: px, backgroundPositionX: -px }); syncBuoys();
+    const px = PV.c * CONFIG.STEP; gsap.set([sc, play], { x: -px }); gsap.set(rail, { x: px }); gsap.set(rope, { x: -(((px % 32) + 32) % 32) }); syncBuoys();
     const x0 = X(0), off = x0 < 230 ? -1 : x0 > 1690 ? 1 : 0;
     zchip.className = off ? (off < 0 ? 'l on' : 'r on') : '';
   }

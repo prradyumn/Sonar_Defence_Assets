@@ -169,8 +169,8 @@
     }
   };
   W.cannonShot = () => { shot(3, SD.CALM ? 3 : 6); return W.muzzle(); };
-  // the label in words ("NEGATIVE missiles") comes only with the level's first launch (QA): it pops in over the launcher, pulses,
-  // and stays for that mission; from the next mission on the − / + badge alone says it. (No chip on the launched missile.)
+  // the label in words ("NEGATIVE missiles", "POSITIVE missiles") comes only with the first launch of each sign in the level (QA):
+  // it pops in over the launcher, pulses, and stays for that mission; after that the − / + badge alone says it. (No chip on the launched missile.)
   W.signTag = on => {
     cn.classList.toggle('named', on); if (!on) return;
     gsap.fromTo(tag, { scale: .6, opacity: 0 }, { scale: 1, opacity: 1, duration: .35, ease: 'back.out(2.2)' });

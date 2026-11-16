@@ -41,8 +41,10 @@ img{-webkit-user-drag:none;user-select:none}
 #scaleBack::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 2px,transparent 2px 50px)}
 #scaleBack .sheen{position:absolute;top:0;bottom:0;left:-30%;width:30%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(200,250,255,.22),rgba(255,255,255,0));transform:skewX(-18deg)}
 /* the buoy trail: a rope across the water with a buoy at every whole number (gold at 0), the number under each buoy */
-#rail{position:absolute;left:110px;top:551px;width:1700px;height:18px;background:url(../assets/img/rope.webp) 0 0/32px 18px repeat-x;
+#rail{position:absolute;left:110px;top:551px;width:1700px;height:18px;overflow:hidden;
   filter:drop-shadow(0 5px 5px rgba(0,10,30,.5))}   /* a rendered three-strand rope (static: only the buoys move) */
+/* its texture: a strip one twist (32 px) longer, slid by transform as the view pans (world.js applyPan), not a repaint every frame */
+#rail .rope{position:absolute;left:0;top:0;width:calc(100% + 32px);height:100%;background:url(../assets/img/rope.webp) 0 0/32px 18px repeat-x}
 #rail .arrowL,#rail .arrowR{display:none;position:absolute;top:-13px;width:0;height:0;border-top:22px solid transparent;border-bottom:22px solid transparent}
 #rail .arrowL{left:-26px;border-right:30px solid #ff8a5c;filter:drop-shadow(0 0 6px #ff6a3c)}
 #rail .arrowR{right:-26px;border-left:30px solid #5fe6ff;filter:drop-shadow(0 0 6px #22c6ff)}
@@ -50,10 +52,14 @@ img{-webkit-user-drag:none;user-select:none}
 .tick .clamp{position:absolute;left:50%;top:-3px;width:12px;height:24px;margin-left:-6px;border-radius:4px;z-index:2;   /* a metal band wrapped round the rope: the buoy hangs from it */
   background:linear-gradient(#0e1a2e,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 78%,#0e1a2e),linear-gradient(90deg,#24344f,#9fb4d2 38%,#4a6082 62%,#16233a);box-shadow:0 0 0 1.5px #0b1628,0 3px 3px rgba(0,0,0,.4)}
 .tick .clamp::after{content:"";position:absolute;left:50%;top:100%;width:6px;height:7px;margin-left:-3px;background:linear-gradient(90deg,#1a2840,#6f87ab,#1a2840)}   /* the short stem down into the buoy */
-.tick .bob{position:absolute;inset:0;transform-origin:50% 9px;filter:drop-shadow(0 0 1.5px #06264a) drop-shadow(0 5px 6px rgba(0,10,30,.55));background:url(../assets/img/buoy.webp) center top/contain no-repeat;animation:buoyBob 3.2s ease-in-out infinite;will-change:transform}
+/* the buoy swings (.bob, a GPU layer); its picture and shadows are on a still child (::before), so they are drawn once into that
+   layer. (Shadows on the swinging layer itself were re-blurred by the GPU every frame, ~20 buoys × 2-3 blurs: Level 2 lagged on tablets, QA) */
+.tick .bob{position:absolute;inset:0;transform-origin:50% 9px;animation:buoyBob 3.2s ease-in-out infinite;will-change:transform}
+.tick .bob::before{content:"";position:absolute;inset:0;filter:drop-shadow(0 0 1.5px #06264a) drop-shadow(0 5px 6px rgba(0,10,30,.55));background:url(../assets/img/buoy.webp) center top/contain no-repeat}
 .tick.zero{width:62px;height:117px;margin-left:-31px;top:549px}   /* 0 is the reference: a bigger gold buoy */
-.tick.zero .bob{background-image:url(../assets/img/buoy_zero.webp);transform-origin:50% 11px;filter:drop-shadow(0 0 1.5px #06264a) drop-shadow(0 0 14px rgba(255,214,107,.75)) drop-shadow(0 5px 6px rgba(0,10,30,.55))}
-.tick.on .bob{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 14px rgba(255,236,170,1)) drop-shadow(0 0 30px rgba(255,214,107,.85))}
+.tick.zero .bob{transform-origin:50% 11px}
+.tick.zero .bob::before{background-image:url(../assets/img/buoy_zero.webp);filter:drop-shadow(0 0 1.5px #06264a) drop-shadow(0 0 14px rgba(255,214,107,.75)) drop-shadow(0 5px 6px rgba(0,10,30,.55))}
+.tick.on .bob::before{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 14px rgba(255,236,170,1)) drop-shadow(0 0 30px rgba(255,214,107,.85))}
 .tick.on .bob{animation-name:buoyBobOn}   /* a highlighted buoy grows a little (GSAP owns .tick's own transform) */
 @keyframes buoyBobOn{0%,100%{transform:scale(1.18) rotate(-3deg)}50%{transform:scale(1.18) rotate(3deg)}}
 @keyframes buoyBob{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}   /* swings gently on its ring; the ring stays on its number */   /* vertical only: the spacing never moves */
@@ -141,7 +147,7 @@ img{-webkit-user-drag:none;user-select:none}
 
 /* while the title loads, the game world behind it does not fetch its pictures yet (js/core.js takes .booting off once the
    title's and the story's art are in) */
-.booting #water .grad,.booting #rays,.booting #caustics,.booting #current .surf i,.booting #rail,.booting #done .card,.booting #marker{background-image:none!important}
+.booting #water .grad,.booting #rays,.booting #caustics,.booting #current .surf i,.booting #rail .rope,.booting #done .card,.booting #marker{background-image:none!important}
 /* overlays */
 .overlay{position:absolute;inset:0;pointer-events:auto}
 /* cover: the title screen is a live scene (css/cover.css); sonar pings pulse out from behind the logo */

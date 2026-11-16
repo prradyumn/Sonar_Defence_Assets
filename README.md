@@ -61,6 +61,11 @@ The original art pack (PNG sources, concepts, briefs) is not needed by the game;
 - **Story on tablets and phones (`SD.LOW`):** the full-resolution underwater picture with the same slow camera drift and bubbles, not the WebGL water (on those screens it ran at half resolution, stretched 2–3×, so it looked blurry, and full resolution is too heavy for their GPUs). Desktops keep the water.
 - **Launcher label** ("NEGATIVE missiles" / "POSITIVE missiles") appears only with Level 1's first launch and stays for that mission; from the next mission the − / + badge alone says it. No sign chip on launched missiles any more.
 
+## QA round 5 (tablets)
+- **Loading frame sharp:** a 1280×720 still of the cover (`assets/img/cover/poster.webp`, 51 KB, preloaded first in `index.html`) is layered over the 96×54 inline one, so the blurred one shows only for the moment before the sharp one arrives.
+- **Launcher label for each sign:** it shows with the first launch of each sign in Level 1 (NEGATIVE in mission 1, POSITIVE the first time the launcher switches to +), then the badge alone.
+- **Level 2 number line lag:** each swinging buoy carried its drop-shadows on its own GPU layer, so the GPU re-blurred ~20 buoys × 2–3 shadows every frame (Level 1 has none of this). The picture and shadows are now on a still `::before` inside the swinging layer (drawn once), and the rope's texture slides by transform during pans instead of repainting. Same look.
+
 ## Deploy (Vercel)
 It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
 

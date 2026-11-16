@@ -207,7 +207,7 @@
      in turn (the missiles that came are counted out loud on screen, 1, 2, 3 …); from the third on, the launcher stops at the
      right number, and from the fourth on FIRE stays off until the bay holds exactly that many (no loop of wrong volleys). No sinking. Row 1 is the teaching (the missiles come, the launcher activates) and the tutorial (the hand).
      ===================================================================== */
-  let NAMED = false;   // the launcher's label has been shown in this level
+  const NAMED = new Set();   // the signs whose launcher label has been shown in this level
   async function launchRound(R, teach) {
     const n = Math.abs(R.give), given = Math.sign(R.give), mine = -given, room = 2;
     W.launcher(0); W.fireBtn('');
@@ -247,7 +247,7 @@
         arm(); SD.skip(); if (busy) return; W.mslHintsOff();
         if (count() >= n + room || (strikes >= 3 && count() >= n)) return W.launcherNo();   // (after three mistakes it stops at the right number)
         const m = W.mslLaunch(mine, W.cannonShot()); fireState(); guide();
-        if (!NAMED) { NAMED = true; W.signTag(true); }   // the level's first launch: the label in words (only then: QA)
+        if (!NAMED.has(mine)) { NAMED.add(mine); W.signTag(true); }   // the first launch of each sign in the level: the label in words (only then: QA)
       });
       W.onMissile(m => { if (m.row !== 1 || busy) return; arm(); SD.skip(); W.mslTakeBack(m, W.muzzle()); fireState(); guide(); });
       W.onFire(async () => {
@@ -277,7 +277,7 @@
     await said; await wait(.3); W.clearMissiles(); W.stripOff();
   }
   async function level1(start = 0) {
-    LV = 'l1'; NAMED = false; W.dragRope(false); gsap.set('#scale', { opacity: 0 });   // Level 1 has no scale: it comes in the L2 transition
+    LV = 'l1'; NAMED.clear(); W.dragRope(false); gsap.set('#scale', { opacity: 0 });   // Level 1 has no scale: it comes in the L2 transition
     await W.banner('', 'LEVEL 1', '');
     W.pips(D.L1.length, start);
     for (let r = start; r < D.L1.length; r++) {
