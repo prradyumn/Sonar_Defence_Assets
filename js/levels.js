@@ -520,10 +520,10 @@
   }
   SD.onHold(on => { for (const a of [sea, nameVo]) { if (on && !a.paused) { a._held = true; a.pause(); } else if (!on && a._held) { a._held = false; if (onTitle()) a.play().catch(() => {}); } } });   // (the game paused: QA bugs 2, 3)
   /* the title comes all at once (QA): a still of the whole cover, logo and Play included, shows from the first frame (css/cover.css) and
-     Play works from then on; once the pictures are decoded (at most 2.5 s) the moving cover fades in over the still, from the same
+     Play works from then on; once its pictures are all in and decoded the moving cover fades in over the still, from the same
      frame, so nothing drops or pops in. Then the name is said and the rest of the game loads (core.js) */
   const reveal = () => {
-    const t = $('#title'); if (!t.classList.contains('wait') || $('#start')._go) return; t.classList.remove('wait'); SD.titleShown();
+    const t = $('#title'); if (!t.classList.contains('wait') || $('#start')._go) return; t.classList.remove('wait', 'prep'); SD.titleShown();
     gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: .5, immediateRender: false });   // Play breathes
     if (Q.get('autostart') !== '1') { seaOn(); gsap.delayedCall(.4, () => sayName()); }
     gsap.delayedCall(1, SD.titleSettled);
@@ -532,9 +532,13 @@
   else {
     const pics = [...new Set([...document.querySelectorAll('#title img')].map(i => i.src)
       .concat(['sky', 'islands', 'sea_base', 'waves_far', 'waves_mid', 'waves_near'].map(n => new URL('assets/img/cover/' + n + '.webp', location.href).href)))];
+    pics.push(new URL('assets/img/cover/play_button.webp', location.href).href);
     const keep = pics.map(u => { const i = new Image(); i.src = u; return i; });
-    Promise.race([Promise.all(keep.map(i => i.decode().catch(() => {}))), new Promise(r => setTimeout(r, 2500))])
-      .then(() => requestAnimationFrame(() => requestAnimationFrame(reveal)));
+    // no time limit: until every picture is in, the cover's still is the cover (Play works on it), so a slow tablet never sees the
+    // moving cover arrive in pieces (QA). Then one invisible paint (.prep: the decodes) and it fades in.
+    Promise.all(keep.map(i => i.decode().catch(() => {})))
+      .then(() => { $('#title').classList.add('prep'); return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300)))); })
+      .then(() => requestAnimationFrame(reveal));
   }
   if (window.SD_PLAY) $('#start').onclick();   // (Play was tapped on the still, before this script ran: index.html)
   $('#start').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#start').onclick(); } };
