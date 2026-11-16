@@ -519,14 +519,14 @@
     addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('#start')) return; sayName(true); seaOn(); });
   }
   SD.onHold(on => { for (const a of [sea, nameVo]) { if (on && !a.paused) { a._held = true; a.pause(); } else if (!on && a._held) { a._held = false; if (onTitle()) a.play().catch(() => {}); } } });   // (the game paused: QA bugs 2, 3)
-  /* the title appears whole (QA bug 1): the navy frame shows until its pictures are decoded (at most 2.5 s), then it fades in and its
-     entrance plays (the logo drops in, Play pops up, the name is said) on a quiet page; the rest of the game loads after that (core.js) */
+  /* the title comes all at once (QA): a still of the whole cover, logo and Play included, shows from the first frame (css/cover.css) and
+     Play works from then on; once the pictures are decoded (at most 2.5 s) the moving cover fades in over the still, from the same
+     frame, so nothing drops or pops in. Then the name is said and the rest of the game loads (core.js) */
   const reveal = () => {
-    const t = $('#title'); if (!t.classList.contains('wait')) return; t.classList.remove('wait'); SD.titleShown();
-    gsap.from('#start', { scale: 0, rotation: -120, opacity: 0, duration: .9, delay: 1.1, ease: 'back.out(2.2)' });
-    gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 2.1, immediateRender: false });   // breathes once it has popped in
-    if (Q.get('autostart') !== '1') { seaOn(); gsap.delayedCall(1.3, () => sayName()); }   // (after the logo has dropped in)
-    gsap.delayedCall(2.4, SD.titleSettled);
+    const t = $('#title'); if (!t.classList.contains('wait') || $('#start')._go) return; t.classList.remove('wait'); SD.titleShown();
+    gsap.fromTo('#start', { scale: 1 }, { scale: 1.06, duration: .8, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: .5, immediateRender: false });   // Play breathes
+    if (Q.get('autostart') !== '1') { seaOn(); gsap.delayedCall(.4, () => sayName()); }
+    gsap.delayedCall(1, SD.titleSettled);
   };
   if (Q.get('autostart') === '1') reveal();
   else {
@@ -536,6 +536,7 @@
     Promise.race([Promise.all(keep.map(i => i.decode().catch(() => {}))), new Promise(r => setTimeout(r, 2500))])
       .then(() => requestAnimationFrame(() => requestAnimationFrame(reveal)));
   }
+  if (window.SD_PLAY) $('#start').onclick();   // (Play was tapped on the still, before this script ran: index.html)
   $('#start').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#start').onclick(); } };
   if (Q.get('autostart') === '1') {   // a QA / editor jump: a quiet sonar screen covers the page while it loads, then the level fades in
     const boot = document.createElement('div'); boot.id = 'boot'; boot.innerHTML = '<i></i><i></i><span>SONAR CONTACT…</span>'; $('#stage').appendChild(boot);

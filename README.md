@@ -66,6 +66,9 @@ The original art pack (PNG sources, concepts, briefs) is not needed by the game;
 - **Launcher label for each sign:** it shows with the first launch of each sign in Level 1 (NEGATIVE in mission 1, POSITIVE the first time the launcher switches to +), then the badge alone.
 - **Level 2 number line lag:** each swinging buoy carried its drop-shadows on its own GPU layer, so the GPU re-blurred ~20 buoys × 2–3 shadows every frame (Level 1 has none of this). The picture and shadows are now on a still `::before` inside the swinging layer (drawn once), and the rope's texture slides by transform during pans instead of repainting. Same look.
 
+## QA round 6 (cover all at once)
+- **The cover comes whole:** the stills (`assets/img/cover/poster.webp` 62 KB and the 96×54 inline `--poster`) now include the logo and Play, taken at the frame the cover's loops start from; Play takes the tap from the first frame. When the moving cover is decoded it fades in over the still with no drop-in or pop-in (the logo's drop and Play's pop are gone), and the rest of the game starts loading 1 s later (was 2.4 s). To remake the stills after changing the cover: screenshot `#title` at 1920×1080 with its animations at `currentTime = 0` (pings, Play's rings and shine hidden), then `cwebp -resize 1280 0 -q 45` and `-resize 96 54 -q 60`.
+
 ## Deploy (Vercel)
 It is a static site: no build step. Import the repo (or drag this folder into Vercel) and keep **Framework Preset: Other**, no build command, **Root Directory `./`**. `vercel.json` pins the preset; `.vercelignore` leaves `tools/` and the docs out of the upload. If the Vercel project was created while the game lived in `Sonar_Defence_Game/`, set its Root Directory back to `./`. The layout editor's Save needs `tools/dev_server.py`, so on Vercel it offers Copy / Download instead.
 

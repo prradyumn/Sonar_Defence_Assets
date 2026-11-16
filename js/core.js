@@ -295,9 +295,9 @@
   for (const k in SHEET) SHEET[k].wait = [];
   const LOW = (navigator.deviceMemory && navigator.deviceMemory <= 4) || matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
   /* Loading in order of need, so the first screens are not slowed by art they don't show:
-     1 · the title's art (in the page itself, highest priority: index.html). The title shows once it is decoded and plays its
-         entrance on a quiet page: nothing else is fetched or decoded until then (QA bug 1). levels.js calls SD.titleShown()
-         when it appears and SD.titleSettled() when its entrance is over (or Play is pressed).
+     1 · the title's art (in the page itself, highest priority: index.html). Until it is decoded a still of the whole cover
+         shows (Play already works); then the moving cover fades in on a quiet page: nothing else is fetched or decoded until then (QA bug 1). levels.js calls SD.titleShown()
+         when it appears and SD.titleSettled() a second later (or when Play is pressed).
      2 · the story's art (the hook comes right after Play), decoded in the background once the title is up — READY waits for it
      3 · LATER, once the title has settled: Meera's sheet (first needed at Level 1's intro), the rest of the game art, the sounds
          (the story's first, the missions' music last), one at a time in the browser's idle moments. Decoded images are kept (KEEP)
@@ -306,7 +306,7 @@
   setTimeout(() => { shown(); settled(); }, 8000);   // (never later than this, whatever happens)
   const idle = () => new Promise(r => window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 700 }) : setTimeout(r, 50));
   const KEEP = [], art = (dir, n) => { const i = new Image(); i.src = 'assets/img/' + dir + n + '.webp'; KEEP.push(i); return i.decode().catch(() => {}); };
-  const STORY = LOW ? Promise.resolve() : Promise.race([SHOWN.then(() => new Promise(r => setTimeout(r, 900))), SETTLED])   // (after the logo has landed)
+  const STORY = LOW ? Promise.resolve() : Promise.race([SHOWN.then(() => new Promise(r => setTimeout(r, 900))), SETTLED])   // (a moment after the title is up)
     .then(() => Promise.all(['bg_under', 'ship', 'sub_bay', 'missile_red', 'missile_blue', 'meera_shocked', 'meera_determined'].map(n => art('story/', n))));
   /* every font face the game uses is loaded up front (Hindi: its Devanagari faces too). A face loads only when text first uses it, so
      a feedback line in a face not yet used came up in the fallback font for a moment, the first time only (QA bug 28). */
