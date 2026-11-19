@@ -126,10 +126,6 @@ The camera is inside the submarine, looking out through the big bow window (`ass
 - Code: `js/world.js` draws the sea, scale, submarines and effects; `js/cockpit.js` adds the sliding bow cannon (`W.aimHook`, `W.fire`), the crew and the cockpit effects; `css/cockpit.css` holds its layout. Layout constants (`SUB_Y`, `SUB_ROW`, `SIG_Y1/2`, `SCALE_DY`) are `DEFAULTS` in `js/world.js`.
 - The earlier ship-at-the-surface version was removed; it is still in the git history (before commit "Keep only the submarine cockpit version").
 
-## QA jumper (for testers)
-Press **Q** in the game (Q again hides it), or add `?qa=1` to the URL (e.g. `https://<your-vercel-link>/?qa=1`). A small **QA ▾** panel (top-left) jumps straight into any part and starts playing:
-story (Harbour · Control room · Dive), Teaching, every round of Level 1–3 and the Final mission. While playing: **Skip line**, **Answer ✓** (taps the right submarine / pair), **Restart part**; choose 1×/2×/3× speed and sound for the next jump. After a jump the panel stays on. (URL equivalents: `?at=hook&scene=2`, `?at=l3&round=4`, `?at=final&round=3`.)
-
 ## Sound
 Recorded music + ambience + effects live in `assets/sfx/` (all `.ogg`): two loops composed for the game with Google Lyria (a mysterious deep-sea atmosphere for the story, a focused naval-mission underscore for the missions, crossfading at the dive), harbour gulls + waves, sea waves, and CC0 Freesound effects (sonar, torpedo, underwater explosion, splash, water rush, sci-fi door, bubbles) — see `assets/sfx/CREDITS.md`. Taps, chimes and the reward arpeggio are synthesized. Music dips under every voice line. Over http(s) everything plays through Web Audio; from `file://` through `<audio>` elements.
 
@@ -162,7 +158,6 @@ open http://localhost:8000/?edit=1
 - `js/core.js` stage fit, sound (Web-Audio sfx + tanpura/underwater music bed, ducked under voice), voice playback (recorded VO → browser voice), captions + name tag, the talking sheets
 - `js/world.js` parallax sea (far reef, seabed, fish schools, rays, caustics, marine snow, bubbles), navigation scale (x = 960 + 100·value, −8…+8), submarines (tap rings, propeller bubbles), lock-on/blast (flash, shockwave, debris), hints, the helper glow and tapping hand (tutorial + nudges), Level 1's missiles + launch bay, Level 3's order row
 - `js/cockpit.js` the bow cannon + torpedo, the crew at their stations, console screen, warning lamps, hull kick
-- `js/qa.js` the QA jumper (`?qa=1`)
 - `js/editor.js` + `css/editor.css` the pause + layout editor (inert unless `?edit=1` / E) · `js/layout.js` saved layout overrides · `tools/dev_server.py` local server that saves them
 - `js/levels.js` flow + pedagogy: the hook (lines `h1`, `h2`), the level intros (`l1a` `l1b`, `l2a` `l2b`, `l3a`), the ending (ROUTE CLEARED!), tutorial glow in each level's first round, 3-strike feedback as panel text, idle help (6 s visual → 12 s text → 22 s reminder), stars
 - `tools/make_voices.py` makes the voice files
