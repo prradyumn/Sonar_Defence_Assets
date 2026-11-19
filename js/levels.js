@@ -79,6 +79,17 @@
     return cv;
   })());
   SD.settled.then(() => new Promise(r => setTimeout(r, 1500))).then(SD.idle).then(waterReady);
+  /* Play: the story's water is set up under the title first (its picture, the WebGL water running), so the title cross-fades
+     straight into it. (Its solid navy backdrop used to show between the two for ~0.5 s: a blue flash after Play, QA.) K.open()
+     then finds it up and only adds the camera drift. */
+  let STORY_UP = null;
+  const storyUnder = () => STORY_UP || (STORY_UP = (async () => {
+    const st = $('#story'), bg = $('#storyBg');
+    bg.style.backgroundImage = `url(${IMG('bg_under')})`; gsap.set(bg, { opacity: 1, scale: 1.08 });
+    const cv = await waterReady();
+    if (WATER) { Object.assign(WATER.state, { glow: 0, r: 1, g: 1, b: 1 }); WATER.start(); cv.style.display = 'block'; gsap.set(cv, { opacity: 1, scale: 1.08 }); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); }
+    st.classList.remove('hidden'); gsap.set(st, { opacity: 1 });
+  })());
   function storyKit(fade) {   // fade: the story fades in over the cockpit (part 2 and the ending come after a level)
     const st = $('#story'), bg = $('#storyBg'), cast = $('#cast'), sfx = $('#storyFx');
     st.classList.remove('hidden'); cast.innerHTML = sfx.innerHTML = ''; gsap.set([st, bg, cast, sfx], { clearProps: 'all' });
@@ -94,7 +105,8 @@
       const cv = await waterReady();
       cv.style.display = WATER ? 'block' : 'none'; if (WATER) { Object.assign(WATER.state, { glow: 0, r: 1, g: 1, b: 1 }); WATER.start(); }
       K.cam = gsap.fromTo([cv, bg], { scale: 1.08 }, { scale: 1.02, duration: 30, ease: 'none' });
-      if (K.fade) { gsap.set([cv, bg], { opacity: 1 }); await gsap.to(st, { opacity: 1, duration: .8, ease: 'power1.inOut' }); }   // over the cockpit: the water comes in with the overlay (no dark frame)
+      if (STORY_UP && !K.fade) { STORY_UP = null; gsap.set([cv, bg], { opacity: 1 }); gsap.set(st, { opacity: 1 }); }   // already up under the title (Play)
+      else if (K.fade) { gsap.set([cv, bg], { opacity: 1 }); await gsap.to(st, { opacity: 1, duration: .8, ease: 'power1.inOut' }); }   // over the cockpit: the water comes in with the overlay (no dark frame)
       else { gsap.set(st, { opacity: 1 }); gsap.fromTo([cv, bg], { opacity: 0 }, { opacity: 1, duration: .6 }); }   // the overlay is solid from the first frame; only the water fades in
       for (let i = 0; i < 9; i++) { const r = 4 + Math.random() * 9, b = mk('div', 'sx-bub', { left: 120 + Math.random() * 1680 + 'px', top: '1100px', width: 2 * r + 'px', height: 2 * r + 'px' });
         gsap.to(b, { y: -1250, x: (Math.random() - .5) * 120, duration: 7 + Math.random() * 6, delay: Math.random() * 5, repeat: -1, ease: 'none' }); }
@@ -488,7 +500,8 @@
     const named = !heard && !SD.MUTE && Q.get('autostart') !== '1' ? new Promise(r => { const p = sayName(true); if (!p) return r(); p.catch(r); nameVo.addEventListener('ended', r, { once: true }); setTimeout(r, 3500); }) : null;
     if (!named && !nameVo.paused) gsap.to(nameVo, { volume: 0, duration: .4, onComplete: () => nameVo.pause() });
     const boot = $('#boot');
-    if ((Q.get('at') || 'hook') === 'hook') { $('#story').classList.remove('hidden'); gsap.set('#story', { opacity: 1 }); }   // the story's solid backdrop goes up under the title first: the game never shows through
+    gsap.to('#start', { scale: .92, duration: .15, overwrite: true });   // pressed (at once, while the story's water gets ready)
+    if ((Q.get('at') || 'hook') === 'hook') await Promise.all([SD.ready, storyUnder()]);   // the story's water up under the title: the title fades straight into it
     await Promise.all([gsap.to('#title', { opacity: 0, duration: .5 }), SD.ready, named]);   // never start mid-load: that is where jumps used to hitch
     $('#title').classList.add('hidden'); gsap.killTweensOf(['#start', '#title .art']);   // the title's loops stop with it
     if (boot) await gsap.to(boot, { opacity: 0, duration: .45, onComplete: () => boot.remove() });

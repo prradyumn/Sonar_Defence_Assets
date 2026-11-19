@@ -473,3 +473,18 @@ img{-webkit-user-drag:none;user-select:none}
 .mcount{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;display:flex;align-items:center;justify-content:center;pointer-events:none;
   background:#06264a;border:4px solid #ffd66b;box-shadow:0 0 16px rgba(255,214,107,.8);font:800 32px/1 Baloo,sans-serif;color:#fff}
 .mcount.last{width:68px;height:68px;margin:-34px 0 0 -34px;font-size:40px;background:#f08a10;border-color:#fff}
+
+/* the player's controls (js/controls.js): previous round · pause / play · next round, on the console at the bottom right (clear of
+   the cannon, FIRE and Meera's bubble on every screen); pause dims the game under a cover with the big play button */
+#ctrl{position:absolute;right:26px;bottom:16px;display:flex;gap:12px;padding:7px 12px;border-radius:50px;background:rgba(6,24,46,.85);
+  box-shadow:0 0 0 3px #c4914a,0 0 0 5px #2a1a08,0 8px 18px rgba(0,0,0,.45)}
+#ctrl button{width:76px;height:76px;padding:0;border:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;touch-action:manipulation;
+  background:radial-gradient(circle at 50% 35%,#21679e,#0b2c4d);box-shadow:inset 0 0 0 2px rgba(127,242,255,.55)}
+#ctrl button svg{width:38px;height:38px;fill:#eaf6ff}
+#ctrl button:active{transform:scale(.92)}
+#ctrl button.on{background:radial-gradient(circle at 50% 35%,#ffb347,#e0701a);box-shadow:inset 0 0 0 2px #ffe0a8}
+#ctrl button.off{opacity:.35;pointer-events:none}
+#pauseCover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;cursor:pointer;background:rgba(2,18,38,.62)}
+#pauseCover[hidden]{display:none}
+#pauseCover b{font:800 72px/1 Baloo,sans-serif;letter-spacing:4px;color:#fff;text-shadow:0 4px 0 #021226,0 0 24px rgba(80,220,255,.6)}
+#pauseCover i{width:220px;height:220px;border-radius:50%;background:url(../assets/img/cover/play_button.webp) center/100% 100% no-repeat;box-shadow:0 14px 28px rgba(0,20,50,.45),0 0 40px rgba(255,190,70,.6)}
